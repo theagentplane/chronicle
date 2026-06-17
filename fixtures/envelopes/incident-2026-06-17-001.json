@@ -1,0 +1,67 @@
+{
+  "schema_version": "1.0",
+  "envelope_id": "env-sample-001",
+  "trace_id": "trace-incident-2026-06-17-001",
+  "node_id": "agent",
+  "timestamp": "2026-06-17T12:00:00+00:00",
+  "metadata": {
+    "model_version": "gpt-4o-2024-08-06",
+    "sampling_params": {
+      "temperature": 0.0,
+      "top_p": 1.0,
+      "max_tokens": 1024,
+      "seed": 42,
+      "extra": {}
+    },
+    "build_id": "chronicle-0.1.0",
+    "tool_schemas": [
+      {
+        "name": "search_docs",
+        "description": "Search internal documentation",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "query": {"type": "string"}
+          },
+          "required": ["query"]
+        }
+      }
+    ],
+    "framework": "langgraph",
+    "node_id": "agent",
+    "trace_id": "trace-incident-2026-06-17-001",
+    "extra": {}
+  },
+  "input_state": {
+    "messages": [
+      {"role": "user", "content": "How do I reset my API key?"}
+    ],
+    "system_prompt": "You are a helpful support agent. Use search_docs for factual answers.",
+    "rag_chunks": [
+      {
+        "chunk_id": "doc-42",
+        "content": "API keys can be reset from Settings > API Keys > Regenerate.",
+        "source": "docs/api-keys.md",
+        "score": 0.92,
+        "index_version": "v3.2.1",
+        "metadata": {}
+      }
+    ],
+    "graph_state": {
+      "step": "agent"
+    }
+  },
+  "action_result": {
+    "tool_calls": [
+      {
+        "id": "call_abc123",
+        "name": "search_docs",
+        "arguments": {"query": "reset API key"}
+      }
+    ],
+    "completion": "You can reset your API key from Settings > API Keys > Regenerate.",
+    "finish_reason": "tool_calls",
+    "token_usage": {"prompt_tokens": 256, "completion_tokens": 24},
+    "raw_response": null
+  }
+}

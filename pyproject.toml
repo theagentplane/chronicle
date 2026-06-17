@@ -1,0 +1,51 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "chronicle"
+version = "0.1.0"
+description = "Agent Data Recorder and Verification Test Bench for replayable agent debugging"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+dependencies = [
+    "pydantic>=2.0",
+    "opentelemetry-api>=1.20",
+    "opentelemetry-sdk>=1.20",
+    "openinference-instrumentation>=0.1.12",
+    "openinference-semantic-conventions>=0.1.9",
+    "click>=8.0",
+]
+
+[project.optional-dependencies]
+langgraph = [
+    "langgraph>=0.2",
+    "langchain-core>=0.3",
+    "openinference-instrumentation-langchain>=0.1.20",
+]
+phoenix = [
+    "arize-phoenix>=4.0",
+    "opentelemetry-exporter-otlp>=1.20",
+]
+judge = [
+    "openai>=1.0",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "chronicle[langgraph,judge]",
+]
+
+[project.scripts]
+chronicle = "chronicle.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["chronicle"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "layer1: deterministic replay tests (no LLM API calls)",
+    "layer2: LLM-as-judge evaluation tests",
+]
