@@ -1,13 +1,13 @@
 {
   "schema_version": "1.0",
-  "envelope_id": "85eec646-bd54-459d-abf6-635a61210a9e",
+  "envelope_id": "6bf4f098-497f-43db-a361-e97e9662e146",
   "trace_id": "trace-deletion-incident-001",
   "node_id": "agent",
   "boundary_kind": "llm",
   "parent_envelope_id": null,
   "sequence": 1,
   "invocation_index": 1,
-  "timestamp": "2026-06-18T16:18:45.852160Z",
+  "timestamp": "2026-06-18T16:32:22.641036Z",
   "metadata": {
     "model_version": "demo-model",
     "sampling_params": {

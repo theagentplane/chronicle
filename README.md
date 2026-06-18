@@ -8,64 +8,117 @@ Chronicle implements two complementary systems:
 
 ### 1. Agent Data Recorder ("The Envelope")
 
-Captures "flight data" at the **graph boundary** (LangGraph nodes), not at network sockets.
+Captures "flight data" at **decision boundaries**—the methods where your agent calls an LLM, runs a tool, or makes a routing decision. Chronicle builds a **side execution graph** alongside your agent without modifying framework topology.
 
-Every execution serializes an immutable, append-only **Envelope**:
+Every boundary invocation serializes an immutable, append-only **Envelope**:
 
 | Field | Contents |
 |---|---|
 | **Contextual Metadata** | Pinned model version, sampling parameters, runtime build ID |
-| **Input State** | Full assembled prompt and retrieved context/chunks |
+| **Input State** | Full assembled prompt, graph state, retrieved context/chunks |
 | **Action/Result** | Structured tool calls and model completion |
+| **Graph linkage** | `parent_envelope_id`, `sequence`, `invocation_index` for retries |
 
-OpenInference and Arize Phoenix provide framework-agnostic tracing; Chronicle normalizes spans into a regression-ready envelope format.
+OpenInference and Arize Phoenix provide framework-agnostic tracing; Chronicle normalizes observations into a regression-ready envelope format.
 
 ### 2. Verification Test Bench
 
 | Layer | Goal | Mechanism |
 |---|---|---|
-| **Layer 1: Replay** | Validate control flow / logic | Static envelope fixture; structural assertions (tool called, routing) — **never calls the LLM API** |
+| **Layer 1: Replay** | Validate control flow / logic | Static envelope/trace fixtures; structural assertions — **never calls the LLM API** |
 | **Layer 2: Evaluation** | Validate generation quality | LLM-as-a-judge on meaning (grounding, safety, refusal) — not bitwise equality |
+| **Cut-point replay** | Test a code change in one boundary | Stub upstream from fixtures, run target boundary live |
 
-Production incident envelopes are committed under `fixtures/envelopes/` as permanent regression tests.
+Production incidents are committed under `fixtures/traces/` (multi-step graphs) or `fixtures/envelopes/` (single-step) as permanent regression tests.
 
 ## Quick Start
 
 ```bash
 pip install -e ".[dev]"
-pytest -m layer1          # deterministic replay (no API keys needed)
-chronicle replay fixtures/envelopes/incident-2026-06-17-001.json
+
+# Cross-platform (Windows, macOS, Linux):
+python scripts/run.py demo       # interactive demo (confirms each step)
+python scripts/run.py test       # full pytest suite (separate)
+
+# Non-interactive (CI / automation):
+python scripts/run.py demo -y
+
+# Shell wrappers (Unix):
+./scripts/demo.sh
+./scripts/test.sh
+
+# Batch wrappers (Windows):
+scripts\demo.bat
+scripts\test.bat
 ```
 
-### Record agent execution
+The demo walks through record → trace → optional UI → cut-point replay, **confirming before each step**. It does not run pytest — use `test` for that.
+
+```bash
+pytest -v                 # or: python scripts/run.py test
+pytest -m layer1 -v       # deterministic replay only
+```
+
+## Primary API: `@boundary`
+
+Annotate decision boundaries once. The same annotation records in live mode and stubs in replay mode.
 
 ```python
-from chronicle import EnvelopeRecorder
+from chronicle import boundary, get_session, reset_session, ReplayPlan
 from chronicle.envelope.store import EnvelopeStore
-from chronicle.instrumentation import instrument_graph_nodes
 
-recorder = EnvelopeRecorder(
-    store=EnvelopeStore(".chronicle/runs/envelopes.jsonl"),
-    model_version="gpt-4o-2024-08-06",  # pinned, not an alias
-    build_id="deploy-abc123",
-)
+@boundary("agent", kind="llm")
+def agent_plan(state: dict) -> dict:
+    ...
 
-wrapped_nodes = instrument_graph_nodes(recorder, {"agent": agent_node})
+@boundary("delete_file", kind="tool")
+def delete_file(path: str, environment: str) -> dict:
+    ...
+
+# Record mode (default)
+session = reset_session()
+session.store = EnvelopeStore(".chronicle/runs/incident.jsonl")
+session.begin_trace("trace-001")
+result = run_agent(...)
+
+# Export trace graph to fixtures/
+session.export_trace("fixtures/traces/incident-001/")
 ```
 
-### Layer 1 replay (deterministic)
+### Cut-point replay
+
+Test a fix in one boundary while stubbing everything else from the incident:
+
+```python
+session = reset_session()
+session.load_trace("fixtures/traces/deletion-incident-001/")
+session.enable_replay(
+    ReplayPlan()
+    .stub("agent", 1)          # upstream: frozen from fixture
+    .live("delete_file", 1)    # cut-point: run new code
+    .live("agent", 2)          # downstream: observe effect
+)
+result = run_agent(...)
+
+# Assert on live cut-point
+assert session.captured_result("delete_file", 1)["blocked"] is True
+```
+
+### Layer 1 replay (injector API)
+
+For single-envelope structural replay:
 
 ```python
 from chronicle.replay import ReplayInjector
-from chronicle.envelope.schema import Envelope
+from chronicle import Envelope
 
 envelope = Envelope.from_file("fixtures/envelopes/incident-2026-06-17-001.json")
 injector = ReplayInjector(envelope)
 
 def agent(state, inj):
-    completion = inj.stub_llm()          # no API call
+    inj.stub_llm()
     inj.stub_tool("search_docs", {"query": "reset API key"})
-    return {"finish_reason": completion.finish_reason}
+    return {"finish_reason": "tool_calls"}
 
 _, _, assertions = injector.replay(agent)
 assert all(a.passed for a in assertions)
@@ -81,29 +134,85 @@ result = runner.evaluate(envelope)
 assert result.overall_passed
 ```
 
+## Deletion agent demo (record → visualize → cut-point test)
+
+A test bench where an ungated `delete_file` tool deletes production data, then a cut-point test verifies the gated fix.
+
+```bash
+# 1. Record the incident (ungated tool deletes prod)
+python examples/deletion_agent/record_incident.py
+
+# 2. View trace in terminal (demo.sh will offer interactive UI next)
+python examples/deletion_agent/show_trace.py
+
+# 3. Interactive UI (timeline + graph + full envelope on click)
+python examples/deletion_agent/show_trace.py --ui
+# or: chronicle show-graph fixtures/traces/deletion-incident-001 --ui
+
+# 4. Static HTML export
+python examples/deletion_agent/show_trace.py --html trace.html
+
+# 5. Cut-point replay demo (gated tool blocks prod)
+python examples/deletion_agent/run_cutpoint_demo.py
+
+# 6. Full test suite (separate from demo)
+python scripts/run.py test
+# or: pytest tests/test_deletion_cutpoint.py -v
+```
+
+Cut-point plan: `stub agent@1` → `LIVE delete_file@1` (gated)` → `LIVE agent@2`
+
+Expected incident graph:
+
+```
+agent@1 → delete_file@1 (deleted prod) → agent@2
+```
+
 ## Workflow
 
 ```
-Instrument → Capture → Extract → Debug → Fix → Verify
-     │           │          │        │       │      │
-     │           │          │        │       │      └─ Layer 1 + Layer 2
-     │           │          │        │       └─ Modify agent logic/prompt
-     │           │          │        └─ Step through frozen envelope
-     │           │          └─ chronicle extract --trace-id <id>
-     │           └─ EnvelopeRecorder at graph nodes
-     └─ OpenInference + Phoenix bootstrap
+Annotate → Record → Visualize → Extract → Fix → Cut-point replay → Verify
+    │         │          │          │       │           │              │
+    │         │          │          │       │           │              └─ pytest / chronicle replay
+    │         │          │          │       │           └─ ReplayPlan stub/live
+    │         │          │          │       └─ Change target boundary code
+    │         │          │          └─ fixtures/traces/ committed to git
+    │         │          └─ show_trace --ui
+    │         └─ @boundary in LIVE mode
+    └─ @boundary on LLM + tool methods
 ```
 
 ## CLI
 
 ```bash
-chronicle record                  # Bootstrap tracing + instrumentation
-chronicle extract --trace-id ID   # Export envelopes to fixtures/
-chronicle replay FIXTURE.json     # Layer 1 deterministic replay
-chronicle verify FIXTURE.json --layer2  # Layer 1 + Layer 2
-chronicle schema                  # Print Envelope JSON Schema
-chronicle list-fixtures           # List committed regression cases
+chronicle record                                    # Bootstrap tracing + instrumentation
+chronicle extract --trace-id ID                     # Export envelopes to fixtures/
+chronicle replay FIXTURE.json                       # Layer 1 deterministic replay
+chronicle verify FIXTURE.json --layer2 --mock-judge # Layer 1 + Layer 2
+chronicle show-graph fixtures/traces/TRACE --ui     # Interactive trace visualization
+chronicle show-graph TRACE --html out.html          # Static HTML export
+chronicle schema                                    # Print Envelope JSON Schema
+chronicle list-fixtures                             # List committed envelope fixtures
 ```
+
+## LangGraph integration (optional)
+
+For LangGraph-specific node wrapping (alternative to `@boundary`):
+
+```python
+from chronicle.envelope.capture import EnvelopeRecorder
+from chronicle.envelope.store import EnvelopeStore
+from chronicle.instrumentation import instrument_graph_nodes
+
+recorder = EnvelopeRecorder(
+    store=EnvelopeStore(".chronicle/runs/envelopes.jsonl"),
+    model_version="gpt-4o-2024-08-06",
+    build_id="deploy-abc123",
+)
+wrapped_nodes = instrument_graph_nodes(recorder, {"agent": agent_node})
+```
+
+See `examples/langgraph_demo/agent.py`.
 
 ## Environment Variables
 
@@ -113,43 +222,30 @@ chronicle list-fixtures           # List committed regression cases
 | `CHRONICLE_STORE` | Default envelope store path |
 | `PHOENIX_COLLECTOR_ENDPOINT` | Phoenix OTLP endpoint (default `http://localhost:4317`) |
 
-## Deletion agent demo (record → graph → cut-point replay)
-
-A test bench showing an incident where an ungated `delete_file` tool removes production data,
-then a cut-point test stubs the agent and runs the fixed gated tool live.
-
-```bash
-# 1. Record the incident (ungated tool deletes prod)
-python examples/deletion_agent/record_incident.py
-
-# 2. Visualize the execution graph
-python examples/deletion_agent/show_trace.py --ui
-# or: chronicle show-graph fixtures/traces/deletion-incident-001 --ui
-
-# 3. Run cut-point replay demo (gated tool blocks prod)
-python examples/deletion_agent/run_cutpoint_demo.py
-
-# 4. Run checked-in regression test
-pytest tests/test_deletion_cutpoint.py -v
-```
-
-Cut-point plan: `stub agent@1` → `LIVE delete_file@1` (gated) → `LIVE agent@2`
-
 ## Project Structure
 
 ```
 chronicle/
-├── boundary.py        # @boundary decorator (record + replay)
-├── session.py         # runtime session, stub/live modes
-├── execution_graph.py # trace graph builder + render
-├── envelope/          # Schema, capture, append-only store
-├── instrumentation/   # OpenInference + LangGraph hooks
-├── replay/            # Layer 1 injector + structural assertions
-├── judge/             # Layer 2 rubric + LLM-as-judge runner
-├── cli.py             # chronicle CLI
-fixtures/envelopes/    # Committed regression envelopes
-fixtures/traces/       # Committed trace graphs (multi-step incidents)
-examples/deletion_agent/
+├── boundary.py         # @boundary decorator (record + replay + cut-point)
+├── session.py          # runtime session, trace export, stub/live modes
+├── execution_graph.py  # side graph builder (load/save/render)
+├── visualizer.py       # interactive HTML trace UI
+├── envelope/           # schema, capture, append-only store
+├── replay/             # ReplayPlan, ReplayInjector, structural assertions
+├── judge/              # Layer 2 rubric + LLM-as-judge runner
+├── instrumentation/    # OpenInference + LangGraph hooks
+├── cli.py
+fixtures/
+├── envelopes/          # single-step regression envelopes
+└── traces/             # multi-step trace graphs (graph.json + envelopes)
+examples/
+├── deletion_agent/     # record → visualize → cut-point demo
+└── langgraph_demo/     # LangGraph node wrapping example
+scripts/
+├── run.py              # cross-platform runner (demo | test)
+├── demo.sh / .bat      # interactive demo
+├── test.sh / .bat      # pytest suite
+└── quickrun.sh / .bat  # alias for demo
 tests/
 ```
 

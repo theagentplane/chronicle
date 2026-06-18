@@ -1,13 +1,13 @@
 {
   "schema_version": "1.0",
-  "envelope_id": "aba7503a-10d5-4825-a707-e521941351f8",
+  "envelope_id": "3268cd3b-6b86-4374-978c-8b2c162f0613",
   "trace_id": "trace-deletion-incident-001",
   "node_id": "agent",
   "boundary_kind": "llm",
-  "parent_envelope_id": "b2bff9fe-3bc9-40b2-add7-8ce2e1b1afe3",
+  "parent_envelope_id": "a6377b87-d528-46cb-9c40-83f39e2e11a7",
   "sequence": 3,
   "invocation_index": 2,
-  "timestamp": "2026-06-18T16:18:45.854593Z",
+  "timestamp": "2026-06-18T16:32:22.641738Z",
   "metadata": {
     "model_version": "demo-model",
     "sampling_params": {
