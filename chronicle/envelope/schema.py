@@ -97,10 +97,18 @@ class Envelope(BaseModel):
     envelope_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     trace_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     node_id: str
+    boundary_kind: str = "custom"
+    parent_envelope_id: str | None = None
+    sequence: int = 0
+    invocation_index: int = 1
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     metadata: ContextMetadata
     input_state: InputState
     action_result: ActionResult
+
+    @property
+    def boundary_id(self) -> str:
+        return self.node_id
 
     @field_validator("timestamp", mode="before")
     @classmethod

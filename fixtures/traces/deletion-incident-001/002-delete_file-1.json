@@ -1,0 +1,49 @@
+{
+  "schema_version": "1.0",
+  "envelope_id": "b2bff9fe-3bc9-40b2-add7-8ce2e1b1afe3",
+  "trace_id": "trace-deletion-incident-001",
+  "node_id": "delete_file",
+  "boundary_kind": "tool",
+  "parent_envelope_id": "85eec646-bd54-459d-abf6-635a61210a9e",
+  "sequence": 2,
+  "invocation_index": 1,
+  "timestamp": "2026-06-18T16:18:45.854411Z",
+  "metadata": {
+    "model_version": "demo-model",
+    "sampling_params": {
+      "temperature": null,
+      "top_p": null,
+      "max_tokens": null,
+      "seed": null,
+      "extra": {}
+    },
+    "build_id": "deletion-demo-record",
+    "tool_schemas": [],
+    "framework": "chronicle.boundary",
+    "node_id": "delete_file",
+    "trace_id": "trace-deletion-incident-001",
+    "extra": {}
+  },
+  "input_state": {
+    "messages": [],
+    "system_prompt": null,
+    "rag_chunks": [],
+    "graph_state": {
+      "path": "/prod/logs/app.log",
+      "environment": "prod"
+    }
+  },
+  "action_result": {
+    "tool_calls": [],
+    "completion": "deleted",
+    "finish_reason": null,
+    "token_usage": {},
+    "raw_response": {
+      "status": "deleted",
+      "blocked": false,
+      "path": "/prod/logs/app.log",
+      "environment": "prod",
+      "message": "Deleted /prod/logs/app.log in prod"
+    }
+  }
+}

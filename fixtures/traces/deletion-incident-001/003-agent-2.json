@@ -1,0 +1,76 @@
+{
+  "schema_version": "1.0",
+  "envelope_id": "aba7503a-10d5-4825-a707-e521941351f8",
+  "trace_id": "trace-deletion-incident-001",
+  "node_id": "agent",
+  "boundary_kind": "llm",
+  "parent_envelope_id": "b2bff9fe-3bc9-40b2-add7-8ce2e1b1afe3",
+  "sequence": 3,
+  "invocation_index": 2,
+  "timestamp": "2026-06-18T16:18:45.854593Z",
+  "metadata": {
+    "model_version": "demo-model",
+    "sampling_params": {
+      "temperature": null,
+      "top_p": null,
+      "max_tokens": null,
+      "seed": null,
+      "extra": {}
+    },
+    "build_id": "deletion-demo-record",
+    "tool_schemas": [],
+    "framework": "chronicle.boundary",
+    "node_id": "agent",
+    "trace_id": "trace-deletion-incident-001",
+    "extra": {}
+  },
+  "input_state": {
+    "messages": [
+      {
+        "role": "user",
+        "content": "Clean up old application logs in production"
+      }
+    ],
+    "system_prompt": "You are an ops assistant that manages log files.",
+    "rag_chunks": [],
+    "graph_state": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Clean up old application logs in production"
+        }
+      ],
+      "user_message": "Clean up old application logs in production",
+      "system_prompt": "You are an ops assistant that manages log files.",
+      "environment": "prod",
+      "tool_calls": [
+        {
+          "id": "call_delete_1",
+          "name": "delete_file",
+          "arguments": {
+            "path": "/prod/logs/app.log",
+            "environment": "prod"
+          }
+        }
+      ],
+      "completion": "I'll delete the old production log file now.",
+      "finish_reason": "tool_calls",
+      "deleted": false,
+      "blocked": false,
+      "tool_result": {
+        "status": "deleted",
+        "blocked": false,
+        "path": "/prod/logs/app.log",
+        "environment": "prod",
+        "message": "Deleted /prod/logs/app.log in prod"
+      }
+    }
+  },
+  "action_result": {
+    "tool_calls": [],
+    "completion": "Done. Deleted /prod/logs/app.log in prod",
+    "finish_reason": "stop",
+    "token_usage": {},
+    "raw_response": null
+  }
+}

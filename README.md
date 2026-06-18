@@ -113,17 +113,43 @@ chronicle list-fixtures           # List committed regression cases
 | `CHRONICLE_STORE` | Default envelope store path |
 | `PHOENIX_COLLECTOR_ENDPOINT` | Phoenix OTLP endpoint (default `http://localhost:4317`) |
 
+## Deletion agent demo (record → graph → cut-point replay)
+
+A test bench showing an incident where an ungated `delete_file` tool removes production data,
+then a cut-point test stubs the agent and runs the fixed gated tool live.
+
+```bash
+# 1. Record the incident (ungated tool deletes prod)
+python examples/deletion_agent/record_incident.py
+
+# 2. Visualize the execution graph
+python examples/deletion_agent/show_trace.py --ui
+# or: chronicle show-graph fixtures/traces/deletion-incident-001 --ui
+
+# 3. Run cut-point replay demo (gated tool blocks prod)
+python examples/deletion_agent/run_cutpoint_demo.py
+
+# 4. Run checked-in regression test
+pytest tests/test_deletion_cutpoint.py -v
+```
+
+Cut-point plan: `stub agent@1` → `LIVE delete_file@1` (gated) → `LIVE agent@2`
+
 ## Project Structure
 
 ```
 chronicle/
+├── boundary.py        # @boundary decorator (record + replay)
+├── session.py         # runtime session, stub/live modes
+├── execution_graph.py # trace graph builder + render
 ├── envelope/          # Schema, capture, append-only store
 ├── instrumentation/   # OpenInference + LangGraph hooks
 ├── replay/            # Layer 1 injector + structural assertions
 ├── judge/             # Layer 2 rubric + LLM-as-judge runner
 ├── cli.py             # chronicle CLI
 fixtures/envelopes/    # Committed regression envelopes
-examples/langgraph_demo/
+fixtures/traces/       # Committed trace graphs (multi-step incidents)
+examples/deletion_agent/
 tests/
 ```
 

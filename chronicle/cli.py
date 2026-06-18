@@ -128,6 +128,36 @@ def schema_cmd() -> None:
     click.echo(json.dumps(Envelope.json_schema(), indent=2))
 
 
+@main.command("show-graph")
+@click.argument("trace_dir", type=click.Path(exists=True))
+@click.option("--mermaid/--no-mermaid", default=False, help="Print mermaid diagram")
+@click.option("--ui", is_flag=True, help="Open interactive HTML visualization")
+@click.option("--port", default=8765, help="UI server port")
+@click.option("--html", type=click.Path(), help="Write static HTML file")
+def show_graph(trace_dir: str, mermaid: bool, ui: bool, port: int, html: str | None) -> None:
+    """Render a recorded trace execution graph."""
+    from chronicle.execution_graph import ExecutionGraph
+    from chronicle.visualizer import serve_trace_ui, write_trace_html
+
+    graph = ExecutionGraph.load(trace_dir)
+
+    if html:
+        write_trace_html(graph, html)
+        click.echo(f"Wrote {html}")
+
+    if ui:
+        serve_trace_ui(trace_dir, port=port, open_browser=True)
+        return
+
+    if html and not mermaid:
+        return
+
+    click.echo(graph.to_ascii())
+    if mermaid:
+        click.echo()
+        click.echo(graph.to_mermaid())
+
+
 @main.command("list-fixtures")
 @click.option("--directory", default="fixtures/envelopes", help="Fixtures directory")
 def list_fixtures(directory: str) -> None:
