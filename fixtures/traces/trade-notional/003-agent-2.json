@@ -1,13 +1,13 @@
 {
   "schema_version": "1.0",
-  "envelope_id": "f8888101-6495-4a16-8b7f-4bd167e289fc",
+  "envelope_id": "38643504-639b-405a-ba7e-d85fcc96b787",
   "trace_id": "trace-trade-notional-001",
   "node_id": "agent",
   "boundary_kind": "llm",
-  "parent_envelope_id": "25fbf1d6-9fd0-424f-8f65-a7f15564a00a",
+  "parent_envelope_id": "184a402a-e7b9-45a6-a904-e74d999bf6cd",
   "sequence": 3,
   "invocation_index": 2,
-  "timestamp": "2026-06-19T07:50:19.236972Z",
+  "timestamp": "2026-06-19T10:49:06.464441Z",
   "metadata": {
     "model_version": "demo-model",
     "sampling_params": {
@@ -28,7 +28,7 @@
     "messages": [
       {
         "role": "user",
-        "content": "Sell about $1,000 of AAPL from my portfolio to rebalance."
+        "content": "Sell about $1,000 of ACME from my portfolio to rebalance."
       }
     ],
     "system_prompt": "You are a portfolio management agent.",
@@ -37,10 +37,10 @@
       "messages": [
         {
           "role": "user",
-          "content": "Sell about $1,000 of AAPL from my portfolio to rebalance."
+          "content": "Sell about $1,000 of ACME from my portfolio to rebalance."
         }
       ],
-      "user_message": "Sell about $1,000 of AAPL from my portfolio to rebalance.",
+      "user_message": "Sell about $1,000 of ACME from my portfolio to rebalance.",
       "system_prompt": "You are a portfolio management agent.",
       "intended_notional_cents": 100000,
       "tool_calls": [
@@ -48,31 +48,31 @@
           "id": "call_order_1",
           "name": "place_order",
           "arguments": {
-            "symbol": "AAPL",
+            "symbol": "ACME",
             "quantity": 1000,
             "side": "sell"
           }
         }
       ],
-      "completion": "I'll sell $1,000.00 worth of AAPL.",
+      "completion": "I'll sell $1,000.00 worth of ACME.",
       "finish_reason": "tool_calls",
       "filled": false,
       "blocked": false,
       "tool_result": {
         "status": "filled",
         "blocked": false,
-        "symbol": "AAPL",
+        "symbol": "ACME",
         "quantity": 1000,
         "side": "sell",
         "fill_price_cents": 19000,
         "notional_cents": 19000000,
-        "message": "Sold 1000 AAPL at $190.00 ($190,000.00 total)"
+        "message": "Sold 1000 ACME at $190.00 ($190,000.00 total)"
       }
     }
   },
   "action_result": {
     "tool_calls": [],
-    "completion": "Done. Sold 1000 AAPL at $190.00 ($190,000.00 total)",
+    "completion": "Done. Sold 1000 ACME at $190.00 ($190,000.00 total)",
     "finish_reason": "stop",
     "token_usage": {},
     "raw_response": null

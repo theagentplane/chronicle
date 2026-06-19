@@ -35,13 +35,13 @@ TEMPLATE_HEAD = """<!DOCTYPE html>
 
 slides = [
     ("01-scenario-setup", "trade_notional.py — scenario setup", """
-<pre>USER_MESSAGE = "Sell about $1,000 of AAPL from my portfolio to rebalance."
+<pre>USER_MESSAGE = "Sell about $1,000 of ACME from my portfolio to rebalance."
 
 INTENDED_NOTIONAL_CENTS = 100_000   <span class="hl"># $1,000 — what user meant</span>
 <span class="hl-r">BAD_QUANTITY = 1000</span>                 <span class="hl-r"># shares — agent mistake</span>
 SHARE_PRICE_CENTS = 19_000          # $190 / share  → 1000 shares = $190k
 <span class="hl-g">MAX_ORDER_NOTIONAL_CENTS = 500_000</span>  <span class="hl-g"># $5,000 — gated fix</span></pre>
-<div class="ann r"><strong>① Incident:</strong> User wants ~$1k of AAPL. Agent will send quantity=1000 (shares).</div>
+<div class="ann r"><strong>① Incident:</strong> User wants ~$1k of ACME. Agent will send quantity=1000 (shares).</div>
 <div class="ann g"><strong>② Fix:</strong> Tool refuses orders above $5,000 notional.</div>
 """),
     ("02-agent-bug", "trade_notional.py — agent bug (@boundary agent@1)", """
@@ -84,7 +84,7 @@ session.enable_replay(
   RECORD  trade-notional
   agent@1       llm  LIVE  → place_order(quantity=<span class="bad">1000</span>)
   place_order@1 tool LIVE  <span class="bad">filled: $190,000.00 total</span>
-  agent@2       llm  LIVE  Done. Sold 1000 AAPL...
+  agent@2       llm  LIVE  Done. Sold 1000 ACME...
 
   Trace exported → fixtures/traces/trade-notional/</pre>
 <div class="ann r"><strong>Incident captured</strong> as committed regression fixture.</div>

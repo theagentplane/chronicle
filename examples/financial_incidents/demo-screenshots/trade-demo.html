@@ -101,13 +101,13 @@
       <span class="slide-num">1 / 5</span>
     </div>
     <div class="slide-body">
-<pre><span class="hl">USER_MESSAGE = "Sell about $1,000 of AAPL from my portfolio to rebalance."</span>
+<pre><span class="hl">USER_MESSAGE = "Sell about $1,000 of ACME from my portfolio to rebalance."</span>
 
 INTENDED_NOTIONAL_CENTS = 100_000   <span class="hl"># $1,000 — what user meant</span>
 <span class="hl-red">BAD_QUANTITY = 1000</span>                 <span class="hl-red"># shares — agent mistake (190× too large)</span>
 SHARE_PRICE_CENTS = 19_000          # $190.00 per share
 <span class="hl-green">MAX_ORDER_NOTIONAL_CENTS = 500_000</span>  <span class="hl-green"># $5,000 — the gated fix</span></pre>
-      <div class="ann red"><strong>Incident:</strong> User asks for ~$1k of AAPL. Agent will pass <code>quantity=1000</code> (shares) → ~$190k notional.</div>
+      <div class="ann red"><strong>Incident:</strong> User asks for ~$1k of ACME. Agent will pass <code>quantity=1000</code> (shares) → ~$190k notional.</div>
       <div class="ann green"><strong>Fix under test:</strong> Tool blocks any order above $5,000 notional.</div>
     </div>
   </div>
@@ -188,12 +188,12 @@ result = scenario.run_agent()</pre>
 <pre>$ python examples/financial_incidents/run.py trade record
 
   RECORD  trade-notional
-  User request     Sell about $1,000 of AAPL from my portfolio to rebalance.
+  User request     Sell about $1,000 of ACME from my portfolio to rebalance.
 
   Node               Kind  Mode   Input                    Output
   agent@1            llm   LIVE   Sell about $1,000...     → place_order(quantity=<span class="bad">1000</span>)
   place_order@1      tool  LIVE   quantity=1000              <span class="bad">filled: $190,000.00 total</span>
-  agent@2            llm   LIVE   tool_result: filled        Done. Sold 1000 AAPL...
+  agent@2            llm   LIVE   tool_result: filled        Done. Sold 1000 ACME...
 
   Trace exported   fixtures/traces/trade-notional/</pre>
       <div class="ann red"><strong>Incident recorded:</strong> ~$190k sell committed to fixture. Agent behavior preserved for regression.</div>

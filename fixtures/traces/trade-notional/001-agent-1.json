@@ -1,13 +1,13 @@
 {
   "schema_version": "1.0",
-  "envelope_id": "f596b65b-ed44-4d3d-b0ae-f8165dc5a8dc",
+  "envelope_id": "0867c134-9f86-479e-a350-34b27679a93a",
   "trace_id": "trace-trade-notional-001",
   "node_id": "agent",
   "boundary_kind": "llm",
   "parent_envelope_id": null,
   "sequence": 1,
   "invocation_index": 1,
-  "timestamp": "2026-06-19T07:50:19.234597Z",
+  "timestamp": "2026-06-19T10:49:06.460667Z",
   "metadata": {
     "model_version": "demo-model",
     "sampling_params": {
@@ -28,7 +28,7 @@
     "messages": [
       {
         "role": "user",
-        "content": "Sell about $1,000 of AAPL from my portfolio to rebalance."
+        "content": "Sell about $1,000 of ACME from my portfolio to rebalance."
       }
     ],
     "system_prompt": "You are a portfolio management agent.",
@@ -37,10 +37,10 @@
       "messages": [
         {
           "role": "user",
-          "content": "Sell about $1,000 of AAPL from my portfolio to rebalance."
+          "content": "Sell about $1,000 of ACME from my portfolio to rebalance."
         }
       ],
-      "user_message": "Sell about $1,000 of AAPL from my portfolio to rebalance.",
+      "user_message": "Sell about $1,000 of ACME from my portfolio to rebalance.",
       "system_prompt": "You are a portfolio management agent.",
       "intended_notional_cents": 100000,
       "tool_calls": [],
@@ -56,13 +56,13 @@
         "id": "call_order_1",
         "name": "place_order",
         "arguments": {
-          "symbol": "AAPL",
+          "symbol": "ACME",
           "quantity": 1000,
           "side": "sell"
         }
       }
     ],
-    "completion": "I'll sell $1,000.00 worth of AAPL.",
+    "completion": "I'll sell $1,000.00 worth of ACME.",
     "finish_reason": "tool_calls",
     "token_usage": {},
     "raw_response": null

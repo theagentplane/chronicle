@@ -12,22 +12,26 @@ Captures "flight data" at **decision boundaries**—the methods where your agent
 
 Every boundary invocation serializes an immutable, append-only **Envelope**:
 
-| Field | Contents |
-|---|---|
-| **Contextual Metadata** | Pinned model version, sampling parameters, runtime build ID |
-| **Input State** | Full assembled prompt, graph state, retrieved context/chunks |
-| **Action/Result** | Structured tool calls and model completion |
-| **Graph linkage** | `parent_envelope_id`, `sequence`, `invocation_index` for retries |
+
+| Field                   | Contents                                                         |
+| ----------------------- | ---------------------------------------------------------------- |
+| **Contextual Metadata** | Pinned model version, sampling parameters, runtime build ID      |
+| **Input State**         | Full assembled prompt, graph state, retrieved context/chunks     |
+| **Action/Result**       | Structured tool calls and model completion                       |
+| **Graph linkage**       | `parent_envelope_id`, `sequence`, `invocation_index` for retries |
+
 
 OpenInference and Arize Phoenix provide framework-agnostic tracing; Chronicle normalizes observations into a regression-ready envelope format.
 
 ### 2. Verification Test Bench
 
-| Layer | Goal | Mechanism |
-|---|---|---|
-| **Layer 1: Replay** | Validate control flow / logic | Static envelope/trace fixtures; structural assertions — **never calls the LLM API** |
-| **Layer 2: Evaluation** | Validate generation quality | LLM-as-a-judge on meaning (grounding, safety, refusal) — not bitwise equality |
-| **Cut-point replay** | Test a code change in one boundary | Stub upstream from fixtures, run target boundary live |
+
+| Layer                   | Goal                               | Mechanism                                                                           |
+| ----------------------- | ---------------------------------- | ----------------------------------------------------------------------------------- |
+| **Layer 1: Replay**     | Validate control flow / logic      | Static envelope/trace fixtures; structural assertions — **never calls the LLM API** |
+| **Layer 2: Evaluation** | Validate generation quality        | LLM-as-a-judge on meaning (grounding, safety, refusal) — not bitwise equality       |
+| **Cut-point replay**    | Test a code change in one boundary | Stub upstream from fixtures, run target boundary live                               |
+
 
 Production incidents are committed under `fixtures/traces/` (multi-step graphs) or `fixtures/envelopes/` (single-step) as permanent regression tests.
 
@@ -85,6 +89,66 @@ result = run_agent(...)
 session.export_trace("fixtures/traces/incident-001/")
 ```
 
+### How `@boundary` wraps your function
+
+Same decorator, two behaviors. The wrapper sits around your function — it does not replace your logic.
+
+#### 1. LIVE mode — capture input & output
+
+Your function **runs normally**. Chronicle snapshots what went in and what came out, then saves an **Envelope**.
+
+```
+┌────────────────── @boundary wrapper (LIVE) ────────────────────────────┐
+│                                                                        │
+│   @boundary("place_order", kind="tool")  ◄── annotate once             │
+│   ┌────────────────────────────────────────────────────────────────┐   │
+│   │  INPUT captured                                                │   │
+│   │  symbol=ACME  quantity=1000  side=sell  (args → InputState)    │   │
+│   └────────────────────────────────────────────────────────────────┘   │
+│                              │                                         │
+│                              ▼                                         │
+│   def place_order(symbol: str, quantity: int) -> dict:                 │
+│       notional = quantity * SHARE_PRICE                                │
+│       return {"status": "filled", "notional_cents": notional}          │
+│                              │                                         │
+│                              ▼                                         │
+│   ┌────────────────────────────────────────────────────────────────┐   │
+│   │  OUTPUT captured                                               │   │
+│   │  {"status": "filled", "notional_cents": 19000000, ...}         │   │
+│   └────────────────────────────────────────────────────────────────┘   │
+│                              │                                         │
+│                              ▼                                         │
+│                    Envelope → store → fixtures/traces/                 │
+│                                                                        │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 2. Replay / eval mode — mimic output from a saved Envelope
+
+Your function **does not run**. Chronicle returns the **same output** that was recorded during the incident (from the fixture trace).
+
+```
+┌────────────────── @boundary wrapper (EVAL + stub) ─────────────────────┐
+│                                                                        │
+│   @boundary("place_order", kind="tool")  ◄── same decorator            │
+│                                                                        │
+│   ReplayPlan(trace_id).stub("place_order",1) ◄── eval: freeze this step│
+│                                                                        │
+│   def place_order(symbol: str, quantity: int) -> dict:                 │
+│       notional = quantity * SHARE_PRICE                                │
+│       return {"status": "filled", ...}     ◄── NOT executed            │
+│                                                                        │
+│   ┌────────────────────────────────────────────────────────────────┐   │
+│   │  OUTPUT returned from saved Envelope (incident fixture)        │   │
+│   │  {"status": "filled", "notional_cents": 19000000, ...}         │   │
+│   │  mimics the output Chronicle captured in LIVE mode             │   │
+│   └────────────────────────────────────────────────────────────────┘   │
+│                                                                        │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+For cut-point tests, one boundary can be set to **live** instead of stub — the wrapper runs your **new** function body while upstream steps still mimic the saved Envelope. See [Cut-point replay](#cut-point-replay) below.
+
 ### Cut-point replay
 
 Test a fix in one boundary while stubbing everything else from the incident:
@@ -138,11 +202,13 @@ assert result.overall_passed
 
 Three realistic billing/finance scenarios with minimal agent code. Each uses `@boundary` on `agent@1 → tool@1 → agent@2`.
 
-| Scenario | Command name | Incident |
-|----------|--------------|----------|
-| Refund amount = order ID | `refund` or `1` | $9.8M refund on a $47 order |
-| Invoice currency mismatch | `invoice` or `8` | €2M invoice sent as USD |
-| $1k notional → 1,000 shares | `trade` or `24` | ~$190k sell instead of ~$1k |
+
+| Scenario                    | Command name     | Incident                    |
+| --------------------------- | ---------------- | --------------------------- |
+| Refund amount = order ID    | `refund` or `1`  | $9.8M refund on a $47 order |
+| Invoice currency mismatch   | `invoice` or `8` | €2M invoice sent as USD     |
+| $1k notional → 1,000 shares | `trade` or `24`  | ~$190k sell instead of ~$1k |
+
 
 ```bash
 # Record incident (ungated tool — bad outcome)
@@ -165,7 +231,7 @@ pytest tests/test_financial_incidents.py -v
 
 Scenario source (screenshot-friendly): `examples/financial_incidents/refund_order_id.py`, `invoice_currency.py`, `trade_notional.py`
 
-Cut-point plan (each scenario): `stub agent@1` → `LIVE <tool>@1` (max-amount gate)` → `LIVE agent@2`
+Cut-point plan (each scenario): `stub agent@1` → `LIVE <tool>@1` (max-amount gate)`→`LIVE agent@2`
 
 Gated fix (same pattern in each tool): refuse if amount exceeds a flat cap — `MAX_REFUND_CENTS` ($10k), `MAX_INVOICE_CENTS` ($100k), `MAX_ORDER_NOTIONAL_CENTS` ($5k).
 
@@ -195,7 +261,7 @@ python scripts/run.py test
 # or: pytest tests/test_deletion_cutpoint.py -v
 ```
 
-Cut-point plan: `stub agent@1` → `LIVE delete_file@1` (gated)` → `LIVE agent@2`
+Cut-point plan: `stub agent@1` → `LIVE delete_file@1` (gated)`→`LIVE agent@2`
 
 Expected incident graph:
 
@@ -251,11 +317,13 @@ See `examples/langgraph_demo/agent.py`.
 
 ## Environment Variables
 
-| Variable | Purpose |
-|---|---|
-| `CHRONICLE_BUILD_ID` | Pin runtime build ID in envelope metadata |
-| `CHRONICLE_STORE` | Default envelope store path |
+
+| Variable                     | Purpose                                                 |
+| ---------------------------- | ------------------------------------------------------- |
+| `CHRONICLE_BUILD_ID`         | Pin runtime build ID in envelope metadata               |
+| `CHRONICLE_STORE`            | Default envelope store path                             |
 | `PHOENIX_COLLECTOR_ENDPOINT` | Phoenix OTLP endpoint (default `http://localhost:4317`) |
+
 
 ## Project Structure
 
