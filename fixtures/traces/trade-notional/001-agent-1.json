@@ -1,13 +1,13 @@
 {
   "schema_version": "1.0",
-  "envelope_id": "8909e1de-9a88-44ef-96cf-0e215ffdc25c",
-  "trace_id": "trace-deletion-incident-001",
+  "envelope_id": "f596b65b-ed44-4d3d-b0ae-f8165dc5a8dc",
+  "trace_id": "trace-trade-notional-001",
   "node_id": "agent",
   "boundary_kind": "llm",
   "parent_envelope_id": null,
   "sequence": 1,
   "invocation_index": 1,
-  "timestamp": "2026-06-18T17:48:23.362992Z",
+  "timestamp": "2026-06-19T07:50:19.234597Z",
   "metadata": {
     "model_version": "demo-model",
     "sampling_params": {
@@ -17,51 +17,52 @@
       "seed": null,
       "extra": {}
     },
-    "build_id": "deletion-demo-record",
+    "build_id": "financial-demo-trade-notional",
     "tool_schemas": [],
     "framework": "chronicle.boundary",
     "node_id": "agent",
-    "trace_id": "trace-deletion-incident-001",
+    "trace_id": "trace-trade-notional-001",
     "extra": {}
   },
   "input_state": {
     "messages": [
       {
         "role": "user",
-        "content": "Clean up old application logs in production"
+        "content": "Sell about $1,000 of AAPL from my portfolio to rebalance."
       }
     ],
-    "system_prompt": "You are an ops assistant that manages log files.",
+    "system_prompt": "You are a portfolio management agent.",
     "rag_chunks": [],
     "graph_state": {
       "messages": [
         {
           "role": "user",
-          "content": "Clean up old application logs in production"
+          "content": "Sell about $1,000 of AAPL from my portfolio to rebalance."
         }
       ],
-      "user_message": "Clean up old application logs in production",
-      "system_prompt": "You are an ops assistant that manages log files.",
-      "environment": "prod",
+      "user_message": "Sell about $1,000 of AAPL from my portfolio to rebalance.",
+      "system_prompt": "You are a portfolio management agent.",
+      "intended_notional_cents": 100000,
       "tool_calls": [],
       "completion": "",
       "finish_reason": "",
-      "deleted": false,
+      "filled": false,
       "blocked": false
     }
   },
   "action_result": {
     "tool_calls": [
       {
-        "id": "call_delete_1",
-        "name": "delete_file",
+        "id": "call_order_1",
+        "name": "place_order",
         "arguments": {
-          "path": "/prod/logs/app.log",
-          "environment": "prod"
+          "symbol": "AAPL",
+          "quantity": 1000,
+          "side": "sell"
         }
       }
     ],
-    "completion": "I'll delete the old production log file now.",
+    "completion": "I'll sell $1,000.00 worth of AAPL.",
     "finish_reason": "tool_calls",
     "token_usage": {},
     "raw_response": null

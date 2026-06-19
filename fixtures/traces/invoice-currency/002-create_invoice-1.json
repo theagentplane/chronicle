@@ -1,0 +1,54 @@
+{
+  "schema_version": "1.0",
+  "envelope_id": "1a674dae-2e50-48a7-bb73-7c110dd451a8",
+  "trace_id": "trace-invoice-currency-001",
+  "node_id": "create_invoice",
+  "boundary_kind": "tool",
+  "parent_envelope_id": "b99454ef-9ade-4d77-9ccd-21b258e744d5",
+  "sequence": 2,
+  "invocation_index": 1,
+  "timestamp": "2026-06-19T07:15:06.860387Z",
+  "metadata": {
+    "model_version": "demo-model",
+    "sampling_params": {
+      "temperature": null,
+      "top_p": null,
+      "max_tokens": null,
+      "seed": null,
+      "extra": {}
+    },
+    "build_id": "financial-demo-invoice-currency",
+    "tool_schemas": [],
+    "framework": "chronicle.boundary",
+    "node_id": "create_invoice",
+    "trace_id": "trace-invoice-currency-001",
+    "extra": {}
+  },
+  "input_state": {
+    "messages": [],
+    "system_prompt": null,
+    "rag_chunks": [],
+    "graph_state": {
+      "customer_id": "acme-corp",
+      "amount_cents": 200000000,
+      "currency": "USD",
+      "contract_currency": "EUR",
+      "contract_amount_cents": 200000000
+    }
+  },
+  "action_result": {
+    "tool_calls": [],
+    "completion": "sent",
+    "finish_reason": null,
+    "token_usage": {},
+    "raw_response": {
+      "status": "sent",
+      "blocked": false,
+      "customer_id": "acme-corp",
+      "amount_cents": 200000000,
+      "currency": "USD",
+      "contract_currency": "EUR",
+      "message": "Invoice sent to acme-corp for 2,000,000.00 USD"
+    }
+  }
+}

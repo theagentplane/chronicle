@@ -1,13 +1,13 @@
 {
   "schema_version": "1.0",
-  "envelope_id": "a6377b87-d528-46cb-9c40-83f39e2e11a7",
+  "envelope_id": "1e550c54-af8c-48d2-a8c7-3bcccb3ab5b6",
   "trace_id": "trace-deletion-incident-001",
   "node_id": "delete_file",
   "boundary_kind": "tool",
-  "parent_envelope_id": "6bf4f098-497f-43db-a361-e97e9662e146",
+  "parent_envelope_id": "8909e1de-9a88-44ef-96cf-0e215ffdc25c",
   "sequence": 2,
   "invocation_index": 1,
-  "timestamp": "2026-06-18T16:32:22.641569Z",
+  "timestamp": "2026-06-18T17:48:23.364734Z",
   "metadata": {
     "model_version": "demo-model",
     "sampling_params": {

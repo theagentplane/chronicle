@@ -1,0 +1,42 @@
+{
+  "trace_id": "trace-invoice-currency-001",
+  "nodes": [
+    {
+      "envelope_id": "b99454ef-9ade-4d77-9ccd-21b258e744d5",
+      "boundary_id": "agent",
+      "boundary_kind": "llm",
+      "invocation_index": 1,
+      "sequence": 1,
+      "fixture": "001-agent-1.json"
+    },
+    {
+      "envelope_id": "1a674dae-2e50-48a7-bb73-7c110dd451a8",
+      "boundary_id": "create_invoice",
+      "boundary_kind": "tool",
+      "invocation_index": 1,
+      "sequence": 2,
+      "fixture": "002-create_invoice-1.json"
+    },
+    {
+      "envelope_id": "841d0492-3630-497f-a9e8-15254517fd2f",
+      "boundary_id": "agent",
+      "boundary_kind": "llm",
+      "invocation_index": 2,
+      "sequence": 3,
+      "fixture": "003-agent-2.json"
+    }
+  ],
+  "edges": [
+    [
+      "b99454ef-9ade-4d77-9ccd-21b258e744d5",
+      "1a674dae-2e50-48a7-bb73-7c110dd451a8"
+    ],
+    [
+      "1a674dae-2e50-48a7-bb73-7c110dd451a8",
+      "841d0492-3630-497f-a9e8-15254517fd2f"
+    ]
+  ],
+  "roots": [
+    "b99454ef-9ade-4d77-9ccd-21b258e744d5"
+  ]
+}

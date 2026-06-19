@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.0",
+  "envelope_id": "25fbf1d6-9fd0-424f-8f65-a7f15564a00a",
+  "trace_id": "trace-trade-notional-001",
+  "node_id": "place_order",
+  "boundary_kind": "tool",
+  "parent_envelope_id": "f596b65b-ed44-4d3d-b0ae-f8165dc5a8dc",
+  "sequence": 2,
+  "invocation_index": 1,
+  "timestamp": "2026-06-19T07:50:19.236613Z",
+  "metadata": {
+    "model_version": "demo-model",
+    "sampling_params": {
+      "temperature": null,
+      "top_p": null,
+      "max_tokens": null,
+      "seed": null,
+      "extra": {}
+    },
+    "build_id": "financial-demo-trade-notional",
+    "tool_schemas": [],
+    "framework": "chronicle.boundary",
+    "node_id": "place_order",
+    "trace_id": "trace-trade-notional-001",
+    "extra": {}
+  },
+  "input_state": {
+    "messages": [],
+    "system_prompt": null,
+    "rag_chunks": [],
+    "graph_state": {
+      "symbol": "AAPL",
+      "quantity": 1000,
+      "side": "sell",
+      "share_price_cents": 19000,
+      "intended_notional_cents": 100000,
+      "implied_notional_cents": 19000000,
+      "max_order_notional_cents": 500000
+    }
+  },
+  "action_result": {
+    "tool_calls": [],
+    "completion": "filled",
+    "finish_reason": null,
+    "token_usage": {},
+    "raw_response": {
+      "status": "filled",
+      "blocked": false,
+      "symbol": "AAPL",
+      "quantity": 1000,
+      "side": "sell",
+      "fill_price_cents": 19000,
+      "notional_cents": 19000000,
+      "message": "Sold 1000 AAPL at $190.00 ($190,000.00 total)"
+    }
+  }
+}

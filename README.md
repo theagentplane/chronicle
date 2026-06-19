@@ -134,6 +134,41 @@ result = runner.evaluate(envelope)
 assert result.overall_passed
 ```
 
+## Financial incident demos (record → cut-point test)
+
+Three realistic billing/finance scenarios with minimal agent code. Each uses `@boundary` on `agent@1 → tool@1 → agent@2`.
+
+| Scenario | Command name | Incident |
+|----------|--------------|----------|
+| Refund amount = order ID | `refund` or `1` | $9.8M refund on a $47 order |
+| Invoice currency mismatch | `invoice` or `8` | €2M invoice sent as USD |
+| $1k notional → 1,000 shares | `trade` or `24` | ~$190k sell instead of ~$1k |
+
+```bash
+# Record incident (ungated tool — bad outcome)
+python examples/financial_incidents/run.py refund record
+python examples/financial_incidents/run.py invoice record
+python examples/financial_incidents/run.py trade record
+
+# Cut-point test (stub agent@1, live gated tool, live agent@2)
+python examples/financial_incidents/run.py refund test
+python examples/financial_incidents/run.py invoice test
+python examples/financial_incidents/run.py trade test
+
+# All three in sequence
+python examples/financial_incidents/run.py all record
+python examples/financial_incidents/run.py all test
+
+# Tests
+pytest tests/test_financial_incidents.py -v
+```
+
+Scenario source (screenshot-friendly): `examples/financial_incidents/refund_order_id.py`, `invoice_currency.py`, `trade_notional.py`
+
+Cut-point plan (each scenario): `stub agent@1` → `LIVE <tool>@1` (max-amount gate)` → `LIVE agent@2`
+
+Gated fix (same pattern in each tool): refuse if amount exceeds a flat cap — `MAX_REFUND_CENTS` ($10k), `MAX_INVOICE_CENTS` ($100k), `MAX_ORDER_NOTIONAL_CENTS` ($5k).
+
 ## Deletion agent demo (record → visualize → cut-point test)
 
 A test bench where an ungated `delete_file` tool deletes production data, then a cut-point test verifies the gated fix.
@@ -239,6 +274,7 @@ fixtures/
 ├── envelopes/          # single-step regression envelopes
 └── traces/             # multi-step trace graphs (graph.json + envelopes)
 examples/
+├── financial_incidents/ # refund, invoice, trade demos (run.py)
 ├── deletion_agent/     # record → visualize → cut-point demo
 └── langgraph_demo/     # LangGraph node wrapping example
 scripts/

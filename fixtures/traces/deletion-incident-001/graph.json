@@ -2,7 +2,7 @@
   "trace_id": "trace-deletion-incident-001",
   "nodes": [
     {
-      "envelope_id": "6bf4f098-497f-43db-a361-e97e9662e146",
+      "envelope_id": "8909e1de-9a88-44ef-96cf-0e215ffdc25c",
       "boundary_id": "agent",
       "boundary_kind": "llm",
       "invocation_index": 1,
@@ -10,7 +10,7 @@
       "fixture": "001-agent-1.json"
     },
     {
-      "envelope_id": "a6377b87-d528-46cb-9c40-83f39e2e11a7",
+      "envelope_id": "1e550c54-af8c-48d2-a8c7-3bcccb3ab5b6",
       "boundary_id": "delete_file",
       "boundary_kind": "tool",
       "invocation_index": 1,
@@ -18,7 +18,7 @@
       "fixture": "002-delete_file-1.json"
     },
     {
-      "envelope_id": "3268cd3b-6b86-4374-978c-8b2c162f0613",
+      "envelope_id": "19b54657-568c-4087-9975-f05eb37f6cf2",
       "boundary_id": "agent",
       "boundary_kind": "llm",
       "invocation_index": 2,
@@ -28,15 +28,15 @@
   ],
   "edges": [
     [
-      "6bf4f098-497f-43db-a361-e97e9662e146",
-      "a6377b87-d528-46cb-9c40-83f39e2e11a7"
+      "8909e1de-9a88-44ef-96cf-0e215ffdc25c",
+      "1e550c54-af8c-48d2-a8c7-3bcccb3ab5b6"
     ],
     [
-      "a6377b87-d528-46cb-9c40-83f39e2e11a7",
-      "3268cd3b-6b86-4374-978c-8b2c162f0613"
+      "1e550c54-af8c-48d2-a8c7-3bcccb3ab5b6",
+      "19b54657-568c-4087-9975-f05eb37f6cf2"
     ]
   ],
   "roots": [
-    "6bf4f098-497f-43db-a361-e97e9662e146"
+    "8909e1de-9a88-44ef-96cf-0e215ffdc25c"
   ]
 }

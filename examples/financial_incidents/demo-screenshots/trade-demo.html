@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Trade Agent Demo — Chronicle</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 32px;
+      background: #0d1117;
+      color: #e6edf3;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      line-height: 1.5;
+    }
+    .slide {
+      width: 960px;
+      margin: 0 auto 64px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .slide-header {
+      padding: 16px 20px;
+      background: #21262d;
+      border-bottom: 1px solid #30363d;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .slide-header h2 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 600;
+      color: #58a6ff;
+    }
+    .slide-num {
+      font-size: 12px;
+      color: #8b949e;
+    }
+    .slide-body { padding: 20px; position: relative; }
+    pre {
+      margin: 0;
+      padding: 16px;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      font-size: 12.5px;
+      overflow-x: auto;
+      white-space: pre;
+    }
+    .hl { background: rgba(210, 153, 34, 0.2); border-radius: 2px; }
+    .hl-red { background: rgba(248, 81, 73, 0.2); border-radius: 2px; }
+    .hl-green { background: rgba(63, 185, 80, 0.2); border-radius: 2px; }
+    .hl-blue { background: rgba(88, 166, 255, 0.2); border-radius: 2px; }
+    .ann {
+      margin-top: 14px;
+      padding: 10px 14px;
+      border-left: 3px solid #d29922;
+      background: rgba(210, 153, 34, 0.08);
+      font-size: 13px;
+      color: #e6edf3;
+    }
+    .ann strong { color: #d29922; }
+    .ann.green { border-color: #3fb950; background: rgba(63, 185, 80, 0.08); }
+    .ann.green strong { color: #3fb950; }
+    .ann.red { border-color: #f85149; background: rgba(248, 81, 73, 0.08); }
+    .ann.red strong { color: #f85149; }
+    .ann.blue { border-color: #58a6ff; background: rgba(88, 166, 255, 0.08); }
+    .ann.blue strong { color: #58a6ff; }
+    .terminal pre { color: #8b949e; }
+    .pass { color: #3fb950; }
+    .bad { color: #f85149; }
+    .warn { color: #d29922; }
+    .flow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 12px 0;
+      font-size: 13px;
+    }
+    .flow span {
+      padding: 6px 10px;
+      border-radius: 6px;
+      background: #21262d;
+      border: 1px solid #30363d;
+    }
+    .flow .arrow { color: #8b949e; background: none; border: none; padding: 0; }
+    .stub { border-color: #58a6ff; color: #58a6ff; }
+    .live { border-color: #d29922; color: #d29922; }
+    .cut { border-color: #3fb950; color: #3fb950; }
+  </style>
+</head>
+<body>
+
+  <!-- SLIDE 1 -->
+  <div class="slide" id="slide-1">
+    <div class="slide-header">
+      <h2>trade_notional.py — scenario setup</h2>
+      <span class="slide-num">1 / 5</span>
+    </div>
+    <div class="slide-body">
+<pre><span class="hl">USER_MESSAGE = "Sell about $1,000 of AAPL from my portfolio to rebalance."</span>
+
+INTENDED_NOTIONAL_CENTS = 100_000   <span class="hl"># $1,000 — what user meant</span>
+<span class="hl-red">BAD_QUANTITY = 1000</span>                 <span class="hl-red"># shares — agent mistake (190× too large)</span>
+SHARE_PRICE_CENTS = 19_000          # $190.00 per share
+<span class="hl-green">MAX_ORDER_NOTIONAL_CENTS = 500_000</span>  <span class="hl-green"># $5,000 — the gated fix</span></pre>
+      <div class="ann red"><strong>Incident:</strong> User asks for ~$1k of AAPL. Agent will pass <code>quantity=1000</code> (shares) → ~$190k notional.</div>
+      <div class="ann green"><strong>Fix under test:</strong> Tool blocks any order above $5,000 notional.</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 2 -->
+  <div class="slide" id="slide-2">
+    <div class="slide-header">
+      <h2>trade_notional.py — agent bug (@boundary agent@1)</h2>
+      <span class="slide-num">2 / 5</span>
+    </div>
+    <div class="slide-body">
+<pre><span class="hl-blue">@boundary("agent", kind="llm", extract_input=agent_input)</span>
+def agent_plan(state: dict) -> dict:
+    <span class="hl">"""Simulated LLM — treats '$1,000' as 1,000 shares."""</span>
+    tool_call = ToolCall(
+        name="place_order",
+        arguments={<span class="hl-red">"quantity": BAD_QUANTITY</span>},  <span class="hl-red"># 1000 shares, not $1,000</span>
+    )
+    return {..., "tool_calls": [tool_call], "finish_reason": "tool_calls"}</pre>
+      <div class="ann blue"><strong>Chronicle:</strong> <code>@boundary</code> records this LLM step as an envelope. Same code is stubbed during cut-point test.</div>
+      <div class="ann red"><strong>Bug:</strong> Confuses dollar notional with share count. Frozen in the incident fixture.</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3 -->
+  <div class="slide" id="slide-3">
+    <div class="slide-header">
+      <h2>trade_notional.py — max-amount gate (@boundary place_order@1)</h2>
+      <span class="slide-num">3 / 5</span>
+    </div>
+    <div class="slide-body">
+<pre><span class="hl-blue">@boundary("place_order", kind="tool", extract_input=_order_input)</span>
+def place_order(symbol: str, quantity: int, *, side: str = "sell") -> dict:
+    notional_cents = quantity * SHARE_PRICE_CENTS
+    <span class="hl-green">if _mode == "gated" and notional_cents > MAX_ORDER_NOTIONAL_CENTS:</span>
+        return {"status": "blocked", "blocked": True, ...}
+
+    return {"status": "filled", ...}  <span class="hl-red"># ungated: $190k goes through</span></pre>
+      <div class="ann green"><strong>Cut-point boundary:</strong> This is the only code you change. <code>set_mode("gated")</code> activates the max-amount check.</div>
+      <div class="ann"><strong>Record:</strong> <code>ungated</code> → incident captured. <strong>Test:</strong> <code>gated</code> → $190k blocked (&gt; $5k cap).</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4 -->
+  <div class="slide" id="slide-4">
+    <div class="slide-header">
+      <h2>run.py — Chronicle cut-point test</h2>
+      <span class="slide-num">4 / 5</span>
+    </div>
+    <div class="slide-body">
+      <div class="flow">
+        <span class="stub">agent@1 STUB</span>
+        <span class="arrow">→</span>
+        <span class="live cut">place_order@1 LIVE ★</span>
+        <span class="arrow">→</span>
+        <span class="live">agent@2 LIVE</span>
+      </div>
+<pre>scenario.set_mode(<span class="hl-green">"gated"</span>)
+session.load_trace("fixtures/traces/trade-notional/")
+session.enable_replay(
+    ReplayPlan()
+        .stub("agent", 1)
+        .live("place_order", 1)   <span class="hl-green"># run gated tool live</span>
+        .live("agent", 2)
+)
+result = scenario.run_agent()</pre>
+      <div class="ann blue"><strong>Chronicle:</strong> Agent plan replayed from fixture (unchanged). Only <code>place_order</code> runs new gated code.</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5 -->
+  <div class="slide" id="slide-5">
+    <div class="slide-header">
+      <h2>Terminal — record incident</h2>
+      <span class="slide-num">5 / 5</span>
+    </div>
+    <div class="slide-body terminal">
+<pre>$ python examples/financial_incidents/run.py trade record
+
+  RECORD  trade-notional
+  User request     Sell about $1,000 of AAPL from my portfolio to rebalance.
+
+  Node               Kind  Mode   Input                    Output
+  agent@1            llm   LIVE   Sell about $1,000...     → place_order(quantity=<span class="bad">1000</span>)
+  place_order@1      tool  LIVE   quantity=1000              <span class="bad">filled: $190,000.00 total</span>
+  agent@2            llm   LIVE   tool_result: filled        Done. Sold 1000 AAPL...
+
+  Trace exported   fixtures/traces/trade-notional/</pre>
+      <div class="ann red"><strong>Incident recorded:</strong> ~$190k sell committed to fixture. Agent behavior preserved for regression.</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6 -->
+  <div class="slide" id="slide-6">
+    <div class="slide-header">
+      <h2>Terminal — cut-point test</h2>
+      <span class="slide-num">6 / 5</span>
+    </div>
+    <div class="slide-body terminal">
+<pre>$ python examples/financial_incidents/run.py trade test
+
+  TEST  trade-notional  (cut-point)
+
+  Node               Kind  Mode   Input                    Output
+  agent@1            llm   <span class="warn">STUB</span>   Sell about $1,000...     → place_order(quantity=1000)
+  place_order@1      tool  <span class="warn">LIVE</span>   quantity=1000              <span class="pass">blocked: exceeds maximum $5,000.00</span>
+  agent@2            llm   LIVE   blocked...               Order blocked — $190,000...
+
+  <span class="pass">[PASS]</span> order blocked
+  <span class="pass">[PASS]</span> no shares sold
+  <span class="pass">[PASS]</span> agent@1 stubbed
+  <span class="pass">[PASS]</span> place_order ran live</pre>
+      <div class="ann green"><strong>Fix verified:</strong> Same agent plan, gated tool blocks $190k. No LLM API calls.</div>
+    </div>
+  </div>
+
+</body>
+</html>

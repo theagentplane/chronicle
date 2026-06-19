@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px; background: #0d1117; color: #e6edf3;
+    font-family: ui-monospace, Menlo, Monaco, Consolas, monospace; }
+  .slide { width: 920px; background: #161b22; border: 1px solid #30363d; border-radius: 12px; overflow: hidden; }
+  .hdr { padding: 14px 18px; background: #21262d; border-bottom: 1px solid #30363d; }
+  .hdr h2 { margin: 0; font-size: 15px; color: #58a6ff; }
+  .body { padding: 18px; }
+  pre { margin: 0; padding: 14px; background: #0d1117; border: 1px solid #30363d;
+    border-radius: 8px; font-size: 12px; line-height: 1.55; white-space: pre-wrap; }
+  .hl { background: rgba(210,153,34,.25); }
+  .hl-r { background: rgba(248,81,73,.25); }
+  .hl-g { background: rgba(63,185,80,.25); }
+  .hl-b { background: rgba(88,166,255,.25); }
+  .ann { margin-top: 12px; padding: 10px 12px; border-left: 3px solid #d29922;
+    background: rgba(210,153,34,.08); font-size: 12.5px; }
+  .ann strong { color: #d29922; }
+  .ann.g { border-color: #3fb950; background: rgba(63,185,80,.08); }
+  .ann.g strong { color: #3fb950; }
+  .ann.r { border-color: #f85149; background: rgba(248,81,73,.08); }
+  .ann.r strong { color: #f85149; }
+  .ann.b { border-color: #58a6ff; background: rgba(88,166,255,.08); }
+  .ann.b strong { color: #58a6ff; }
+  .bad { color: #f85149; } .ok { color: #3fb950; } .warn { color: #d29922; }
+  .flow { margin: 10px 0; font-size: 12px; }
+  .flow span { padding: 4px 8px; border: 1px solid #30363d; border-radius: 5px; margin-right: 6px; }
+</style></head><body><div class="slide"><div class="hdr"><h2>Terminal — python run.py trade test</h2></div><div class="body">
+<pre>$ python examples/financial_incidents/run.py trade test
+
+  TEST  trade-notional  (cut-point)
+  agent@1       llm  <span class="warn">STUB</span>  → place_order(quantity=1000)
+  place_order@1 tool <span class="warn">LIVE</span>  <span class="ok">blocked: exceeds maximum $5,000.00</span>
+  agent@2       llm  LIVE   Order blocked — $190,000.00...
+
+  <span class="ok">[PASS]</span> order blocked  <span class="ok">[PASS]</span> no shares sold
+  <span class="ok">[PASS]</span> agent@1 stubbed  <span class="ok">[PASS]</span> place_order ran live</pre>
+<div class="ann g"><strong>Fix verified</strong> — same agent plan, gated tool blocks $190k.</div>
+</div></div></body></html>
