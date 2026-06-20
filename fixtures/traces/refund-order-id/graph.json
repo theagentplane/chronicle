@@ -1,0 +1,42 @@
+{
+  "trace_id": "trace-refund-order-id-001",
+  "nodes": [
+    {
+      "envelope_id": "06a8d21f-2f7e-4797-a8aa-4d3d114f7d54",
+      "boundary_id": "agent",
+      "boundary_kind": "llm",
+      "invocation_index": 1,
+      "sequence": 1,
+      "fixture": "001-agent-1.json"
+    },
+    {
+      "envelope_id": "94eccfed-f0cf-4bd3-ad97-0767dc78c7ec",
+      "boundary_id": "issue_refund",
+      "boundary_kind": "tool",
+      "invocation_index": 1,
+      "sequence": 2,
+      "fixture": "002-issue_refund-1.json"
+    },
+    {
+      "envelope_id": "2b8082a5-8f21-4bde-aa96-63be29ce539b",
+      "boundary_id": "agent",
+      "boundary_kind": "llm",
+      "invocation_index": 2,
+      "sequence": 3,
+      "fixture": "003-agent-2.json"
+    }
+  ],
+  "edges": [
+    [
+      "06a8d21f-2f7e-4797-a8aa-4d3d114f7d54",
+      "94eccfed-f0cf-4bd3-ad97-0767dc78c7ec"
+    ],
+    [
+      "94eccfed-f0cf-4bd3-ad97-0767dc78c7ec",
+      "2b8082a5-8f21-4bde-aa96-63be29ce539b"
+    ]
+  ],
+  "roots": [
+    "06a8d21f-2f7e-4797-a8aa-4d3d114f7d54"
+  ]
+}

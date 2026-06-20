@@ -1,0 +1,42 @@
+{
+  "trace_id": "trace-trade-notional-001",
+  "nodes": [
+    {
+      "envelope_id": "0867c134-9f86-479e-a350-34b27679a93a",
+      "boundary_id": "agent",
+      "boundary_kind": "llm",
+      "invocation_index": 1,
+      "sequence": 1,
+      "fixture": "001-agent-1.json"
+    },
+    {
+      "envelope_id": "184a402a-e7b9-45a6-a904-e74d999bf6cd",
+      "boundary_id": "place_order",
+      "boundary_kind": "tool",
+      "invocation_index": 1,
+      "sequence": 2,
+      "fixture": "002-place_order-1.json"
+    },
+    {
+      "envelope_id": "38643504-639b-405a-ba7e-d85fcc96b787",
+      "boundary_id": "agent",
+      "boundary_kind": "llm",
+      "invocation_index": 2,
+      "sequence": 3,
+      "fixture": "003-agent-2.json"
+    }
+  ],
+  "edges": [
+    [
+      "0867c134-9f86-479e-a350-34b27679a93a",
+      "184a402a-e7b9-45a6-a904-e74d999bf6cd"
+    ],
+    [
+      "184a402a-e7b9-45a6-a904-e74d999bf6cd",
+      "38643504-639b-405a-ba7e-d85fcc96b787"
+    ]
+  ],
+  "roots": [
+    "0867c134-9f86-479e-a350-34b27679a93a"
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "schema_version": "1.0",
+  "envelope_id": "8909e1de-9a88-44ef-96cf-0e215ffdc25c",
+  "trace_id": "trace-deletion-incident-001",
+  "node_id": "agent",
+  "boundary_kind": "llm",
+  "parent_envelope_id": null,
+  "sequence": 1,
+  "invocation_index": 1,
+  "timestamp": "2026-06-18T17:48:23.362992Z",
+  "metadata": {
+    "model_version": "demo-model",
+    "sampling_params": {
+      "temperature": null,
+      "top_p": null,
+      "max_tokens": null,
+      "seed": null,
+      "extra": {}
+    },
+    "build_id": "deletion-demo-record",
+    "tool_schemas": [],
+    "framework": "chronicle.boundary",
+    "node_id": "agent",
+    "trace_id": "trace-deletion-incident-001",
+    "extra": {}
+  },
+  "input_state": {
+    "messages": [
+      {
+        "role": "user",
+        "content": "Clean up old application logs in production"
+      }
+    ],
+    "system_prompt": "You are an ops assistant that manages log files.",
+    "rag_chunks": [],
+    "graph_state": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Clean up old application logs in production"
+        }
+      ],
+      "user_message": "Clean up old application logs in production",
+      "system_prompt": "You are an ops assistant that manages log files.",
+      "environment": "prod",
+      "tool_calls": [],
+      "completion": "",
+      "finish_reason": "",
+      "deleted": false,
+      "blocked": false
+    }
+  },
+  "action_result": {
+    "tool_calls": [
+      {
+        "id": "call_delete_1",
+        "name": "delete_file",
+        "arguments": {
+          "path": "/prod/logs/app.log",
+          "environment": "prod"
+        }
+      }
+    ],
+    "completion": "I'll delete the old production log file now.",
+    "finish_reason": "tool_calls",
+    "token_usage": {},
+    "raw_response": null
+  }
+}

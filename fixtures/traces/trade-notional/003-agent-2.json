@@ -1,0 +1,80 @@
+{
+  "schema_version": "1.0",
+  "envelope_id": "38643504-639b-405a-ba7e-d85fcc96b787",
+  "trace_id": "trace-trade-notional-001",
+  "node_id": "agent",
+  "boundary_kind": "llm",
+  "parent_envelope_id": "184a402a-e7b9-45a6-a904-e74d999bf6cd",
+  "sequence": 3,
+  "invocation_index": 2,
+  "timestamp": "2026-06-19T10:49:06.464441Z",
+  "metadata": {
+    "model_version": "demo-model",
+    "sampling_params": {
+      "temperature": null,
+      "top_p": null,
+      "max_tokens": null,
+      "seed": null,
+      "extra": {}
+    },
+    "build_id": "financial-demo-trade-notional",
+    "tool_schemas": [],
+    "framework": "chronicle.boundary",
+    "node_id": "agent",
+    "trace_id": "trace-trade-notional-001",
+    "extra": {}
+  },
+  "input_state": {
+    "messages": [
+      {
+        "role": "user",
+        "content": "Sell about $1,000 of ACME from my portfolio to rebalance."
+      }
+    ],
+    "system_prompt": "You are a portfolio management agent.",
+    "rag_chunks": [],
+    "graph_state": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Sell about $1,000 of ACME from my portfolio to rebalance."
+        }
+      ],
+      "user_message": "Sell about $1,000 of ACME from my portfolio to rebalance.",
+      "system_prompt": "You are a portfolio management agent.",
+      "intended_notional_cents": 100000,
+      "tool_calls": [
+        {
+          "id": "call_order_1",
+          "name": "place_order",
+          "arguments": {
+            "symbol": "ACME",
+            "quantity": 1000,
+            "side": "sell"
+          }
+        }
+      ],
+      "completion": "I'll sell $1,000.00 worth of ACME.",
+      "finish_reason": "tool_calls",
+      "filled": false,
+      "blocked": false,
+      "tool_result": {
+        "status": "filled",
+        "blocked": false,
+        "symbol": "ACME",
+        "quantity": 1000,
+        "side": "sell",
+        "fill_price_cents": 19000,
+        "notional_cents": 19000000,
+        "message": "Sold 1000 ACME at $190.00 ($190,000.00 total)"
+      }
+    }
+  },
+  "action_result": {
+    "tool_calls": [],
+    "completion": "Done. Sold 1000 ACME at $190.00 ($190,000.00 total)",
+    "finish_reason": "stop",
+    "token_usage": {},
+    "raw_response": null
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "schema_version": "1.0",
+  "envelope_id": "2b8082a5-8f21-4bde-aa96-63be29ce539b",
+  "trace_id": "trace-refund-order-id-001",
+  "node_id": "agent",
+  "boundary_kind": "llm",
+  "parent_envelope_id": "94eccfed-f0cf-4bd3-ad97-0767dc78c7ec",
+  "sequence": 3,
+  "invocation_index": 2,
+  "timestamp": "2026-06-19T07:36:07.962891Z",
+  "metadata": {
+    "model_version": "demo-model",
+    "sampling_params": {
+      "temperature": null,
+      "top_p": null,
+      "max_tokens": null,
+      "seed": null,
+      "extra": {}
+    },
+    "build_id": "financial-demo-refund-order-id",
+    "tool_schemas": [],
+    "framework": "chronicle.boundary",
+    "node_id": "agent",
+    "trace_id": "trace-refund-order-id-001",
+    "extra": {}
+  },
+  "input_state": {
+    "messages": [
+      {
+        "role": "user",
+        "content": "Refund order #9847261 — customer was double charged on the $47 plan."
+      }
+    ],
+    "system_prompt": "You are a billing support agent.",
+    "rag_chunks": [],
+    "graph_state": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Refund order #9847261 — customer was double charged on the $47 plan."
+        }
+      ],
+      "user_message": "Refund order #9847261 — customer was double charged on the $47 plan.",
+      "system_prompt": "You are a billing support agent.",
+      "tool_calls": [
+        {
+          "id": "call_refund_1",
+          "name": "issue_refund",
+          "arguments": {
+            "order_id": "9847261",
+            "amount_cents": 984726100
+          }
+        }
+      ],
+      "completion": "I'll process the refund for order #9847261 now.",
+      "finish_reason": "tool_calls",
+      "refunded": false,
+      "blocked": false,
+      "tool_result": {
+        "status": "refunded",
+        "blocked": false,
+        "order_id": "9847261",
+        "amount_cents": 984726100,
+        "order_total_cents": 4700,
+        "message": "Refunded $9,847,261.00 to order #9847261"
+      }
+    }
+  },
+  "action_result": {
+    "tool_calls": [],
+    "completion": "Done. Refunded $9,847,261.00 to order #9847261",
+    "finish_reason": "stop",
+    "token_usage": {},
+    "raw_response": null
+  }
+}

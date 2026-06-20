@@ -1,0 +1,70 @@
+{
+  "schema_version": "1.0",
+  "envelope_id": "b99454ef-9ade-4d77-9ccd-21b258e744d5",
+  "trace_id": "trace-invoice-currency-001",
+  "node_id": "agent",
+  "boundary_kind": "llm",
+  "parent_envelope_id": null,
+  "sequence": 1,
+  "invocation_index": 1,
+  "timestamp": "2026-06-19T07:15:06.859623Z",
+  "metadata": {
+    "model_version": "demo-model",
+    "sampling_params": {
+      "temperature": null,
+      "top_p": null,
+      "max_tokens": null,
+      "seed": null,
+      "extra": {}
+    },
+    "build_id": "financial-demo-invoice-currency",
+    "tool_schemas": [],
+    "framework": "chronicle.boundary",
+    "node_id": "agent",
+    "trace_id": "trace-invoice-currency-001",
+    "extra": {}
+  },
+  "input_state": {
+    "messages": [
+      {
+        "role": "user",
+        "content": "Send Acme Corp the annual platform invoice — €2,000,000 per the signed SOW."
+      }
+    ],
+    "system_prompt": "You are an enterprise billing agent.",
+    "rag_chunks": [],
+    "graph_state": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "Send Acme Corp the annual platform invoice — €2,000,000 per the signed SOW."
+        }
+      ],
+      "user_message": "Send Acme Corp the annual platform invoice — €2,000,000 per the signed SOW.",
+      "system_prompt": "You are an enterprise billing agent.",
+      "contract_currency": "EUR",
+      "tool_calls": [],
+      "completion": "",
+      "finish_reason": "",
+      "invoice_sent": false,
+      "blocked": false
+    }
+  },
+  "action_result": {
+    "tool_calls": [
+      {
+        "id": "call_invoice_1",
+        "name": "create_invoice",
+        "arguments": {
+          "customer_id": "acme-corp",
+          "amount_cents": 200000000,
+          "currency": "USD"
+        }
+      }
+    ],
+    "completion": "I'll send the €2,000,000.00 invoice to Acme Corp.",
+    "finish_reason": "tool_calls",
+    "token_usage": {},
+    "raw_response": null
+  }
+}

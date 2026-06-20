@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.0",
+  "envelope_id": "184a402a-e7b9-45a6-a904-e74d999bf6cd",
+  "trace_id": "trace-trade-notional-001",
+  "node_id": "place_order",
+  "boundary_kind": "tool",
+  "parent_envelope_id": "0867c134-9f86-479e-a350-34b27679a93a",
+  "sequence": 2,
+  "invocation_index": 1,
+  "timestamp": "2026-06-19T10:49:06.464053Z",
+  "metadata": {
+    "model_version": "demo-model",
+    "sampling_params": {
+      "temperature": null,
+      "top_p": null,
+      "max_tokens": null,
+      "seed": null,
+      "extra": {}
+    },
+    "build_id": "financial-demo-trade-notional",
+    "tool_schemas": [],
+    "framework": "chronicle.boundary",
+    "node_id": "place_order",
+    "trace_id": "trace-trade-notional-001",
+    "extra": {}
+  },
+  "input_state": {
+    "messages": [],
+    "system_prompt": null,
+    "rag_chunks": [],
+    "graph_state": {
+      "symbol": "ACME",
+      "quantity": 1000,
+      "side": "sell",
+      "share_price_cents": 19000,
+      "intended_notional_cents": 100000,
+      "implied_notional_cents": 19000000,
+      "max_order_notional_cents": 500000
+    }
+  },
+  "action_result": {
+    "tool_calls": [],
+    "completion": "filled",
+    "finish_reason": null,
+    "token_usage": {},
+    "raw_response": {
+      "status": "filled",
+      "blocked": false,
+      "symbol": "ACME",
+      "quantity": 1000,
+      "side": "sell",
+      "fill_price_cents": 19000,
+      "notional_cents": 19000000,
+      "message": "Sold 1000 ACME at $190.00 ($190,000.00 total)"
+    }
+  }
+}
