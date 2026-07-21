@@ -13,7 +13,7 @@ from chronicle.envelope.schema import (
 )
 from chronicle.execution_graph import ExecutionGraph
 from chronicle.replay.plan import BoundaryMode, ReplayPlan
-from chronicle.session import get_session, reset_session
+from chronicle.session import ChronicleSession, SessionMode, get_session, reset_session
 
 __version__ = "0.1.0"
 
@@ -21,6 +21,7 @@ __all__ = [
     "ActionResult",
     "boundary",
     "BoundaryMode",
+    "ChronicleSession",
     "ContextMetadata",
     "Envelope",
     "ExecutionGraph",
@@ -30,6 +31,7 @@ __all__ = [
     "ReplayPlan",
     "reset_session",
     "SamplingParams",
+    "SessionMode",
     "ToolCall",
     "ToolSchema",
 ]

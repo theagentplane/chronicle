@@ -89,6 +89,17 @@ result = run_agent(...)
 session.export_trace("fixtures/traces/incident-001/")
 ```
 
+### Cost / governance observers (`on_crossing`)
+
+Chronicle does **not** embed cost management. External systems (e.g. TokenOps) attach an observer:
+
+```python
+session = reset_session()
+session.on_crossing = my_observer  # (boundary_id, kind, input_state, result) -> None
+```
+
+Invoked after **LIVE** envelope record and **LIVE** cut-point capture. **Not** called on STUB replay. See `tests/test_cost_management_e2e.py` for an end-to-end fake ledger/budget pattern.
+
 ### How `@boundary` wraps your function
 
 Same decorator, two behaviors. The wrapper sits around your function — it does not replace your logic.
@@ -327,30 +338,28 @@ See `examples/langgraph_demo/agent.py`.
 
 ## Project Structure
 
+**Core vs examples:** only `chronicle/` is the installable library. Demos, screenshot assets, and interactive benches stay under `examples/`. Committed regression traces live in `fixtures/` (not package modules). See `examples/README.md`.
+
 ```
-chronicle/
-├── boundary.py         # @boundary decorator (record + replay + cut-point)
-├── session.py          # runtime session, trace export, stub/live modes
-├── execution_graph.py  # side graph builder (load/save/render)
-├── visualizer.py       # interactive HTML trace UI
-├── envelope/           # schema, capture, append-only store
-├── replay/             # ReplayPlan, ReplayInjector, structural assertions
-├── judge/              # Layer 2 rubric + LLM-as-judge runner
-├── instrumentation/    # OpenInference + LangGraph hooks
-├── cli.py
-fixtures/
-├── envelopes/          # single-step regression envelopes
-└── traces/             # multi-step trace graphs (graph.json + envelopes)
-examples/
-├── financial_incidents/ # refund, invoice, trade demos (run.py)
-├── deletion_agent/     # record → visualize → cut-point demo
-└── langgraph_demo/     # LangGraph node wrapping example
-scripts/
-├── run.py              # cross-platform runner (demo | test)
-├── demo.sh / .bat      # interactive demo
-├── test.sh / .bat      # pytest suite
-└── quickrun.sh / .bat  # alias for demo
-tests/
+chronicle/                 # installable package (pip install -e .)
+├── boundary.py            # @boundary decorator (record + replay + cut-point)
+├── session.py             # runtime session, on_crossing hook, stub/live modes
+├── execution_graph.py     # side graph builder (load/save/render)
+├── visualizer.py          # HTML trace UI (library + CLI)
+├── envelope/              # schema, capture, append-only store
+├── replay/                # ReplayPlan, ReplayInjector, structural assertions
+├── judge/                 # Layer 2 rubric + LLM-as-judge runner
+├── instrumentation/       # OpenInference + LangGraph hooks
+└── cli.py
+fixtures/                  # committed regression data (not library code)
+├── envelopes/             # single-step envelopes
+└── traces/                # multi-step graphs (graph.json + envelopes)
+examples/                  # demos / test benches (not imported by the package)
+├── financial_incidents/   # refund, invoice, trade demos
+├── deletion_agent/        # record → visualize → cut-point demo
+└── langgraph_demo/        # LangGraph node wrapping example
+scripts/                   # demo | test runners
+tests/                     # unit + e2e (incl. cost-management on_crossing)
 ```
 
 ## License
