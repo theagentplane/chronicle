@@ -83,6 +83,8 @@ def _record_call(session, fn, boundary_id, kind, args, kwargs, extract_input, ex
         result = extract_result(result)
     action_result = result_to_action_result(result, kind)
     session.record_envelope(boundary_id, kind, input_state, action_result)
+    if session.on_crossing is not None:
+        session.on_crossing(boundary_id, kind, input_state, result)
     return result
 
 
@@ -102,4 +104,6 @@ def _live_cutpoint_call(
     session.capture_live_result(boundary_id, invocation_index, result)
     session.next_invocation(boundary_id)
     session._replay_cursor[boundary_id] = invocation_index
+    if session.on_crossing is not None:
+        session.on_crossing(boundary_id, kind, input_state, result)
     return result

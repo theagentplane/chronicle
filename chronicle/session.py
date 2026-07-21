@@ -9,6 +9,7 @@ from contextvars import ContextVar
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
+from collections.abc import Callable
 from typing import Any
 
 from chronicle.envelope.schema import (
@@ -47,6 +48,9 @@ class ChronicleSession:
     fixture_graph: ExecutionGraph | None = None  # type: ignore[name-defined]
     model_version: str = "demo-model"
     build_id: str = field(default_factory=lambda: os.environ.get("CHRONICLE_BUILD_ID", "dev-local"))
+    # Optional observer for boundary crossings (LIVE record + LIVE cut-point).
+    # Signature: (boundary_id, kind, input_state, result) -> None
+    on_crossing: Callable[[str, str, InputState, Any], None] | None = None
 
     _sequence: int = 0
     _invocation_counts: dict[str, int] = field(default_factory=dict)
