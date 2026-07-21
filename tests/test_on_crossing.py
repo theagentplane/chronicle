@@ -93,3 +93,28 @@ def test_on_crossing_none_is_noop():
     session.enable_live()
     assert session.on_crossing is None
     assert echo_tool("x")["value"] == "x"
+
+
+@pytest.mark.layer1
+def test_on_crossing_multiple_live_crossings():
+    session = reset_session()
+    session.enable_live()
+    crossings: list[str] = []
+    session.on_crossing = lambda bid, kind, inp, result: crossings.append(bid)
+
+    echo_tool("a")
+    echo_tool("b")
+    echo_tool("c")
+
+    assert crossings == ["echo_tool", "echo_tool", "echo_tool"]
+    assert len(session._recorded_envelopes) == 3
+
+
+@pytest.mark.layer1
+def test_reset_session_clears_on_crossing():
+    session = reset_session()
+    session.on_crossing = lambda *args: None
+    assert session.on_crossing is not None
+
+    session = reset_session()
+    assert session.on_crossing is None

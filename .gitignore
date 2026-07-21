@@ -15,3 +15,5 @@ venv/
 htmlcov/
 .chronicle/runs/
 *.sqlite
+.DS_Store
+**/.DS_Store
