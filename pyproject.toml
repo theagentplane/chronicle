@@ -8,7 +8,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agent-chronicle"
-version = "0.1.0"
+version = "0.1.1"
 description = "Record-and-replay for agent decision graphs: reproduce a prod agent failure as a committed regression test — and re-run your fix without live LLM calls."
 readme = "README.md"
 requires-python = ">=3.10"

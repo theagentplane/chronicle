@@ -7,6 +7,7 @@ import sys
 
 import click
 
+from chronicle import __version__
 from chronicle.envelope.schema import Envelope
 from chronicle.envelope.store import EnvelopeStore
 from chronicle.judge.runner import JudgeRunner, MockJudgeClient, OpenAIJudgeClient
@@ -14,7 +15,10 @@ from chronicle.replay.injector import ReplayInjector
 
 
 @click.group()
-@click.version_option()
+# Pass the version explicitly: the import package is `chronicle` but the
+# distribution is `agent-chronicle`, so click's default metadata lookup by
+# import name raises "'chronicle' is not installed".
+@click.version_option(version=__version__, prog_name="chronicle")
 def main() -> None:
     """Chronicle: Agent Data Recorder and Verification Test Bench."""
 
