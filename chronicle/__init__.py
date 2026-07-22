@@ -1,5 +1,6 @@
 """Chronicle: Agent Data Recorder and Verification Test Bench."""
 
+from chronicle.api import record, replay_trace
 from chronicle.boundary import boundary
 from chronicle.envelope.schema import (
     ActionResult,
@@ -31,7 +32,9 @@ __all__ = [
     "get_session",
     "InputState",
     "RagChunk",
+    "record",
     "redact_secrets",
+    "replay_trace",
     "ReplayPlan",
     "reset_session",
     "SamplingParams",
