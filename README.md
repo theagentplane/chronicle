@@ -1,6 +1,7 @@
 # Chronicle
 
 [![CI](https://github.com/theagentplane/chronicle/actions/workflows/ci.yml/badge.svg)](https://github.com/theagentplane/chronicle/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/agent-chronicle.svg)](https://pypi.org/project/agent-chronicle/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.txt)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://github.com/theagentplane/chronicle)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
@@ -61,7 +62,7 @@ tracing into this same envelope format.
 # From source (development):
 pip install -e ".[dev]"
 
-# From PyPI (coming soon; not yet published):
+# From PyPI:
 pip install agent-chronicle
 ```
 
