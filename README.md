@@ -1,4 +1,9 @@
+<div align="center">
+
 # Chronicle
+
+**Record-and-replay for agent decision graphs.**<br>
+Turn a production agent failure into a committed regression test, and re-run your fix without live LLM calls.
 
 [![CI](https://github.com/theagentplane/chronicle/actions/workflows/ci.yml/badge.svg)](https://github.com/theagentplane/chronicle/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/agent-chronicle.svg)](https://pypi.org/project/agent-chronicle/)
@@ -6,19 +11,25 @@
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://github.com/theagentplane/chronicle)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
-**Record-and-replay for agent decision graphs.** Chronicle records what your agent
-did at each decision boundary (its LLM calls, tool calls, and routing choices) so
-you can reproduce a production failure as a committed regression test and re-run
-your fix without live LLM calls. The target is one specific, real problem:
-control-flow and tool-safety regressions in multi-agent systems, caught
-deterministically from recorded incidents.
-
-## Demo
-
 ![Chronicle: record an incident, then verify the fix with a cut-point test](docs/demo.gif)
 
-Record an incident, then prove the fix with a cut-point test, deterministically and
-with no LLM calls. [Watch the full walkthrough](https://www.youtube.com/watch?v=Lc8zRh9muoY).
+[Watch the full walkthrough](https://www.youtube.com/watch?v=Lc8zRh9muoY)
+
+</div>
+
+Chronicle records what your agent did at each decision boundary (its LLM calls, tool
+calls, and routing choices) so you can reproduce a production failure as a committed
+regression test and re-run your fix without live LLM calls. The target is one specific,
+real problem: control-flow and tool-safety regressions in multi-agent systems, caught
+deterministically from recorded incidents.
+
+## Why Chronicle
+
+- **Record** every LLM call, tool call, and routing decision as an immutable Envelope.
+- **Cut-point replay:** change one boundary, freeze the rest of the incident, and assert deterministically with no LLM calls.
+- **Two-layer verification:** structural replay for control flow and tool safety, plus LLM-as-judge for meaning.
+- **Commit incidents as regression tests** so a fixed failure never silently returns.
+- **Batteries included:** secret redaction, real model-version capture, and LangGraph / OpenInference integration.
 
 ## Architecture
 
@@ -313,3 +324,7 @@ For security issues, follow [SECURITY.md](SECURITY.md).
 ---
 
 If Chronicle saves you a debugging session, please [⭐ star the repo](https://github.com/theagentplane/chronicle) so more people can find it.
+
+<div align="center">
+<sub>Built by <a href="https://www.linkedin.com/in/susheemkoul/">Susheem Koul</a> and <a href="https://www.linkedin.com/in/tisha-chawla/">Tisha Chawla</a></sub>
+</div>
