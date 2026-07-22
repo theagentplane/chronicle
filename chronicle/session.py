@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import os
 import uuid
 from contextvars import ContextVar
@@ -10,7 +9,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from collections.abc import Callable
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from chronicle.envelope.schema import (
     ActionResult,
@@ -21,7 +20,10 @@ from chronicle.envelope.schema import (
     ToolCall,
 )
 from chronicle.envelope.store import EnvelopeStore
-from chronicle.replay.plan import BoundaryMode, ReplayPlan
+from chronicle.replay.plan import ReplayPlan
+
+if TYPE_CHECKING:
+    from chronicle.execution_graph import ExecutionGraph
 
 _envelope_stack: ContextVar[list[str]] = ContextVar("chronicle_envelope_stack", default=[])
 

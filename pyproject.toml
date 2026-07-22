@@ -13,7 +13,7 @@ description = "Record-and-replay for agent decision graphs: reproduce a prod age
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
-license-files = ["LICENSE"]
+license-files = ["LICENSE.txt"]
 authors = [
     { name = "Tisha Chawla" },
     { name = "Susheem Koul" },
@@ -38,17 +38,39 @@ classifiers = [
     "Topic :: Software Development :: Testing",
     "Topic :: Software Development :: Quality Assurance",
 ]
+# Core runtime is intentionally lean: the envelope schema, @boundary recorder,
+# replay engine, and CLI only need pydantic + click. Tracing/framework/judge
+# integrations live in optional extras so a plain install stays small.
 dependencies = [
-    # TODO: pin the real runtime dependencies, e.g.:
-    # "openinference-instrumentation>=0.1",
-    # "arize-phoenix-otel>=0.6",
+    "pydantic>=2",
+    "click>=8",
 ]
 
 [project.optional-dependencies]
+# LangGraph node instrumentation (chronicle/instrumentation/langgraph.py).
+langgraph = [
+    "langgraph>=0.2",
+    "langchain-core>=0.3",
+    "openinference-instrumentation-langchain>=0.1",
+]
+# OpenTelemetry + Phoenix tracing export (chronicle/instrumentation/openinference.py).
+phoenix = [
+    "opentelemetry-api>=1.20",
+    "opentelemetry-sdk>=1.20",
+    "opentelemetry-exporter-otlp>=1.20",
+    "openinference-instrumentation>=0.1",
+    "openinference-semantic-conventions>=0.1",
+    "arize-phoenix>=4",
+]
+# Layer 2 LLM-as-judge (chronicle/judge/runner.py OpenAIJudgeClient).
+judge = [
+    "openai>=1",
+]
 dev = [
     "pytest>=8",
     "ruff>=0.6",
     "build>=1.2",
+    "agent-chronicle[langgraph,phoenix,judge]",
 ]
 
 [project.urls]
@@ -68,7 +90,13 @@ packages = ["chronicle"]
 [tool.ruff]
 line-length = 100
 
+[tool.ruff.lint]
+# Tests and examples intentionally tweak sys.path and keep illustrative unused
+# bindings, so scope those relaxations rather than loosening rules everywhere.
+per-file-ignores = { "tests/**" = ["E402", "F401", "F841"], "examples/**" = ["E402", "F401", "F841", "F541"] }
+
 [tool.pytest.ini_options]
 markers = [
     "layer1: deterministic structural replay (never calls the LLM)",
+    "layer2: LLM-as-judge evaluation (uses a mock judge in CI, no live API)",
 ]

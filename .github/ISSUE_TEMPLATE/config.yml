@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions & ideas
+    url: https://github.com/theagentplane/chronicle/discussions
+    about: For open-ended questions or design discussions, start a Discussion. Please open an issue or Discussion before large changes so we can align.
+  - name: Security vulnerability
+    url: https://github.com/theagentplane/chronicle/blob/main/SECURITY.md
+    about: Do not file public issues for security problems — follow SECURITY.md instead.
