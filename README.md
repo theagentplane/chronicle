@@ -7,7 +7,6 @@ Turn a production agent failure into a committed regression test, and re-run you
 
 [![CI](https://github.com/theagentplane/chronicle/actions/workflows/ci.yml/badge.svg)](https://github.com/theagentplane/chronicle/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/agent-chronicle.svg)](https://pypi.org/project/agent-chronicle/)
-[![Downloads](https://img.shields.io/pypi/dm/agent-chronicle.svg?color=blue)](https://pypi.org/project/agent-chronicle/)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://pypi.org/project/agent-chronicle/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE.txt)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
