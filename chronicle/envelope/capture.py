@@ -46,6 +46,7 @@ class EnvelopeRecorder:
         tool_schemas: list[ToolSchema] | None = None,
         framework: str = "langgraph",
         trace_id: str | None = None,
+        redactors: list[Callable[[str], str]] | None = None,
     ) -> None:
         if isinstance(store, str):
             store = EnvelopeStore(store)
@@ -56,6 +57,8 @@ class EnvelopeRecorder:
         self.tool_schemas = tool_schemas or []
         self.framework = framework
         self.trace_id = trace_id
+        # Applied before an envelope is stored, so secrets never reach a fixture.
+        self.redactors = redactors or []
 
     def _build_metadata(self, node_id: str) -> ContextMetadata:
         return ContextMetadata(
@@ -83,6 +86,10 @@ class EnvelopeRecorder:
             input_state=input_state,
             action_result=action_result,
         )
+        if self.redactors:
+            from chronicle.redaction import apply_redactors
+
+            envelope = apply_redactors(envelope, self.redactors)
         if self.store is not None:
             self.store.append(envelope)
         return envelope
