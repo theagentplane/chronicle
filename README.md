@@ -1,9 +1,9 @@
 <div align="center">
 
-<img src="docs/banner.png" alt="Chronicle" width="520">
+# Chronicle
 
-
-**Turn a production agent failure into a committed regression test, and re-run your fix without live LLM calls.**
+**Record-and-replay for agent decision graphs.**<br>
+Turn a production agent failure into a committed regression test, and re-run your fix without live LLM calls.
 
 [![CI](https://github.com/theagentplane/chronicle/actions/workflows/ci.yml/badge.svg)](https://github.com/theagentplane/chronicle/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/agent-chronicle.svg)](https://pypi.org/project/agent-chronicle/)
