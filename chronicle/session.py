@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import os
 import uuid
+from collections.abc import Callable, Mapping
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 from chronicle.envelope.schema import (
@@ -18,6 +18,7 @@ from chronicle.envelope.schema import (
     InputState,
     SamplingParams,
     ToolCall,
+    ToolSchema,
 )
 from chronicle.envelope.store import EnvelopeStore
 from chronicle.replay.plan import ReplayPlan
@@ -48,7 +49,7 @@ class ChronicleSession:
     store: EnvelopeStore | None = None
     replay_plan: ReplayPlan = field(default_factory=ReplayPlan)
     fixture_graph: ExecutionGraph | None = None  # type: ignore[name-defined]
-    model_version: str = "demo-model"
+    model_version: str = "unknown"
     build_id: str = field(default_factory=lambda: os.environ.get("CHRONICLE_BUILD_ID", "dev-local"))
     # Optional observer for boundary crossings (LIVE record + LIVE cut-point).
     # Signature: (boundary_id, kind, input_state, result) -> None
@@ -126,6 +127,10 @@ class ChronicleSession:
         kind: str,
         input_state: InputState,
         action_result: ActionResult,
+        *,
+        model_version: str | None = None,
+        sampling_params: SamplingParams | None = None,
+        tool_schemas: list[ToolSchema] | None = None,
     ) -> Envelope:
         invocation_index = self.next_invocation(boundary_id)
         sequence = self.next_sequence()
@@ -139,9 +144,12 @@ class ChronicleSession:
             sequence=sequence,
             invocation_index=invocation_index,
             metadata=ContextMetadata(
-                model_version=self.model_version,
+                # Prefer what the call actually used; fall back to the session
+                # default only when the boundary surfaced no real metadata.
+                model_version=model_version or self.model_version,
                 build_id=self.build_id,
-                sampling_params=SamplingParams(),
+                sampling_params=sampling_params or SamplingParams(),
+                tool_schemas=tool_schemas or [],
                 framework="chronicle.boundary",
                 node_id=boundary_id,
                 trace_id=self.trace_id,
@@ -266,5 +274,62 @@ def result_to_action_result(result: Any, kind: str) -> ActionResult:
             tool_calls=tool_calls,
             completion=result.get("completion"),
             finish_reason=result.get("finish_reason"),
+            token_usage=_as_token_usage(result.get("token_usage") or result.get("usage")),
         )
     return ActionResult(completion=str(result), raw_response=result if isinstance(result, dict) else None)
+
+
+def _as_token_usage(source: Any) -> dict[str, int]:
+    """Coerce a usage mapping into the envelope's ``dict[str, int]`` shape.
+
+    LLM SDKs report usage under slightly different keys and occasionally as
+    floats, so keep only the integer counts and drop anything else rather than
+    fail validation on a stray value.
+    """
+    if not isinstance(source, Mapping):
+        return {}
+    usage: dict[str, int] = {}
+    for key, value in source.items():
+        if isinstance(value, bool):
+            continue
+        if isinstance(value, int):
+            usage[str(key)] = value
+        elif isinstance(value, float) and value.is_integer():
+            usage[str(key)] = int(value)
+    return usage
+
+
+def sampling_params_from(source: Any) -> SamplingParams | None:
+    """Best-effort extraction of sampling parameters from a boundary result.
+
+    Recognizes either a nested ``sampling_params`` mapping or the flat keys
+    (temperature, top_p, max_tokens, seed) that common LLM SDKs return. Returns
+    ``None`` when nothing recognizable is present, so callers fall back to the
+    session/recorder default instead of recording empty parameters.
+    """
+    if not isinstance(source, Mapping):
+        return None
+    nested = source.get("sampling_params")
+    if isinstance(nested, Mapping):
+        source = nested
+    keys = ("temperature", "top_p", "max_tokens", "seed")
+    if not any(k in source for k in keys):
+        return None
+    return SamplingParams(
+        temperature=source.get("temperature"),
+        top_p=source.get("top_p"),
+        max_tokens=source.get("max_tokens"),
+        seed=source.get("seed"),
+    )
+
+
+def model_version_from(source: Any) -> str | None:
+    """Best-effort extraction of the resolved model version from a result.
+
+    Prefers an explicit ``model_version`` and falls back to ``model`` (what
+    most SDK responses echo back). Returns ``None`` when neither is present.
+    """
+    if not isinstance(source, Mapping):
+        return None
+    value = source.get("model_version") or source.get("model")
+    return str(value) if value else None

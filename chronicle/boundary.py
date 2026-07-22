@@ -3,11 +3,17 @@
 from __future__ import annotations
 
 import functools
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from typing import Any, TypeVar
 
 from chronicle.envelope.schema import InputState
-from chronicle.session import SessionMode, get_session, result_to_action_result
+from chronicle.session import (
+    SessionMode,
+    get_session,
+    model_version_from,
+    result_to_action_result,
+    sampling_params_from,
+)
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -18,6 +24,7 @@ def boundary(
     kind: str = "custom",
     extract_input: Callable[..., InputState] | None = None,
     extract_result: Callable[[Any], Any] | None = None,
+    extract_metadata: Callable[[Any], Mapping[str, Any]] | None = None,
 ) -> Callable[[F], F]:
     """
     Annotate a decision boundary for Chronicle record and replay.
@@ -25,6 +32,12 @@ def boundary(
     LIVE mode:     execute function, record envelope
     REPLAY + STUB: return fixture without executing
     REPLAY + LIVE: execute function (cut-point), capture input/result for assertions
+
+    extract_metadata lets a boundary surface the real model version and sampling
+    parameters it used (returned as a mapping) so the envelope pins what actually
+    ran. For ``kind="llm"`` these are also auto-detected from conventional keys on
+    the returned dict (``model``/``model_version``, ``temperature``, ``top_p``,
+    ``max_tokens``, ``seed``); the hook, when given, takes precedence.
     """
 
     def decorator(fn: F) -> F:
@@ -35,7 +48,7 @@ def boundary(
             if session.mode == SessionMode.LIVE:
                 return _record_call(
                     session, fn, boundary_id, kind, args, kwargs,
-                    extract_input, extract_result,
+                    extract_input, extract_result, extract_metadata,
                 )
 
             invocation_index = session._replay_cursor.get(boundary_id, 0) + 1
@@ -72,7 +85,7 @@ def _default_input_state(args: tuple, kwargs: dict) -> InputState:
     )
 
 
-def _record_call(session, fn, boundary_id, kind, args, kwargs, extract_input, extract_result):
+def _record_call(session, fn, boundary_id, kind, args, kwargs, extract_input, extract_result, extract_metadata):
     input_state = (
         extract_input(*args, **kwargs)
         if extract_input
@@ -82,10 +95,31 @@ def _record_call(session, fn, boundary_id, kind, args, kwargs, extract_input, ex
     if extract_result:
         result = extract_result(result)
     action_result = result_to_action_result(result, kind)
-    session.record_envelope(boundary_id, kind, input_state, action_result)
+    model_version, sampling_params = _call_metadata(result, kind, extract_metadata)
+    session.record_envelope(
+        boundary_id, kind, input_state, action_result,
+        model_version=model_version, sampling_params=sampling_params,
+    )
     if session.on_crossing is not None:
         session.on_crossing(boundary_id, kind, input_state, result)
     return result
+
+
+def _call_metadata(result, kind, extract_metadata):
+    """Capture the real model version and sampling params for this crossing.
+
+    Model metadata only applies to ``llm`` boundaries, so tool and router
+    results are not scraped for a stray ``model`` key. An explicit
+    extract_metadata hook always wins and works for any kind. Returns
+    ``(None, None)`` when nothing is available, letting record_envelope fall
+    back to the session default.
+    """
+    if extract_metadata is not None:
+        source = extract_metadata(result)
+        return model_version_from(source), sampling_params_from(source)
+    if kind == "llm":
+        return model_version_from(result), sampling_params_from(result)
+    return None, None
 
 
 def _live_cutpoint_call(

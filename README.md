@@ -5,75 +5,77 @@
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://pypi.org/project/agent-chronicle/)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
-Chronicle captures the execution DNA of your agents through record-and-replay for agent decision graphs. It records granular decision states including model versions, retrieval snapshots, tool schemas, and environment context; so you can reproduce a prod agent failure as a committed regression test, and re-run your fix without live LLM calls.
+**Record-and-replay for agent decision graphs.** Chronicle records what your agent
+did at each decision boundary (the LLM calls, tool calls, and routing choices),
+so you can reproduce a production failure as a committed regression test and
+re-run your fix without live LLM calls.
+
+It is built for one job in particular: catching control-flow and tool-safety
+regressions in multi-agent systems, deterministically, from real recorded
+incidents.
+
+## Demo
+
+[![Watch the Chronicle demo](https://img.youtube.com/vi/Lc8zRh9muoY/maxresdefault.jpg)](https://www.youtube.com/watch?v=Lc8zRh9muoY)
 
 ## Architecture
 
-Chronicle implements two complementary systems:
+Chronicle is two systems that share one artifact, the **Envelope**: a recorder
+that captures boundary crossings during a live run, and a test bench that
+replays them without touching the model.
 
-### 1. Agent Data Recorder ("The Envelope")
+```mermaid
+flowchart LR
+    subgraph REC["Record (LIVE run)"]
+        A["Your agent<br/>llm · tool · router calls"] -->|"@boundary"| B["Envelope Recorder"]
+        B --> C["Append-only<br/>envelope store (.jsonl)"]
+        C --> D["Execution graph<br/>(side graph, no topology change)"]
+    end
 
-Captures "flight data" at **decision boundaries**—the methods where your agent calls an LLM, runs a tool, or makes a routing decision. Chronicle builds a **side execution graph** alongside your agent without modifying framework topology.
+    D -->|"export / extract"| E["fixtures/ committed to git<br/>envelopes/ · traces/"]
 
-Every boundary invocation serializes an immutable, append-only **Envelope**:
+    subgraph REP["Replay & Verify (no live LLM)"]
+        E --> F["ReplayPlan<br/>stub upstream · run one boundary live"]
+        F --> G["Layer 1: structural replay<br/>control flow &amp; tool safety"]
+        E --> H["Layer 2: LLM-as-judge<br/>grounding · safety · refusal"]
+    end
 
+    G --> I["pytest / CI<br/>regression tests"]
+    H --> I
+    D -.->|"on_crossing hook"| J["Cost / governance<br/>(external, e.g. TokenOps)"]
+```
 
-| Field                   | Contents                                                         |
-| ----------------------- | ---------------------------------------------------------------- |
-| **Contextual Metadata** | Pinned model version, sampling parameters, runtime build ID      |
-| **Input State**         | Full assembled prompt, graph state, retrieved context/chunks     |
-| **Action/Result**       | Structured tool calls and model completion                       |
-| **Graph linkage**       | `parent_envelope_id`, `sequence`, `invocation_index` for retries |
+**The Envelope** is an immutable, append-only record of one boundary crossing:
 
+| Field | Contents |
+|---|---|
+| Contextual metadata | Model version, sampling parameters, runtime build ID |
+| Input state | Assembled prompt, graph state, retrieved context chunks |
+| Action / result | Structured tool calls and model completion |
+| Graph linkage | `parent_envelope_id`, `sequence`, `invocation_index` for retries |
 
-OpenInference and Arize Phoenix provide framework-agnostic tracing; Chronicle normalizes observations into a regression-ready envelope format.
+The recorder builds a side execution graph alongside your agent without changing
+your framework topology. OpenInference and Arize Phoenix supply framework-agnostic
+tracing; Chronicle normalizes those observations into the regression-ready
+envelope format.
 
-### 2. Verification Test Bench
-
-
-| Layer                   | Goal                               | Mechanism                                                                           |
-| ----------------------- | ---------------------------------- | ----------------------------------------------------------------------------------- |
-| **Layer 1: Replay**     | Validate control flow / logic      | Static envelope/trace fixtures; structural assertions — **never calls the LLM API** |
-| **Layer 2: Evaluation** | Validate generation quality        | LLM-as-a-judge on meaning (grounding, safety, refusal) — not bitwise equality       |
-| **Cut-point replay**    | Test a code change in one boundary | Stub upstream from fixtures, run target boundary live                               |
-
-
-Production incidents are committed under `fixtures/traces/` (multi-step graphs) or `fixtures/envelopes/` (single-step) as permanent regression tests.
-
-## Quick Start
+## Install
 
 ```bash
+# From source (development):
 pip install -e ".[dev]"
 
-# Cross-platform (Windows, macOS, Linux):
-python scripts/run.py demo       # interactive demo (confirms each step)
-python scripts/run.py test       # full pytest suite (separate)
-
-# Non-interactive (CI / automation):
-python scripts/run.py demo -y
-
-# Shell wrappers (Unix):
-./scripts/demo.sh
-./scripts/test.sh
-
-# Batch wrappers (Windows):
-scripts\demo.bat
-scripts\test.bat
+# From PyPI (once released):
+pip install agent-chronicle
 ```
 
-The demo walks through record → trace → optional UI → cut-point replay, **confirming before each step**. It does not run pytest — use `test` for that.
+## Quick start
 
-```bash
-pytest -v                 # or: python scripts/run.py test
-pytest -m layer1 -v       # deterministic replay only
-```
-
-## Primary API: `@boundary`
-
-Annotate decision boundaries once. The same annotation records in live mode and stubs in replay mode.
+The primary API is one decorator. Annotate a decision boundary once; it records
+in live mode and stubs from a fixture in replay mode.
 
 ```python
-from chronicle import boundary, get_session, reset_session, ReplayPlan
+from chronicle import boundary, reset_session, ReplayPlan
 from chronicle.envelope.store import EnvelopeStore
 
 @boundary("agent", kind="llm")
@@ -84,90 +86,21 @@ def agent_plan(state: dict) -> dict:
 def delete_file(path: str, environment: str) -> dict:
     ...
 
-# Record mode (default)
+# 1. Record a run (live mode is the default)
 session = reset_session()
 session.store = EnvelopeStore(".chronicle/runs/incident.jsonl")
 session.begin_trace("trace-001")
-result = run_agent(...)
+run_agent(...)
 
-# Export trace graph to fixtures/
+# 2. Freeze it as a committed fixture
 session.export_trace("fixtures/traces/incident-001/")
 ```
 
-### Cost / governance observers (`on_crossing`)
-
-Chronicle does **not** embed cost management. External systems (e.g. TokenOps) attach an observer:
-
-```python
-session = reset_session()
-session.on_crossing = my_observer  # (boundary_id, kind, input_state, result) -> None
-```
-
-Invoked after **LIVE** envelope record and **LIVE** cut-point capture. **Not** called on STUB replay. See `tests/test_cost_management_e2e.py` for an end-to-end fake ledger/budget pattern.
-
-### How `@boundary` wraps your function
-
-Same decorator, two behaviors. The wrapper sits around your function — it does not replace your logic.
-
-#### 1. LIVE mode — capture input & output
-
-Your function **runs normally**. Chronicle snapshots what went in and what came out, then saves an **Envelope**.
-
-```
-┌────────────────── @boundary wrapper (LIVE) ────────────────────────────┐
-│                                                                        │
-│   @boundary("place_order", kind="tool")  ◄── annotate once             │
-│   ┌────────────────────────────────────────────────────────────────┐   │
-│   │  INPUT captured                                                │   │
-│   │  symbol=ACME  quantity=1000  side=sell  (args → InputState)    │   │
-│   └────────────────────────────────────────────────────────────────┘   │
-│                              │                                         │
-│                              ▼                                         │
-│   def place_order(symbol: str, quantity: int) -> dict:                 │
-│       notional = quantity * SHARE_PRICE                                │
-│       return {"status": "filled", "notional_cents": notional}          │
-│                              │                                         │
-│                              ▼                                         │
-│   ┌────────────────────────────────────────────────────────────────┐   │
-│   │  OUTPUT captured                                               │   │
-│   │  {"status": "filled", "notional_cents": 19000000, ...}         │   │
-│   └────────────────────────────────────────────────────────────────┘   │
-│                              │                                         │
-│                              ▼                                         │
-│                    Envelope → store → fixtures/traces/                 │
-│                                                                        │
-└────────────────────────────────────────────────────────────────────────┘
-```
-
-#### 2. Replay / eval mode — mimic output from a saved Envelope
-
-Your function **does not run**. Chronicle returns the **same output** that was recorded during the incident (from the fixture trace).
-
-```
-┌────────────────── @boundary wrapper (EVAL + stub) ─────────────────────┐
-│                                                                        │
-│   @boundary("place_order", kind="tool")  ◄── same decorator            │
-│                                                                        │
-│   ReplayPlan(trace_id).stub("place_order",1) ◄── eval: freeze this step│
-│                                                                        │
-│   def place_order(symbol: str, quantity: int) -> dict:                 │
-│       notional = quantity * SHARE_PRICE                                │
-│       return {"status": "filled", ...}     ◄── NOT executed            │
-│                                                                        │
-│   ┌────────────────────────────────────────────────────────────────┐   │
-│   │  OUTPUT returned from saved Envelope (incident fixture)        │   │
-│   │  {"status": "filled", "notional_cents": 19000000, ...}         │   │
-│   │  mimics the output Chronicle captured in LIVE mode             │   │
-│   └────────────────────────────────────────────────────────────────┘   │
-│                                                                        │
-└────────────────────────────────────────────────────────────────────────┘
-```
-
-For cut-point tests, one boundary can be set to **live** instead of stub — the wrapper runs your **new** function body while upstream steps still mimic the saved Envelope. See [Cut-point replay](#cut-point-replay) below.
-
 ### Cut-point replay
 
-Test a fix in one boundary while stubbing everything else from the incident:
+Test a fix in one boundary while the rest of the incident stays frozen. Upstream
+boundaries are stubbed from the fixture, your changed boundary runs live, and you
+assert on its captured result.
 
 ```python
 session = reset_session()
@@ -176,17 +109,28 @@ session.enable_replay(
     ReplayPlan()
     .stub("agent", 1)          # upstream: frozen from fixture
     .live("delete_file", 1)    # cut-point: run new code
-    .live("agent", 2)          # downstream: observe effect
+    .live("agent", 2)          # downstream: observe the effect
 )
-result = run_agent(...)
+run_agent(...)
 
-# Assert on live cut-point
 assert session.captured_result("delete_file", 1)["blocked"] is True
 ```
 
-### Layer 1 replay (injector API)
+The same decorator, two behaviors: in **live** mode your function runs and its
+input/output are snapshotted into an Envelope; in **replay + stub** mode your
+function does not run and Chronicle returns the recorded output. A cut-point is
+simply the one boundary you flip back to live so you can test new code against
+real upstream inputs.
 
-For single-envelope structural replay:
+## Verification layers
+
+| Layer | Goal | Mechanism |
+|---|---|---|
+| Layer 1: replay | Validate control flow and tool safety | Structural assertions over recorded fixtures; never calls the LLM |
+| Layer 2: evaluation | Validate generation quality | LLM-as-a-judge on meaning (grounding, safety, refusal), not bitwise equality |
+| Cut-point replay | Test a change in one boundary | Stub upstream from fixtures, run the target boundary live |
+
+### Layer 1 (single-envelope injector)
 
 ```python
 from chronicle.replay import ReplayInjector
@@ -204,7 +148,7 @@ _, _, assertions = injector.replay(agent)
 assert all(a.passed for a in assertions)
 ```
 
-### Layer 2 evaluation (LLM-as-judge)
+### Layer 2 (LLM-as-judge)
 
 ```python
 from chronicle.judge import JudgeRunner, OpenAIJudgeClient
@@ -214,107 +158,52 @@ result = runner.evaluate(envelope)
 assert result.overall_passed
 ```
 
-## Financial incident demos (record → cut-point test)
+## Demos
 
-Three realistic billing/finance scenarios with minimal agent code. Each uses `@boundary` on `agent@1 → tool@1 → agent@2`.
+Each demo records an incident from an ungated tool, then a cut-point test verifies
+the gated fix. All use the same `agent@1 -> tool@1 -> agent@2` shape.
 
-
-| Scenario                    | Command name     | Incident                    |
-| --------------------------- | ---------------- | --------------------------- |
-| Refund amount = order ID    | `refund` or `1`  | $9.8M refund on a $47 order |
-| Invoice currency mismatch   | `invoice` or `8` | €2M invoice sent as USD     |
-| $1k notional → 1,000 shares | `trade` or `24`  | ~$190k sell instead of ~$1k |
-
+| Scenario | Command | Incident |
+|---|---|---|
+| Refund equals order ID | `refund` | $9.8M refund on a $47 order |
+| Invoice currency mismatch | `invoice` | EUR 2M invoice sent as USD |
+| Trade notional vs shares | `trade` | ~$190k sell instead of ~$1k |
+| Deletion agent | (see below) | Ungated `delete_file` wipes prod |
 
 ```bash
-# Record incident (ungated tool — bad outcome)
+# Financial incidents: record, then cut-point test
 python examples/financial_incidents/run.py refund record
-python examples/financial_incidents/run.py invoice record
-python examples/financial_incidents/run.py trade record
-
-# Cut-point test (stub agent@1, live gated tool, live agent@2)
 python examples/financial_incidents/run.py refund test
-python examples/financial_incidents/run.py invoice test
-python examples/financial_incidents/run.py trade test
-
-# All three in sequence
-python examples/financial_incidents/run.py all record
-python examples/financial_incidents/run.py all test
-
-# Tests
+python examples/financial_incidents/run.py all test      # all three in sequence
 pytest tests/test_financial_incidents.py -v
-```
 
-Scenario source (screenshot-friendly): `examples/financial_incidents/refund_order_id.py`, `invoice_currency.py`, `trade_notional.py`
-
-Cut-point plan (each scenario): `stub agent@1` → `LIVE <tool>@1` (max-amount gate)`→`LIVE agent@2`
-
-Gated fix (same pattern in each tool): refuse if amount exceeds a flat cap — `MAX_REFUND_CENTS` ($10k), `MAX_INVOICE_CENTS` ($100k), `MAX_ORDER_NOTIONAL_CENTS` ($5k).
-
-## Deletion agent demo (record → visualize → cut-point test)
-
-A test bench where an ungated `delete_file` tool deletes production data, then a cut-point test verifies the gated fix.
-
-```bash
-# 1. Record the incident (ungated tool deletes prod)
+# Deletion agent: record, visualize, cut-point test
 python examples/deletion_agent/record_incident.py
-
-# 2. View trace in terminal (demo.sh will offer interactive UI next)
-python examples/deletion_agent/show_trace.py
-
-# 3. Interactive UI (timeline + graph + full envelope on click)
-python examples/deletion_agent/show_trace.py --ui
-# or: chronicle show-graph fixtures/traces/deletion-incident-001 --ui
-
-# 4. Static HTML export
-python examples/deletion_agent/show_trace.py --html trace.html
-
-# 5. Cut-point replay demo (gated tool blocks prod)
+python examples/deletion_agent/show_trace.py --ui        # interactive timeline + graph
 python examples/deletion_agent/run_cutpoint_demo.py
-
-# 6. Full test suite (separate from demo)
-python scripts/run.py test
-# or: pytest tests/test_deletion_cutpoint.py -v
+pytest tests/test_deletion_cutpoint.py -v
 ```
 
-Cut-point plan: `stub agent@1` → `LIVE delete_file@1` (gated)`→`LIVE agent@2`
-
-Expected incident graph:
-
-```
-agent@1 → delete_file@1 (deleted prod) → agent@2
-```
-
-## Workflow
-
-```
-Annotate → Record → Visualize → Extract → Fix → Cut-point replay → Verify
-    │         │          │          │       │           │              │
-    │         │          │          │       │           │              └─ pytest / chronicle replay
-    │         │          │          │       │           └─ ReplayPlan stub/live
-    │         │          │          │       └─ Change target boundary code
-    │         │          │          └─ fixtures/traces/ committed to git
-    │         │          └─ show_trace --ui
-    │         └─ @boundary in LIVE mode
-    └─ @boundary on LLM + tool methods
-```
+The gated fix in each tool refuses when an amount exceeds a flat cap
+(`MAX_REFUND_CENTS`, `MAX_INVOICE_CENTS`, `MAX_ORDER_NOTIONAL_CENTS`). Source
+lives under `examples/financial_incidents/` and `examples/deletion_agent/`.
 
 ## CLI
 
 ```bash
-chronicle record                                    # Bootstrap tracing + instrumentation
-chronicle extract --trace-id ID                     # Export envelopes to fixtures/
+chronicle record                                    # bootstrap tracing + instrumentation
+chronicle extract --trace-id ID                     # export envelopes to fixtures/
 chronicle replay FIXTURE.json                       # Layer 1 deterministic replay
 chronicle verify FIXTURE.json --layer2 --mock-judge # Layer 1 + Layer 2
-chronicle show-graph fixtures/traces/TRACE --ui     # Interactive trace visualization
-chronicle show-graph TRACE --html out.html          # Static HTML export
-chronicle schema                                    # Print Envelope JSON Schema
-chronicle list-fixtures                             # List committed envelope fixtures
+chronicle show-graph fixtures/traces/TRACE --ui     # interactive trace visualization
+chronicle show-graph TRACE --html out.html          # static HTML export
+chronicle schema                                    # print Envelope JSON Schema
+chronicle list-fixtures                             # list committed envelope fixtures
 ```
 
 ## LangGraph integration (optional)
 
-For LangGraph-specific node wrapping (alternative to `@boundary`):
+For LangGraph-specific node wrapping as an alternative to `@boundary`:
 
 ```python
 from chronicle.envelope.capture import EnvelopeRecorder
@@ -331,22 +220,35 @@ wrapped_nodes = instrument_graph_nodes(recorder, {"agent": agent_node})
 
 See `examples/langgraph_demo/agent.py`.
 
-## Environment Variables
+## Cost and governance observers (`on_crossing`)
 
+Chronicle does not embed cost management. External systems (for example TokenOps)
+attach an observer that fires after each live crossing:
 
-| Variable                     | Purpose                                                 |
-| ---------------------------- | ------------------------------------------------------- |
-| `CHRONICLE_BUILD_ID`         | Pin runtime build ID in envelope metadata               |
-| `CHRONICLE_STORE`            | Default envelope store path                             |
+```python
+session = reset_session()
+session.on_crossing = my_observer  # (boundary_id, kind, input_state, result) -> None
+```
+
+It runs after a live envelope record and a live cut-point capture, and does not
+run on stub replay. See `tests/test_cost_management_e2e.py` for an end-to-end
+ledger and budget pattern.
+
+## Environment variables
+
+| Variable | Purpose |
+|---|---|
+| `CHRONICLE_BUILD_ID` | Pin runtime build ID in envelope metadata |
+| `CHRONICLE_STORE` | Default envelope store path |
 | `PHOENIX_COLLECTOR_ENDPOINT` | Phoenix OTLP endpoint (default `http://localhost:4317`) |
 
+## Project structure
 
-## Project Structure
-
-**Core vs examples:** only `chronicle/` is the installable library. Demos, screenshot assets, and interactive benches stay under `examples/`. Committed regression traces live in `fixtures/` (not package modules). See `examples/README.md`.
+Only `chronicle/` is the installable library. Demos and interactive benches stay
+under `examples/`; committed regression traces live in `fixtures/`.
 
 ```
-chronicle/                 # installable package (pip install -e .)
+chronicle/                 # installable package
 ├── boundary.py            # @boundary decorator (record + replay + cut-point)
 ├── session.py             # runtime session, on_crossing hook, stub/live modes
 ├── execution_graph.py     # side graph builder (load/save/render)
@@ -356,29 +258,29 @@ chronicle/                 # installable package (pip install -e .)
 ├── judge/                 # Layer 2 rubric + LLM-as-judge runner
 ├── instrumentation/       # OpenInference + LangGraph hooks
 └── cli.py
-fixtures/                  # committed regression data (not library code)
-├── envelopes/             # single-step envelopes
-└── traces/                # multi-step graphs (graph.json + envelopes)
-examples/                  # demos / test benches (not imported by the package)
-├── financial_incidents/   # refund, invoice, trade demos
-├── deletion_agent/        # record → visualize → cut-point demo
-└── langgraph_demo/        # LangGraph node wrapping example
-scripts/                   # demo | test runners
-tests/                     # unit + e2e (incl. cost-management on_crossing)
+fixtures/                  # committed regression data (envelopes/ · traces/)
+examples/                  # demos and test benches (not imported by the package)
+scripts/                   # demo and test runners
+tests/                     # unit + e2e
 ```
 
 ## Contributing
 
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup,
-the DCO sign-off, and the record-and-replay reviewer checklist. Please also read
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup,
+the DCO sign-off, and the record-and-replay reviewer checklist, and please read
 our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Security
 
 Chronicle captures prompts, agent state, and retrieved context. Before recording
-production traffic, read the data-handling guidance in [SECURITY.md](SECURITY.md),
+production traffic, read the data-handling guidance in [SECURITY.md](SECURITY.md)
 and report vulnerabilities privately per that policy.
+
+## Contact
+
+- Susheem Koul: susheemkoul97@gmail.com
+- Tisha Chawla: tishachawla5@gmail.com
 
 ## License
 
-[MIT](LICENSE) © 2026 Susheem Koul and Tisha Chawla.
+[MIT](LICENSE.txt) (c) 2026 Susheem Koul and Tisha Chawla.
