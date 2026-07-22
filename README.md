@@ -367,6 +367,18 @@ scripts/                   # demo | test runners
 tests/                     # unit + e2e (incl. cost-management on_crossing)
 ```
 
+## Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup,
+the DCO sign-off, and the record-and-replay reviewer checklist. Please also read
+our [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Security
+
+Chronicle captures prompts, agent state, and retrieved context. Before recording
+production traffic, read the data-handling guidance in [SECURITY.md](SECURITY.md),
+and report vulnerabilities privately per that policy.
+
 ## License
 
-MIT
+[MIT](LICENSE) © 2026 Susheem Koul and Tisha Chawla.
