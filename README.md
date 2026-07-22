@@ -15,7 +15,10 @@ deterministically from recorded incidents.
 
 ## Demo
 
-[![Watch the Chronicle demo](https://img.youtube.com/vi/Lc8zRh9muoY/maxresdefault.jpg)](https://www.youtube.com/watch?v=Lc8zRh9muoY)
+![Chronicle: record an incident, then verify the fix with a cut-point test](docs/demo.gif)
+
+Record an incident, then prove the fix with a cut-point test, deterministically and
+with no LLM calls. [Watch the full walkthrough](https://www.youtube.com/watch?v=Lc8zRh9muoY).
 
 ## Architecture
 
@@ -294,10 +297,14 @@ roles, tool names, argument keys) while masking the values. Add your own
 `(str) -> str` redactors for PII. Read the data-handling guidance in
 [SECURITY.md](SECURITY.md) and report vulnerabilities privately per that policy.
 
-## Contact
+## Contributors
 
-- Susheem Koul: susheemkoul97@gmail.com
-- Tisha Chawla: tishachawla5@gmail.com
+Thanks to everyone who has contributed.
+
+[![Contributors](https://contrib.rocks/image?repo=theagentplane/chronicle)](https://github.com/theagentplane/chronicle/graphs/contributors)
+
+Questions or ideas? Open a [Discussion](https://github.com/theagentplane/chronicle/discussions).
+For security issues, follow [SECURITY.md](SECURITY.md).
 
 ## License
 
