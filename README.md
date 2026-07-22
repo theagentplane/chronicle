@@ -1,15 +1,16 @@
 <div align="center">
 
-# Chronicle
+![Chronicle](docs/banner.png)
 
-**Record-and-replay for agent decision graphs.**<br>
-Turn a production agent failure into a committed regression test, and re-run your fix without live LLM calls.
+**Turn a production agent failure into a committed regression test, and re-run your fix without live LLM calls.**
 
 [![CI](https://github.com/theagentplane/chronicle/actions/workflows/ci.yml/badge.svg)](https://github.com/theagentplane/chronicle/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/agent-chronicle.svg)](https://pypi.org/project/agent-chronicle/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.txt)
-[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://github.com/theagentplane/chronicle)
-[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
+[![Downloads](https://img.shields.io/pypi/dm/agent-chronicle.svg?color=blue)](https://pypi.org/project/agent-chronicle/)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://pypi.org/project/agent-chronicle/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE.txt)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![Stars](https://img.shields.io/github/stars/theagentplane/chronicle?style=flat&color=yellow)](https://github.com/theagentplane/chronicle/stargazers)
 
 ![Chronicle: record an incident, then verify the fix with a cut-point test](docs/demo.gif)
 
@@ -22,6 +23,8 @@ calls, and routing choices) so you can reproduce a production failure as a commi
 regression test and re-run your fix without live LLM calls. The target is one specific,
 real problem: control-flow and tool-safety regressions in multi-agent systems, caught
 deterministically from recorded incidents.
+
+**[Why](#why-chronicle) · [Architecture](#architecture) · [Install](#install) · [Quick start](#quick-start) · [Verification](#verification-layers) · [Demos](#demos) · [Comparison](#how-chronicle-compares) · [CLI](#cli) · [Roadmap](#roadmap)**
 
 ## Why Chronicle
 
@@ -171,37 +174,58 @@ result = runner.evaluate(envelope)
 assert result.overall_passed
 ```
 
+## How Chronicle compares
+
+Chronicle is not a tracing dashboard or an eval framework. It is the piece that makes a
+recorded agent run **replayable and testable**, and it sits alongside the tools you
+already use.
+
+| | Chronicle | LangSmith / Langfuse / Phoenix | promptfoo | VCR.py |
+|---|:---:|:---:|:---:|:---:|
+| Trace agent runs | ✅ | ✅ | Partial | HTTP only |
+| Deterministic replay, no live LLM | ✅ | No | No | ✅ (HTTP) |
+| Cut-point: change one boundary, freeze the rest | ✅ | No | No | No |
+| Commit incidents as regression tests | ✅ | Via datasets | ✅ | ✅ |
+| Structural + LLM-judge verification | ✅ | Judge only | Judge only | No |
+| Agent-graph aware (boundaries, retries) | ✅ | ✅ | No | No |
+
 ## Demos
 
-Each demo records an incident from an ungated tool, then a cut-point test verifies
-the gated fix. All use the same `agent@1 -> tool@1 -> agent@2` shape.
+Each demo records an incident from an ungated tool, then a cut-point test verifies the
+gated fix. All share the `agent@1 -> tool@1 -> agent@2` shape.
 
-| Scenario | Command | Incident |
+| Demo | What goes wrong | Run the cut-point test |
 |---|---|---|
-| Refund equals order ID | `refund` | $9.8M refund on a $47 order |
-| Invoice currency mismatch | `invoice` | EUR 2M invoice sent as USD |
-| Trade notional vs shares | `trade` | ~$190k sell instead of ~$1k |
-| Deletion agent | (see below) | Ungated `delete_file` wipes prod |
+| Refund | $9.8M refund on a $47 order (amount read from the order ID) | `python examples/financial_incidents/run.py refund test` |
+| Invoice | EUR 2M invoice sent as USD | `python examples/financial_incidents/run.py invoice test` |
+| Trade | ~$190k sell instead of ~$1k (notional read as share count) | `python examples/financial_incidents/run.py trade test` |
+| Deletion | Ungated `delete_file` wipes prod | `python examples/deletion_agent/run_cutpoint_demo.py` |
+
+<details>
+<summary><b>Record the incident, visualize the trace, run the full suite</b></summary>
 
 ```bash
-# Financial incidents: record, then cut-point test
+# Financial incidents: record the bad run, then cut-point test the fix
 python examples/financial_incidents/run.py refund record
-python examples/financial_incidents/run.py refund test
-python examples/financial_incidents/run.py all test      # all three in sequence
+python examples/financial_incidents/run.py all test
 pytest tests/test_financial_incidents.py -v
 
-# Deletion agent: record, visualize, cut-point test
+# Deletion agent: record, visualize the trace, cut-point test
 python examples/deletion_agent/record_incident.py
-python examples/deletion_agent/show_trace.py --ui        # interactive timeline + graph
-python examples/deletion_agent/run_cutpoint_demo.py
+python examples/deletion_agent/show_trace.py --ui   # interactive timeline + graph
 pytest tests/test_deletion_cutpoint.py -v
 ```
 
-The gated fix in each tool refuses when an amount exceeds a flat cap
-(`MAX_REFUND_CENTS`, `MAX_INVOICE_CENTS`, `MAX_ORDER_NOTIONAL_CENTS`). Source
-lives under `examples/financial_incidents/` and `examples/deletion_agent/`.
+The gated fix refuses when an amount exceeds a flat cap (`MAX_REFUND_CENTS`,
+`MAX_INVOICE_CENTS`, `MAX_ORDER_NOTIONAL_CENTS`). Source lives under
+`examples/financial_incidents/` and `examples/deletion_agent/`.
+
+</details>
 
 ## CLI
+
+<details>
+<summary><b>Command reference</b></summary>
 
 ```bash
 chronicle record                                    # bootstrap tracing + instrumentation
@@ -214,9 +238,12 @@ chronicle schema                                    # print Envelope JSON Schema
 chronicle list-fixtures                             # list committed envelope fixtures
 ```
 
+</details>
+
 ## LangGraph integration (optional)
 
-For LangGraph-specific node wrapping as an alternative to `@boundary`:
+<details>
+<summary><b>Wrap LangGraph nodes as an alternative to <code>@boundary</code></b></summary>
 
 ```python
 from chronicle.envelope.capture import EnvelopeRecorder
@@ -232,6 +259,8 @@ wrapped_nodes = instrument_graph_nodes(recorder, {"agent": agent_node})
 ```
 
 See `examples/langgraph_demo/agent.py`.
+
+</details>
 
 ## Cost and governance observers (`on_crossing`)
 
@@ -283,6 +312,17 @@ This work was presented at the **AI Engineer World's Fair 2026**.
 
 - [Your Agent Failed in Prod. Good Luck Reproducing It](https://dev.to/tisha/your-agent-failed-in-prod-good-luck-reproducing-it-56ci): why record and replay beats forcing determinism.
 - [You Recorded the Incident. Now Prove Your Fix Actually Works](https://dev.to/tisha/you-recorded-the-incident-now-prove-your-fix-actually-works-2cni): cut-point replay, turning an incident into a regression test.
+
+## Roadmap
+
+Chronicle is early (0.x), and the Envelope schema may still change. Near-term:
+
+- Drop-in provider capture: `chronicle.wrap(client)` for OpenAI and Anthropic.
+- Async `@boundary` for async agents and graph nodes.
+- A pytest plugin so a committed incident becomes a one-decorator regression test.
+- One-call LangGraph instrumentation and a documentation site.
+
+Ideas and priorities are welcome in [Discussions](https://github.com/theagentplane/chronicle/discussions).
 
 ## Contributing
 
