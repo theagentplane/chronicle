@@ -1,6 +1,6 @@
 # Chronicle
 
-Chronicle captures the execution DNA of your agents through record-and-replay for agent decision graphs. It records granular decision states—including model versions, retrieval snapshots, tool schemas, and environment context—enabling accurate traces that allow you to navigate your agentic terrain with absolute observability.
+Chronicle captures the execution DNA of your agents through record-and-replay for agent decision graphs. It records granular decision states including model versions, retrieval snapshots, tool schemas, and environment context; enabling accurate traces that allow you to navigate your agentic terrain with absolute observability.
 
 ## Architecture
 
