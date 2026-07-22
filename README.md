@@ -1,18 +1,16 @@
 # Chronicle
 
+[![CI](https://github.com/theagentplane/chronicle/actions/workflows/ci.yml/badge.svg)](https://github.com/theagentplane/chronicle/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.txt)
-[![PyPI](https://img.shields.io/pypi/v/agent-chronicle.svg)](https://pypi.org/project/agent-chronicle/)
-[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://pypi.org/project/agent-chronicle/)
+[![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://github.com/theagentplane/chronicle)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
 **Record-and-replay for agent decision graphs.** Chronicle records what your agent
-did at each decision boundary (the LLM calls, tool calls, and routing choices),
-so you can reproduce a production failure as a committed regression test and
-re-run your fix without live LLM calls.
-
-It is built for one job in particular: catching control-flow and tool-safety
-regressions in multi-agent systems, deterministically, from real recorded
-incidents.
+did at each decision boundary (its LLM calls, tool calls, and routing choices) so
+you can reproduce a production failure as a committed regression test and re-run
+your fix without live LLM calls. The target is one specific, real problem:
+control-flow and tool-safety regressions in multi-agent systems, caught
+deterministically from recorded incidents.
 
 ## Demo
 
@@ -54,10 +52,8 @@ flowchart LR
 | Action / result | Structured tool calls and model completion |
 | Graph linkage | `parent_envelope_id`, `sequence`, `invocation_index` for retries |
 
-The recorder builds a side execution graph alongside your agent without changing
-your framework topology. OpenInference and Arize Phoenix supply framework-agnostic
-tracing; Chronicle normalizes those observations into the regression-ready
-envelope format.
+Optional OpenInference and Arize Phoenix integrations feed framework-agnostic
+tracing into this same envelope format.
 
 ## Install
 
@@ -65,7 +61,7 @@ envelope format.
 # From source (development):
 pip install -e ".[dev]"
 
-# From PyPI (once released):
+# From PyPI (coming soon; not yet published):
 pip install agent-chronicle
 ```
 
@@ -116,11 +112,10 @@ run_agent(...)
 assert session.captured_result("delete_file", 1)["blocked"] is True
 ```
 
-The same decorator, two behaviors: in **live** mode your function runs and its
-input/output are snapshotted into an Envelope; in **replay + stub** mode your
-function does not run and Chronicle returns the recorded output. A cut-point is
-simply the one boundary you flip back to live so you can test new code against
-real upstream inputs.
+One decorator, two behaviors: in **live** mode your function runs and its
+input/output are recorded into an Envelope; in **replay + stub** mode it does not
+run and Chronicle returns the recorded output. A cut-point is the one boundary you
+flip back to live to test new code against real upstream inputs.
 
 ## Verification layers
 
