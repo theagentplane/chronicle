@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-07-22
+
+### Fixed
+- `chronicle --version` crashed on the installed CLI with `'chronicle' is not
+  installed`, because the version was resolved by import name rather than the
+  `agent-chronicle` distribution. It is now passed explicitly, so it works in
+  source, editable, and wheel installs.
+
 ## [0.1.0] - 2026-07-22
 
 ### Added
@@ -29,5 +37,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenInference / Arize Phoenix normalization and optional LangGraph node
   wrapping.
 
-[Unreleased]: https://github.com/theagentplane/chronicle/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/theagentplane/chronicle/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/theagentplane/chronicle/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/theagentplane/chronicle/releases/tag/v0.1.0
