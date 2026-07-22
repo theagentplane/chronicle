@@ -68,12 +68,13 @@ pip install agent-chronicle
 
 ## Quick start
 
-The primary API is one decorator. Annotate a decision boundary once; it records
-in live mode and stubs from a fixture in replay mode.
+Annotate a decision boundary once with `@boundary`; it records in live mode and
+stubs from a fixture in replay mode. Record a run, and freeze it as a committed
+fixture, in a single block:
 
 ```python
-from chronicle import boundary, reset_session, ReplayPlan
-from chronicle.envelope.store import EnvelopeStore
+import chronicle
+from chronicle import boundary
 
 @boundary("agent", kind="llm")
 def agent_plan(state: dict) -> dict:
@@ -83,15 +84,16 @@ def agent_plan(state: dict) -> dict:
 def delete_file(path: str, environment: str) -> dict:
     ...
 
-# 1. Record a run (live mode is the default)
-session = reset_session()
-session.store = EnvelopeStore(".chronicle/runs/incident.jsonl")
-session.begin_trace("trace-001")
-run_agent(...)
-
-# 2. Freeze it as a committed fixture
-session.export_trace("fixtures/traces/incident-001/")
+with chronicle.record(
+    "incident-001",
+    store=".chronicle/runs/incident.jsonl",
+    export="fixtures/traces/incident-001/",
+):
+    run_agent(...)
 ```
+
+`record()` wraps `reset_session()`; drop to the session API when you need finer
+control.
 
 ### Cut-point replay
 
@@ -100,17 +102,18 @@ boundaries are stubbed from the fixture, your changed boundary runs live, and yo
 assert on its captured result.
 
 ```python
-session = reset_session()
-session.load_trace("fixtures/traces/deletion-incident-001/")
-session.enable_replay(
+import chronicle
+from chronicle import ReplayPlan
+
+with chronicle.replay_trace(
+    "fixtures/traces/deletion-incident-001/",
     ReplayPlan()
     .stub("agent", 1)          # upstream: frozen from fixture
     .live("delete_file", 1)    # cut-point: run new code
     .live("agent", 2)          # downstream: observe the effect
-)
-run_agent(...)
-
-assert session.captured_result("delete_file", 1)["blocked"] is True
+) as session:
+    run_agent(...)
+    assert session.captured_result("delete_file", 1)["blocked"] is True
 ```
 
 One decorator, two behaviors: in **live** mode your function runs and its
@@ -260,6 +263,13 @@ scripts/                   # demo and test runners
 tests/                     # unit + e2e
 ```
 
+## Talks and writing
+
+This work was presented at the **AI Engineer World's Fair 2026**.
+
+- [Your Agent Failed in Prod. Good Luck Reproducing It](https://dev.to/tisha/your-agent-failed-in-prod-good-luck-reproducing-it-56ci): why record and replay beats forcing determinism.
+- [You Recorded the Incident. Now Prove Your Fix Actually Works](https://dev.to/tisha/you-recorded-the-incident-now-prove-your-fix-actually-works-2cni): cut-point replay, turning an incident into a regression test.
+
 ## Contributing
 
 Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup,
@@ -292,3 +302,7 @@ roles, tool names, argument keys) while masking the values. Add your own
 ## License
 
 [MIT](LICENSE.txt) (c) 2026 Susheem Koul and Tisha Chawla.
+
+---
+
+If Chronicle saves you a debugging session, please [star the repo](https://github.com/theagentplane/chronicle) so more people can find it.

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `chronicle.record()` and `chronicle.replay_trace()` context managers that
+  collapse session setup (reset, attach store, begin or load trace, enable
+  replay) into a single `with` block. No behavior change; the same
+  `ChronicleSession` is yielded for finer control.
+
 ## [0.1.1] - 2026-07-22
 
 ### Fixed
