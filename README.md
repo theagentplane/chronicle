@@ -1,8 +1,9 @@
 <div align="center">
 
-![Chronicle](docs/banner.png)
+# Chronicle
 
-**Turn a production agent failure into a committed regression test, and re-run your fix without live LLM calls.**
+**Record-and-replay for agent decision graphs.**<br>
+Turn a production agent failure into a committed regression test, and re-run your fix without live LLM calls.
 
 [![CI](https://github.com/theagentplane/chronicle/actions/workflows/ci.yml/badge.svg)](https://github.com/theagentplane/chronicle/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/agent-chronicle.svg)](https://pypi.org/project/agent-chronicle/)
@@ -12,7 +13,8 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Stars](https://img.shields.io/github/stars/theagentplane/chronicle?style=flat&color=yellow)](https://github.com/theagentplane/chronicle/stargazers)
 
-![Chronicle: record an incident, then verify the fix with a cut-point test](docs/demo.gif)
+<img src="docs/demo.gif" alt="Chronicle: record an incident, then verify the fix with a cut-point test" width="760">
+
 
 [Watch the full walkthrough](https://www.youtube.com/watch?v=Lc8zRh9muoY)
 
