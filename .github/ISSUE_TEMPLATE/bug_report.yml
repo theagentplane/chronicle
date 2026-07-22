@@ -1,0 +1,36 @@
+name: Bug report
+description: Something in Chronicle behaves incorrectly (recording, replay, cut-point, judge, CLI).
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: Minimal steps or a code snippet. If it involves a fixture, attach or paste the relevant envelope.
+      placeholder: |
+        1. Record with `@boundary(...)`
+        2. Replay with `ReplayPlan().stub(...).live(...)`
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Chronicle version
+      description: Output of `pip show agent-chronicle` (or the commit SHA).
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: "3.11"
+    validations:
+      required: true
