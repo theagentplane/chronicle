@@ -305,4 +305,4 @@ roles, tool names, argument keys) while masking the values. Add your own
 
 ---
 
-If Chronicle saves you a debugging session, please [star the repo](https://github.com/theagentplane/chronicle) so more people can find it.
+If Chronicle saves you a debugging session, please [⭐ star the repo](https://github.com/theagentplane/chronicle) so more people can find it.
