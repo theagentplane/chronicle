@@ -1,51 +1,74 @@
+# Requires a recent build backend that understands SPDX license expressions
+# (hatchling >= 1.27). If your tooling is older, replace the `license` line with
+# license = { text = "MIT" } and add the MIT classifier below.
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "chronicle"
+name = "agent-chronicle"
 version = "0.1.0"
-description = "Agent Data Recorder and Verification Test Bench for replayable agent debugging"
+description = "Record-and-replay for agent decision graphs: reproduce a prod agent failure as a committed regression test — and re-run your fix without live LLM calls."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Tisha Chawla" },
+    { name = "Susheem Koul" },
+]
+keywords = [
+    "llm",
+    "agents",
+    "observability",
+    "record-replay",
+    "testing",
+    "regression",
+    "opentelemetry",
+    "openinference",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Software Development :: Quality Assurance",
+]
 dependencies = [
-    "pydantic>=2.0",
-    "opentelemetry-api>=1.20",
-    "opentelemetry-sdk>=1.20",
-    "openinference-instrumentation>=0.1.12",
-    "openinference-semantic-conventions>=0.1.9",
-    "click>=8.0",
+    # TODO: pin the real runtime dependencies, e.g.:
+    # "openinference-instrumentation>=0.1",
+    # "arize-phoenix-otel>=0.6",
 ]
 
 [project.optional-dependencies]
-langgraph = [
-    "langgraph>=0.2",
-    "langchain-core>=0.3",
-    "openinference-instrumentation-langchain>=0.1.20",
-]
-phoenix = [
-    "arize-phoenix>=4.0",
-    "opentelemetry-exporter-otlp>=1.20",
-]
-judge = [
-    "openai>=1.0",
-]
 dev = [
-    "pytest>=8.0",
-    "pytest-asyncio>=0.24",
-    "chronicle[langgraph,judge]",
+    "pytest>=8",
+    "ruff>=0.6",
+    "build>=1.2",
 ]
 
+[project.urls]
+Homepage = "https://github.com/theagentplane/chronicle"
+Repository = "https://github.com/theagentplane/chronicle"
+Issues = "https://github.com/theagentplane/chronicle/issues"
+Changelog = "https://github.com/theagentplane/chronicle/blob/main/CHANGELOG.md"
+
+# Keeps the CLI command `chronicle` even though the PyPI package is `agent-chronicle`.
 [project.scripts]
 chronicle = "chronicle.cli:main"
 
+# The installable import package stays `chronicle/`.
 [tool.hatch.build.targets.wheel]
 packages = ["chronicle"]
 
+[tool.ruff]
+line-length = 100
+
 [tool.pytest.ini_options]
-testpaths = ["tests"]
 markers = [
-    "layer1: deterministic replay tests (no LLM API calls)",
-    "layer2: LLM-as-judge evaluation tests",
+    "layer1: deterministic structural replay (never calls the LLM)",
 ]
