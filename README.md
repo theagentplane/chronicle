@@ -267,9 +267,21 @@ our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Security
 
-Chronicle captures prompts, agent state, and retrieved context. Before recording
-production traffic, read the data-handling guidance in [SECURITY.md](SECURITY.md)
-and report vulnerabilities privately per that policy.
+Chronicle captures prompts, agent state, and retrieved context, so a recording can
+contain secrets. Turn on redaction before recording production traffic, so nothing
+sensitive reaches a committed fixture:
+
+```python
+import chronicle
+
+session = chronicle.reset_session()
+session.redactors = chronicle.default_redactors()   # mask API keys, tokens, JWTs
+```
+
+Redaction runs at record time and keeps the structure your tests assert on (message
+roles, tool names, argument keys) while masking the values. Add your own
+`(str) -> str` redactors for PII. Read the data-handling guidance in
+[SECURITY.md](SECURITY.md) and report vulnerabilities privately per that policy.
 
 ## Contact
 

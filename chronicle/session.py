@@ -54,6 +54,10 @@ class ChronicleSession:
     # Optional observer for boundary crossings (LIVE record + LIVE cut-point).
     # Signature: (boundary_id, kind, input_state, result) -> None
     on_crossing: Callable[[str, str, InputState, Any], None] | None = None
+    # Applied to each envelope before it is retained or stored, so secrets never
+    # reach a committed fixture. Empty by default; set to default_redactors() or
+    # your own. Signature: (str) -> str. See chronicle.redaction.
+    redactors: list[Callable[[str], str]] = field(default_factory=list)
 
     _sequence: int = 0
     _invocation_counts: dict[str, int] = field(default_factory=dict)
@@ -157,6 +161,11 @@ class ChronicleSession:
             input_state=input_state,
             action_result=action_result,
         )
+
+        if self.redactors:
+            from chronicle.redaction import apply_redactors
+
+            envelope = apply_redactors(envelope, self.redactors)
 
         self._push_envelope(envelope.envelope_id)
         try:
