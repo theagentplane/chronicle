@@ -5,7 +5,7 @@
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://pypi.org/project/agent-chronicle/)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md)
 
-Chronicle captures the execution DNA of your agents through record-and-replay for agent decision graphs. It records granular decision states including model versions, retrieval snapshots, tool schemas, and environment context; enabling accurate traces that allow you to navigate your agentic terrain with absolute observability.
+Chronicle captures the execution DNA of your agents through record-and-replay for agent decision graphs. It records granular decision states including model versions, retrieval snapshots, tool schemas, and environment context; so you can reproduce a prod agent failure as a committed regression test, and re-run your fix without live LLM calls.
 
 ## Architecture
 
