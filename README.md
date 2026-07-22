@@ -1,6 +1,7 @@
 <div align="center">
 
-![Chronicle](docs/banner.png)
+<img src="docs/banner.png" alt="Chronicle" width="520">
+
 
 **Turn a production agent failure into a committed regression test, and re-run your fix without live LLM calls.**
 
