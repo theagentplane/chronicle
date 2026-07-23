@@ -265,8 +265,8 @@ See `examples/langgraph_demo/agent.py`.
 
 ## Cost and governance observers (`on_crossing`)
 
-Chronicle does not embed cost management. External systems (for example TokenOps)
-attach an observer that fires after each live crossing:
+Chronicle is the tracer; governors subscribe via `on_crossing`. External systems
+(for example TokenOps) attach an observer that fires after each live crossing:
 
 ```python
 session = reset_session()
@@ -276,6 +276,26 @@ session.on_crossing = my_observer  # (boundary_id, kind, input_state, result) ->
 It runs after a live envelope record and a live cut-point capture, and does not
 run on stub replay. See `tests/test_cost_management_e2e.py` for an end-to-end
 ledger and budget pattern.
+
+### Wrapping LLM dispatch (`wrap_llm`)
+
+When the LLM entry point is a callable (not a decorate-able function), use
+`wrap_llm` — same record + `on_crossing` contract as `@boundary(..., kind="llm")`:
+
+```python
+from chronicle import wrap_llm
+
+def complete(provider, model, messages, **kwargs):
+    ...
+
+traced = wrap_llm("agent.chat", complete)
+# LIVE: executes, records envelope kind=llm, fires on_crossing
+# REPLAY stub: returns fixture without calling complete
+result = traced("openai", "gpt-4o-mini", [{"role": "user", "content": "hi"}])
+```
+
+Also accepts `(messages) -> result`. Pass `extract_input` / `extract_result` /
+`extract_metadata` when the signature differs.
 
 ## Environment variables
 
@@ -292,7 +312,7 @@ under `examples/`; committed regression traces live in `fixtures/`.
 
 ```
 chronicle/                 # installable package
-├── boundary.py            # @boundary decorator (record + replay + cut-point)
+├── boundary.py            # @boundary + wrap_llm (record + replay + cut-point)
 ├── session.py             # runtime session, on_crossing hook, stub/live modes
 ├── execution_graph.py     # side graph builder (load/save/render)
 ├── visualizer.py          # HTML trace UI (library + CLI)

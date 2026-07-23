@@ -1,7 +1,7 @@
 """Chronicle: Agent Data Recorder and Verification Test Bench."""
 
 from chronicle.api import record, replay_trace
-from chronicle.boundary import boundary
+from chronicle.boundary import boundary, wrap_llm
 from chronicle.envelope.schema import (
     ActionResult,
     ContextMetadata,
@@ -17,12 +17,13 @@ from chronicle.redaction import apply_redactors, default_redactors, redact_secre
 from chronicle.replay.plan import BoundaryMode, ReplayPlan
 from chronicle.session import ChronicleSession, SessionMode, get_session, reset_session
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 
 __all__ = [
     "ActionResult",
     "apply_redactors",
     "boundary",
+    "wrap_llm",
     "BoundaryMode",
     "ChronicleSession",
     "ContextMetadata",
