@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-07-23
+
+### Added
+- `chronicle.wrap_llm(boundary_id, dispatch, ...)` — wrap an LLM callable with the
+  same LIVE / stub / cut-point + `on_crossing` contract as `@boundary(..., kind="llm")`,
+  so governors (e.g. TokenOps) can subscribe without a parallel tracer.
+
 ## [0.1.2] - 2026-07-23
 
 ### Added
@@ -45,7 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenInference / Arize Phoenix normalization and optional LangGraph node
   wrapping.
 
-[Unreleased]: https://github.com/theagentplane/chronicle/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/theagentplane/chronicle/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/theagentplane/chronicle/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/theagentplane/chronicle/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/theagentplane/chronicle/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/theagentplane/chronicle/releases/tag/v0.1.0

@@ -41,28 +41,86 @@ def boundary(
     """
 
     def decorator(fn: F) -> F:
-        @functools.wraps(fn)
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
-            session = get_session()
-
-            if session.mode == SessionMode.LIVE:
-                return _record_call(
-                    session, fn, boundary_id, kind, args, kwargs,
-                    extract_input, extract_result, extract_metadata,
-                )
-
-            invocation_index = session._replay_cursor.get(boundary_id, 0) + 1
-            if session.replay_plan.should_stub(boundary_id, invocation_index):
-                return session.stub_result(boundary_id, kind)
-
-            return _live_cutpoint_call(
-                session, fn, boundary_id, kind, args, kwargs,
-                extract_input, extract_result, invocation_index,
-            )
-
-        return wrapper  # type: ignore[return-value]
+        return _bind_boundary(  # type: ignore[return-value]
+            fn,
+            boundary_id,
+            kind,
+            extract_input=extract_input,
+            extract_result=extract_result,
+            extract_metadata=extract_metadata,
+        )
 
     return decorator
+
+
+def wrap_llm(
+    boundary_id: str,
+    dispatch: Callable[..., Any],
+    *,
+    extract_input: Callable[..., InputState] | None = None,
+    extract_result: Callable[[Any], Any] | None = None,
+    extract_metadata: Callable[[Any], Mapping[str, Any]] | None = None,
+) -> Callable[..., Any]:
+    """Wrap an LLM callable with Chronicle tracing (``kind="llm"``).
+
+    Chronicle owns the tracer; governors subscribe via ``session.on_crossing``.
+    Same LIVE / stub-replay / live cut-point contract as
+    ``@boundary(..., kind="llm")``: execute + record envelope, then fire
+    ``on_crossing(boundary_id, kind, input_state, result)``.
+
+    Prefer this when the LLM entry point is a dispatch function rather than a
+    named method you can decorate (e.g. TokenOps ``wrap_complete`` bridging).
+
+    Common dispatch shapes (default ``extract_input`` handles these):
+
+    - ``(messages) -> result`` / ``(messages, **kwargs) -> result``
+    - ``(provider, model, messages, **kwargs) -> result``
+    - graph-state ``({"messages": ...},) -> result`` (same as ``@boundary``)
+
+    Pass ``extract_input`` / ``extract_result`` / ``extract_metadata`` when the
+    callable does not match those shapes.
+    """
+    return _bind_boundary(
+        dispatch,
+        boundary_id,
+        "llm",
+        extract_input=extract_input if extract_input is not None else _llm_default_input,
+        extract_result=extract_result,
+        extract_metadata=extract_metadata,
+    )
+
+
+def _bind_boundary(
+    fn: Callable[..., Any],
+    boundary_id: str,
+    kind: str,
+    *,
+    extract_input: Callable[..., InputState] | None,
+    extract_result: Callable[[Any], Any] | None,
+    extract_metadata: Callable[[Any], Mapping[str, Any]] | None,
+) -> Callable[..., Any]:
+    """Shared LIVE / replay wrapper used by ``@boundary`` and ``wrap_llm``."""
+
+    @functools.wraps(fn)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        session = get_session()
+
+        if session.mode == SessionMode.LIVE:
+            return _record_call(
+                session, fn, boundary_id, kind, args, kwargs,
+                extract_input, extract_result, extract_metadata,
+            )
+
+        invocation_index = session._replay_cursor.get(boundary_id, 0) + 1
+        if session.replay_plan.should_stub(boundary_id, invocation_index):
+            return session.stub_result(boundary_id, kind)
+
+        return _live_cutpoint_call(
+            session, fn, boundary_id, kind, args, kwargs,
+            extract_input, extract_result, invocation_index,
+        )
+
+    return wrapper
 
 
 def _default_input_state(args: tuple, kwargs: dict) -> InputState:
@@ -83,6 +141,49 @@ def _default_input_state(args: tuple, kwargs: dict) -> InputState:
         system_prompt=graph_state.get("system_prompt"),
         graph_state=graph_state,
     )
+
+
+def _llm_default_input(*args: Any, **kwargs: Any) -> InputState:
+    """Best-effort ``InputState`` for common LLM dispatch signatures."""
+    if "messages" in kwargs:
+        messages = list(kwargs["messages"])
+        graph_state = dict(kwargs)
+        graph_state["messages"] = messages
+        return InputState(
+            messages=messages,
+            system_prompt=graph_state.get("system_prompt"),
+            graph_state=graph_state,
+        )
+
+    if args and isinstance(args[0], dict):
+        return _default_input_state(args, kwargs)
+
+    if len(args) >= 3 and isinstance(args[2], (list, tuple)):
+        # (provider, model, messages, **kwargs)
+        messages = list(args[2])
+        graph_state: dict[str, Any] = {
+            "provider": args[0],
+            "model": args[1],
+            "messages": messages,
+            **kwargs,
+        }
+        return InputState(
+            messages=messages,
+            system_prompt=graph_state.get("system_prompt"),
+            graph_state=graph_state,
+        )
+
+    if args and isinstance(args[0], (list, tuple)):
+        # (messages) or (messages, **kwargs)
+        messages = list(args[0])
+        graph_state = {"messages": messages, **kwargs}
+        return InputState(
+            messages=messages,
+            system_prompt=graph_state.get("system_prompt"),
+            graph_state=graph_state,
+        )
+
+    return _default_input_state(args, kwargs)
 
 
 def _record_call(session, fn, boundary_id, kind, args, kwargs, extract_input, extract_result, extract_metadata):
