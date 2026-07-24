@@ -28,7 +28,7 @@ deterministically from recorded incidents.
 **New here?** The [step-by-step onboarding guide](https://github.com/theagentplane/chronicle/blob/main/docs/onboarding.md)
 walks you from install to a committed regression test.
 
-**[Why](#why-chronicle) · [Architecture](#architecture) · [Install](#install) · [Quick start](#quick-start) · [Verification](#verification-layers) · [Demos](#demos) · [Comparison](#how-chronicle-compares) · [CLI](#cli) · [Roadmap](#roadmap) · [FAQ](#faq)**
+**[Why](#why-chronicle) · [Architecture](#architecture) · [Install](#install) · [Quick start](#quick-start) · [Cut-point replay](#cut-point-replay) · [Recording entry points](#recording-entry-points) · [Verification](#verification-layers) · [Demos](#demos) · [Comparison](#how-chronicle-compares) · [FAQ](#faq)**
 
 ## Why Chronicle
 
@@ -74,23 +74,29 @@ flowchart LR
 | Action / result | Structured tool calls and model completion |
 | Graph linkage | `parent_envelope_id`, `sequence`, `invocation_index` for retries |
 
+An Envelope records a boundary's **I/O**: the input that went in and the result that
+came back. It treats the boundary as a black box and does **not** capture the side
+effects that run *inside* it (files written, network calls, database writes,
+wall-clock time). Replaying a stubbed boundary returns the recorded result without
+re-running the code, which is exactly why replay is safe and deterministic.
+
 Optional OpenInference and Arize Phoenix integrations feed framework-agnostic
 tracing into this same envelope format.
 
 ## Install
 
 ```bash
-# From source (development):
-pip install -e ".[dev]"
-
 # From PyPI:
 pip install agent-chronicle
+
+# From source (development):
+pip install -e ".[dev]"
 ```
 
 ## Quick start
 
-The fastest start is to **wrap your LLM client**: no decorators, and every model
-call is recorded and replayable:
+**1. Wrap your LLM client.** No decorators. Every model call is recorded, and in
+replay it is served back from the fixture with no API call:
 
 ```python
 import chronicle
@@ -100,13 +106,18 @@ client = chronicle.wrap(OpenAI())
 client.chat.completions.create(model="gpt-4o", messages=[...])   # recorded
 ```
 
-For control over what counts as a boundary, annotate the functions that call the
-model or a tool with `@boundary`; it records in live mode and stubs from a fixture
-in replay mode. Record a run, and freeze it as a committed fixture, in a single
-block:
+> **What Chronicle captures:** the **input and the return value** at each boundary
+> (its I/O), plus metadata like model version, sampling params, and token usage.
+> Chronicle treats your boundary as a black box and does **not** capture the side
+> effects that run *inside* it (a real file delete, an API POST, a database write,
+> wall-clock time). That is what makes replay safe: a stubbed boundary returns the
+> recorded output without re-running your code, so no side effect fires again.
+
+**2. Or mark your own boundaries** with `@boundary`, for exact control over what
+counts as an LLM, tool, or routing decision. It records in live mode and stubs from
+the fixture in replay mode:
 
 ```python
-import chronicle
 from chronicle import boundary
 
 @boundary("agent", kind="llm")
@@ -116,6 +127,16 @@ def agent_plan(state: dict) -> dict:
 @boundary("delete_file", kind="tool")
 def delete_file(path: str, environment: str) -> dict:
     ...
+```
+
+`@boundary` works on `async def` too, and it is **transparent**: it never changes
+what your function returns or raises. A bare `@boundary` records the call by argument
+name, so extractors are an optional way to trim payloads, never a requirement.
+
+**3. Record a run and freeze it as a committed fixture** in one block:
+
+```python
+import chronicle
 
 with chronicle.record(
     "incident-001",
@@ -125,10 +146,21 @@ with chronicle.record(
     run_agent(...)
 ```
 
-`record()` wraps `reset_session()`; drop to the session API when you need finer
-control.
+`record()` wraps `reset_session()`; drop to the session API when you need finer control.
 
-### Cut-point replay
+### Which entry point should I record with?
+
+Pick by what you already have. All four produce the **same Envelopes**, the same
+`ReplayPlan`, and the same `on_crossing` hook, so nothing downstream changes.
+
+| You have | Use |
+|---|---|
+| An OpenAI- or Anthropic-style client | [`chronicle.wrap(client)`](#recording-entry-points) |
+| A function you can edit | `@boundary("name", kind=...)` (above) |
+| A model call that is a plain function you pass around | [`wrap_llm("name", fn)`](#recording-entry-points) |
+| LangGraph nodes | [`chronicle.instrument_langgraph(nodes)`](#recording-entry-points) |
+
+## Cut-point replay
 
 Test a fix in one boundary while the rest of the incident stays frozen. Upstream
 boundaries are stubbed from the fixture, your changed boundary runs live, and you
@@ -149,14 +181,79 @@ with chronicle.replay_trace(
     assert session.captured_result("delete_file", 1)["blocked"] is True
 ```
 
-One decorator, two behaviors: in **live** mode your function runs and its
-input/output are recorded into an Envelope; in **replay + stub** mode it does not
-run and Chronicle returns the recorded output. A cut-point is the one boundary you
-flip back to live to test new code against real upstream inputs.
+One boundary, two behaviors: in **live** mode your function runs and its I/O is
+recorded into an Envelope; in **replay + stub** mode it does not run and Chronicle
+returns the recorded output. A **cut-point** is the one boundary you flip back to
+live to test new code against real, recorded upstream inputs.
 
-`@boundary` works on `async def` too, and it is **transparent**: it never changes
-what your function returns or raises. Bare `@boundary` records the call by argument
-name, so extractors are an optional way to trim payloads, not a requirement.
+## Recording entry points
+
+`@boundary` (above) is the explicit way to mark a boundary. Three helpers cover the
+common cases where you would rather not decorate by hand. All of them record the same
+Envelopes and replay the same way.
+
+### `wrap(client)`: an OpenAI- or Anthropic-style client
+
+```python
+client = chronicle.wrap(OpenAI())
+client.chat.completions.create(model="gpt-4o", messages=[...])   # recorded
+```
+
+Wraps the client's completion method in place and returns the client. Transparent in
+live mode (you get the real response); in replay it returns the recorded response with
+attribute and index access (`resp.choices[0].message.content`) and makes no API call.
+
+### `wrap_llm(name, fn)`: a model call that is a plain function
+
+Use this when your model call is a **plain function you pass around** (not a client,
+and not a named function you can decorate):
+
+```python
+from chronicle import wrap_llm
+
+def complete(model, messages, **kwargs):
+    ...                                    # your function that calls the model
+
+complete = wrap_llm("llm", complete)       # now it records and replays
+result = complete("gpt-4o", [{"role": "user", "content": "hi"}])
+```
+
+- **Live:** runs `complete`, records an `llm` Envelope (with model and token usage).
+- **Replay (stubbed):** returns the recorded result without calling `complete`.
+
+It reads `messages` (and `model` / `provider` if present) from the arguments
+automatically. Pass `extract_input` only if the signature is unusual.
+
+### `instrument_langgraph(nodes)`: every LangGraph node at once
+
+```python
+nodes = chronicle.instrument_langgraph({"agent": agent_node, "tools": tool_node})
+for name, fn in nodes.items():
+    graph.add_node(name, fn)
+```
+
+Wraps each node as a `@boundary` in one call (async nodes supported). Use
+`kind="llm"` for nodes that call a model so their Envelopes capture model metadata.
+
+<details>
+<summary><b>Lower-level: EnvelopeRecorder</b></summary>
+
+```python
+from chronicle.envelope.capture import EnvelopeRecorder
+from chronicle.envelope.store import EnvelopeStore
+from chronicle.instrumentation import instrument_graph_nodes
+
+recorder = EnvelopeRecorder(
+    store=EnvelopeStore(".chronicle/runs/envelopes.jsonl"),
+    model_version="gpt-4o-2024-08-06",
+    build_id="deploy-abc123",
+)
+wrapped_nodes = instrument_graph_nodes(recorder, {"agent": agent_node})
+```
+
+See `examples/langgraph_demo/agent.py`.
+
+</details>
 
 ## Verification layers
 
@@ -260,39 +357,6 @@ chronicle list-fixtures                             # list committed envelope fi
 
 </details>
 
-## LangGraph integration (optional)
-
-Wrap every node in one call, so each records and replays via `@boundary` (async
-nodes supported):
-
-```python
-import chronicle
-
-nodes = chronicle.instrument_langgraph({"agent": agent_node, "tools": tool_node})
-for name, fn in nodes.items():
-    graph.add_node(name, fn)
-```
-
-<details>
-<summary><b>Lower-level: EnvelopeRecorder</b></summary>
-
-```python
-from chronicle.envelope.capture import EnvelopeRecorder
-from chronicle.envelope.store import EnvelopeStore
-from chronicle.instrumentation import instrument_graph_nodes
-
-recorder = EnvelopeRecorder(
-    store=EnvelopeStore(".chronicle/runs/envelopes.jsonl"),
-    model_version="gpt-4o-2024-08-06",
-    build_id="deploy-abc123",
-)
-wrapped_nodes = instrument_graph_nodes(recorder, {"agent": agent_node})
-```
-
-See `examples/langgraph_demo/agent.py`.
-
-</details>
-
 ## Cost and governance observers (`on_crossing`)
 
 Chronicle is the tracer; governors subscribe via `on_crossing`. External systems
@@ -306,26 +370,6 @@ session.on_crossing = my_observer  # (boundary_id, kind, input_state, result) ->
 It runs after a live envelope record and a live cut-point capture, and does not
 run on stub replay. See `tests/test_cost_management_e2e.py` for an end-to-end
 ledger and budget pattern.
-
-### Wrapping LLM dispatch (`wrap_llm`)
-
-When the LLM entry point is a callable (not a decorate-able function), use
-`wrap_llm` gives the same record + `on_crossing` contract as `@boundary(..., kind="llm")`:
-
-```python
-from chronicle import wrap_llm
-
-def complete(provider, model, messages, **kwargs):
-    ...
-
-traced = wrap_llm("agent.chat", complete)
-# LIVE: executes, records envelope kind=llm, fires on_crossing
-# REPLAY stub: returns fixture without calling complete
-result = traced("openai", "gpt-4o-mini", [{"role": "user", "content": "hi"}])
-```
-
-Also accepts `(messages) -> result`. Pass `extract_input` / `extract_result` /
-`extract_metadata` when the signature differs.
 
 ## Environment variables
 
