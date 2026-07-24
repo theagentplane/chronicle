@@ -68,7 +68,7 @@ judge = [
 ]
 dev = [
     "pytest>=8",
-    "ruff>=0.6",
+    "ruff==0.15.22",
     "build>=1.2",
     "agent-chronicle[langgraph,phoenix,judge]",
 ]
