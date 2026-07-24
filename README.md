@@ -8,11 +8,11 @@ Turn a production agent failure into a committed regression test, and re-run you
 [![CI](https://github.com/theagentplane/chronicle/actions/workflows/ci.yml/badge.svg)](https://github.com/theagentplane/chronicle/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/agent-chronicle.svg)](https://pypi.org/project/agent-chronicle/)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://pypi.org/project/agent-chronicle/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE.txt)
+[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](https://github.com/theagentplane/chronicle/blob/main/LICENSE.txt)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Stars](https://img.shields.io/github/stars/theagentplane/chronicle?style=flat&color=yellow)](https://github.com/theagentplane/chronicle/stargazers)
 
-<img src="docs/demo.gif" alt="Chronicle: record an incident, then verify the fix with a cut-point test" width="760">
+<img src="https://raw.githubusercontent.com/theagentplane/chronicle/main/docs/demo.gif" alt="Chronicle: record an incident, then verify the fix with a cut-point test" width="760">
 
 
 [Watch the full walkthrough](https://www.youtube.com/watch?v=Lc8zRh9muoY)
@@ -347,9 +347,9 @@ Ideas and priorities are welcome in [Discussions](https://github.com/theagentpla
 
 ## Contributing
 
-Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup,
+Contributions are welcome. See [CONTRIBUTING.md](https://github.com/theagentplane/chronicle/blob/main/CONTRIBUTING.md) for dev setup,
 the DCO sign-off, and the record-and-replay reviewer checklist, and please read
-our [Code of Conduct](CODE_OF_CONDUCT.md).
+our [Code of Conduct](https://github.com/theagentplane/chronicle/blob/main/CODE_OF_CONDUCT.md).
 
 ## Security
 
@@ -367,7 +367,7 @@ session.redactors = chronicle.default_redactors()   # mask API keys, tokens, JWT
 Redaction runs at record time and keeps the structure your tests assert on (message
 roles, tool names, argument keys) while masking the values. Add your own
 `(str) -> str` redactors for PII. Read the data-handling guidance in
-[SECURITY.md](SECURITY.md) and report vulnerabilities privately per that policy.
+[SECURITY.md](https://github.com/theagentplane/chronicle/blob/main/SECURITY.md) and report vulnerabilities privately per that policy.
 
 ## Contributors
 
@@ -376,11 +376,11 @@ Thanks to everyone who has contributed.
 [![Contributors](https://contrib.rocks/image?repo=theagentplane/chronicle)](https://github.com/theagentplane/chronicle/graphs/contributors)
 
 Questions or ideas? Open a [Discussion](https://github.com/theagentplane/chronicle/discussions).
-For security issues, follow [SECURITY.md](SECURITY.md).
+For security issues, follow [SECURITY.md](https://github.com/theagentplane/chronicle/blob/main/SECURITY.md).
 
 ## License
 
-[MIT](LICENSE.txt) (c) 2026 Susheem Koul and Tisha Chawla.
+[MIT](https://github.com/theagentplane/chronicle/blob/main/LICENSE.txt) (c) 2026 Susheem Koul and Tisha Chawla.
 
 ---
 
