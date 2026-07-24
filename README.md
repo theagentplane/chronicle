@@ -25,6 +25,9 @@ regression test and re-run your fix without live LLM calls. The target is one sp
 real problem: control-flow and tool-safety regressions in multi-agent systems, caught
 deterministically from recorded incidents.
 
+**New here?** The [step-by-step onboarding guide](https://github.com/theagentplane/chronicle/blob/main/docs/onboarding.md)
+walks you from install to a committed regression test.
+
 **[Why](#why-chronicle) · [Architecture](#architecture) · [Install](#install) · [Quick start](#quick-start) · [Verification](#verification-layers) · [Demos](#demos) · [Comparison](#how-chronicle-compares) · [CLI](#cli) · [Roadmap](#roadmap) · [FAQ](#faq)**
 
 ## Why Chronicle
