@@ -1,7 +1,7 @@
 # Releasing
 
 Chronicle publishes to PyPI as **`agent-chronicle`** using GitHub Actions with
-**Trusted Publishing (OIDC)** — no API tokens are stored anywhere.
+**Trusted Publishing (OIDC)**, so no API tokens are stored anywhere.
 
 ## One-time setup
 
