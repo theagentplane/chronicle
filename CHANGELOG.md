@@ -7,10 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-23
+
+### Changed
+- `@boundary` is now **transparent**: it never changes what the wrapped function
+  returns or raises. `extract_result` feeds the envelope only; the caller and
+  `on_crossing` always receive the real value. (Fixes a latent bug where the hook
+  silently replaced the return value.)
+- **Zero-config capture** now binds the real signature and records arguments by
+  their real names (skipping `self`), instead of shape-sniffing. `wrap_llm` no
+  longer needs a special extractor. Note: the recorded `graph_state` shape changes
+  for some call patterns, so fixtures recorded before 0.2 may need re-recording.
+
+### Added
+- **Async support**: `async def` boundaries record, stub on replay, and run live at
+  a cut-point exactly like sync ones (via `@boundary` and `wrap_llm`); LangGraph
+  `EnvelopeRecorder.wrap_node` gains the same async path.
+- **Per-request isolation**: the session is context-scoped (`ContextVar`), so
+  concurrent async requests no longer share a trace.
+- **Failure capture**: a boundary that raises records an envelope with the new
+  `ActionResult.error` / `error_type` fields (and `finish_reason="error"`), then
+  re-raises. Optional fields, so pre-0.2 envelopes load unchanged.
+
 ## [0.1.3] - 2026-07-23
 
 ### Added
-- `chronicle.wrap_llm(boundary_id, dispatch, ...)` — wrap an LLM callable with the
+- `chronicle.wrap_llm(boundary_id, dispatch, ...)`: wrap an LLM callable with the
   same LIVE / stub / cut-point + `on_crossing` contract as `@boundary(..., kind="llm")`,
   so governors (e.g. TokenOps) can subscribe without a parallel tracer.
 
@@ -52,7 +74,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenInference / Arize Phoenix normalization and optional LangGraph node
   wrapping.
 
-[Unreleased]: https://github.com/theagentplane/chronicle/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/theagentplane/chronicle/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/theagentplane/chronicle/compare/v0.1.3...v0.2.0
 [0.1.3]: https://github.com/theagentplane/chronicle/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/theagentplane/chronicle/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/theagentplane/chronicle/compare/v0.1.0...v0.1.1

@@ -227,20 +227,24 @@ class ChronicleSession:
         return root
 
 
-_session: ChronicleSession | None = None
+# Context-scoped, not a plain global: concurrent async requests (and threads)
+# each get their own session, so their traces never interleave. Boundaries within
+# one request share the session set at that request's entry.
+_session: ContextVar[ChronicleSession | None] = ContextVar("chronicle_session", default=None)
 
 
 def get_session() -> ChronicleSession:
-    global _session
-    if _session is None:
-        _session = ChronicleSession()
-    return _session
+    session = _session.get()
+    if session is None:
+        session = ChronicleSession()
+        _session.set(session)
+    return session
 
 
 def reset_session() -> ChronicleSession:
-    global _session
-    _session = ChronicleSession()
-    return _session
+    session = ChronicleSession()
+    _session.set(session)
+    return session
 
 
 def envelope_to_return_value(envelope: Envelope, kind: str) -> Any:

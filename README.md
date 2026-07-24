@@ -139,6 +139,10 @@ input/output are recorded into an Envelope; in **replay + stub** mode it does no
 run and Chronicle returns the recorded output. A cut-point is the one boundary you
 flip back to live to test new code against real upstream inputs.
 
+`@boundary` works on `async def` too, and it is **transparent**: it never changes
+what your function returns or raises. Bare `@boundary` records the call by argument
+name, so extractors are an optional way to trim payloads, not a requirement.
+
 ## Verification layers
 
 | Layer | Goal | Mechanism |
@@ -280,7 +284,7 @@ ledger and budget pattern.
 ### Wrapping LLM dispatch (`wrap_llm`)
 
 When the LLM entry point is a callable (not a decorate-able function), use
-`wrap_llm` — same record + `on_crossing` contract as `@boundary(..., kind="llm")`:
+`wrap_llm` gives the same record + `on_crossing` contract as `@boundary(..., kind="llm")`:
 
 ```python
 from chronicle import wrap_llm

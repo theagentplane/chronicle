@@ -17,7 +17,7 @@ from chronicle.redaction import apply_redactors, default_redactors, redact_secre
 from chronicle.replay.plan import BoundaryMode, ReplayPlan
 from chronicle.session import ChronicleSession, SessionMode, get_session, reset_session
 
-__version__ = "0.1.3"
+__version__ = "0.2.0"
 
 __all__ = [
     "ActionResult",
