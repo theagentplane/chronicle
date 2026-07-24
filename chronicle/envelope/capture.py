@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import functools
+import inspect
 import os
 import uuid
 from collections.abc import Callable
@@ -109,33 +110,57 @@ class EnvelopeRecorder:
         """
 
         def decorator(fn: Callable[P, R]) -> Callable[P, R]:
-            @functools.wraps(fn)
-            def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            def _prepare(args, kwargs):
                 state = args[0] if args else kwargs.get("state", {})
                 if not isinstance(state, dict):
                     state = {}
-
                 if extract_input:
-                    input_state = extract_input(state)
-                else:
-                    input_state = InputState(
-                        messages=state.get("messages", []),
-                        system_prompt=state.get("system_prompt"),
-                        rag_chunks=[
-                            RagChunk(**c) if isinstance(c, dict) else c
-                            for c in state.get("rag_chunks", [])
-                        ],
-                        graph_state=state,
-                    )
+                    return state, extract_input(state)
+                return state, InputState(
+                    messages=state.get("messages", []),
+                    system_prompt=state.get("system_prompt"),
+                    rag_chunks=[
+                        RagChunk(**c) if isinstance(c, dict) else c
+                        for c in state.get("rag_chunks", [])
+                    ],
+                    graph_state=state,
+                )
 
-                result = fn(*args, **kwargs)
-
+            def _on_success(state, input_state, result):
                 if extract_result:
                     action_result = extract_result(state, result)
                 else:
                     action_result = _default_extract_result(result)
-
                 self.record(node_id, input_state, action_result)
+
+            def _on_error(input_state, exc):
+                self.record(node_id, input_state, ActionResult(
+                    error=str(exc), error_type=type(exc).__name__, finish_reason="error",
+                ))
+
+            if inspect.iscoroutinefunction(fn):
+                @functools.wraps(fn)
+                async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+                    state, input_state = _prepare(args, kwargs)
+                    try:
+                        result = await fn(*args, **kwargs)
+                    except Exception as exc:
+                        _on_error(input_state, exc)
+                        raise
+                    _on_success(state, input_state, result)
+                    return result
+
+                return async_wrapper  # type: ignore[return-value]
+
+            @functools.wraps(fn)
+            def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+                state, input_state = _prepare(args, kwargs)
+                try:
+                    result = fn(*args, **kwargs)
+                except Exception as exc:
+                    _on_error(input_state, exc)
+                    raise
+                _on_success(state, input_state, result)
                 return result
 
             return wrapper

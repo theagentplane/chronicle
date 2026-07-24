@@ -83,6 +83,10 @@ class ActionResult(BaseModel):
     finish_reason: str | None = None
     token_usage: dict[str, int] = Field(default_factory=dict)
     raw_response: dict[str, Any] | None = None
+    # Set when the boundary raised. Optional and default None, so pre-0.2
+    # envelopes still load unchanged.
+    error: str | None = None
+    error_type: str | None = None
 
 
 class Envelope(BaseModel):
