@@ -44,9 +44,11 @@ def boundary(
     """
     Annotate a decision boundary for Chronicle record and replay.
 
-    LIVE mode:     execute the function, record an envelope, return its real value
+    LIVE mode:     optional ``session.on_enter`` (may abort / patch kwargs), execute
+                   the function, record an envelope, ``on_crossing``, then ``on_leave``
     REPLAY + STUB: return the recorded fixture without executing
     REPLAY + LIVE: execute the function (cut-point), capture input/result for asserts
+                   (``on_enter`` / ``on_leave`` / ``on_crossing`` still apply)
 
     Works on sync functions and ``async def`` coroutines. The wrapper is
     transparent: the caller always gets exactly what the function returned (or the
@@ -160,26 +162,55 @@ def _bind_boundary(
 # Recording (LIVE mode)
 # --------------------------------------------------------------------------- #
 
+def _apply_on_enter(session, boundary_id, kind, input_state, kwargs) -> tuple[dict, bool]:
+    """Run ``on_enter`` if set. Returns ``(call_kwargs, entered)``.
+
+    ``entered`` is True only when ``on_enter`` returned (so ``on_leave`` can pair).
+    A raise from ``on_enter`` (e.g. TokenOps ``Halt``, a ``BaseException``) aborts
+    before the wrapped function and does not mark entered.
+    """
+    call_kwargs = dict(kwargs)
+    if session.on_enter is None:
+        return call_kwargs, False
+    patch = session.on_enter(boundary_id, kind, input_state)
+    if patch:
+        call_kwargs.update(dict(patch))
+    return call_kwargs, True
+
+
+def _run_on_leave(session, boundary_id, kind, input_state, entered: bool) -> None:
+    if entered and session.on_leave is not None:
+        session.on_leave(boundary_id, kind, input_state)
+
+
 def _record_call(session, fn, boundary_id, kind, args, kwargs, extract_input, extract_result, extract_metadata):
     input_state = _capture_input(fn, args, kwargs, extract_input)
+    call_kwargs, entered = _apply_on_enter(session, boundary_id, kind, input_state, kwargs)
     try:
-        result = fn(*args, **kwargs)
-    except Exception as exc:
-        _record_failure(session, boundary_id, kind, input_state, exc)
-        raise
-    _record_success(session, boundary_id, kind, input_state, result, extract_result, extract_metadata)
-    return result
+        try:
+            result = fn(*args, **call_kwargs)
+        except Exception as exc:
+            _record_failure(session, boundary_id, kind, input_state, exc)
+            raise
+        _record_success(session, boundary_id, kind, input_state, result, extract_result, extract_metadata)
+        return result
+    finally:
+        _run_on_leave(session, boundary_id, kind, input_state, entered)
 
 
 async def _record_call_async(session, fn, boundary_id, kind, args, kwargs, extract_input, extract_result, extract_metadata):
     input_state = _capture_input(fn, args, kwargs, extract_input)
+    call_kwargs, entered = _apply_on_enter(session, boundary_id, kind, input_state, kwargs)
     try:
-        result = await fn(*args, **kwargs)
-    except Exception as exc:
-        _record_failure(session, boundary_id, kind, input_state, exc)
-        raise
-    _record_success(session, boundary_id, kind, input_state, result, extract_result, extract_metadata)
-    return result
+        try:
+            result = await fn(*args, **call_kwargs)
+        except Exception as exc:
+            _record_failure(session, boundary_id, kind, input_state, exc)
+            raise
+        _record_success(session, boundary_id, kind, input_state, result, extract_result, extract_metadata)
+        return result
+    finally:
+        _run_on_leave(session, boundary_id, kind, input_state, entered)
 
 
 def _record_success(session, boundary_id, kind, input_state, result, extract_result, extract_metadata):
@@ -228,25 +259,33 @@ def _call_metadata(result, kind, extract_metadata):
 def _live_cutpoint_call(session, fn, boundary_id, kind, args, kwargs, extract_input, invocation_index):
     input_state = _capture_input(fn, args, kwargs, extract_input)
     session.capture_live_input(boundary_id, invocation_index, input_state)
+    call_kwargs, entered = _apply_on_enter(session, boundary_id, kind, input_state, kwargs)
     try:
-        result = fn(*args, **kwargs)
-    except Exception:
-        _advance_cutpoint(session, boundary_id, invocation_index)
-        raise
-    _finish_cutpoint(session, boundary_id, kind, input_state, result, invocation_index)
-    return result
+        try:
+            result = fn(*args, **call_kwargs)
+        except Exception:
+            _advance_cutpoint(session, boundary_id, invocation_index)
+            raise
+        _finish_cutpoint(session, boundary_id, kind, input_state, result, invocation_index)
+        return result
+    finally:
+        _run_on_leave(session, boundary_id, kind, input_state, entered)
 
 
 async def _live_cutpoint_call_async(session, fn, boundary_id, kind, args, kwargs, extract_input, invocation_index):
     input_state = _capture_input(fn, args, kwargs, extract_input)
     session.capture_live_input(boundary_id, invocation_index, input_state)
+    call_kwargs, entered = _apply_on_enter(session, boundary_id, kind, input_state, kwargs)
     try:
-        result = await fn(*args, **kwargs)
-    except Exception:
-        _advance_cutpoint(session, boundary_id, invocation_index)
-        raise
-    _finish_cutpoint(session, boundary_id, kind, input_state, result, invocation_index)
-    return result
+        try:
+            result = await fn(*args, **call_kwargs)
+        except Exception:
+            _advance_cutpoint(session, boundary_id, invocation_index)
+            raise
+        _finish_cutpoint(session, boundary_id, kind, input_state, result, invocation_index)
+        return result
+    finally:
+        _run_on_leave(session, boundary_id, kind, input_state, entered)
 
 
 def _finish_cutpoint(session, boundary_id, kind, input_state, result, invocation_index):
