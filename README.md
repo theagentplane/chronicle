@@ -100,6 +100,10 @@ client = chronicle.wrap(OpenAI())
 client.chat.completions.create(model="gpt-4o", messages=[...])   # recorded
 ```
 
+`wrap` supports OpenAI and Anthropic clients. For any other provider, wrap the call
+with `wrap_llm("llm", your_completion_fn)` or decorate your own function with
+`@boundary`.
+
 For control over what counts as a boundary, annotate the functions that call the
 model or a tool with `@boundary`; it records in live mode and stubs from a fixture
 in replay mode. Record a run, and freeze it as a committed fixture, in a single
@@ -148,6 +152,10 @@ with chronicle.replay_trace(
     run_agent(...)
     assert session.captured_result("delete_file", 1)["blocked"] is True
 ```
+
+**`stub`** returns the recorded output (the boundary is frozen to the incident);
+**`live`** runs your code. You stub everything upstream, and make the boundary you
+are fixing live.
 
 One decorator, two behaviors: in **live** mode your function runs and its
 input/output are recorded into an Envelope; in **replay + stub** mode it does not

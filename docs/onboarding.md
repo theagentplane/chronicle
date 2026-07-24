@@ -18,6 +18,17 @@ input and the output). A whole run is a **trace** (the ordered boundaries).
 **Your only job is to tell Chronicle which functions are boundaries.** That is the
 setup. Everything else is record and replay on top.
 
+The whole loop at a glance:
+
+```mermaid
+flowchart LR
+  A["run_agent()"] --> B["@boundary<br/>agent (llm)"] --> C["@boundary<br/>refund (tool)"]
+  B -. one envelope .-> E[("trace<br/>fixtures/traces/incident-001/")]
+  C -. one envelope .-> E
+  E --> R["replay_trace(...)<br/>in tests/, no LLM"]
+  R --> V["assert<br/>captured_result(...)"]
+```
+
 ---
 
 ## Step 1: Install
@@ -78,7 +89,7 @@ for name, fn in nodes.items():
 
 ---
 
-## First, three things people ask here
+## A few things people ask here
 
 **1. What is `run_agent(...)`?** It is **your** function that runs your agent one
 time. Chronicle does not provide it; it is a stand-in for however you already
@@ -122,6 +133,40 @@ you call agent(state)
 Call `agent` once and `refund` once -> 2 envelopes. A boundary called 3 times in a
 loop -> 3 envelopes (invocation 1, 2, 3). An envelope is the input and output of
 one crossing plus context; it does not capture the inside of your function.
+
+**4. What exactly do I add for a boundary?** Just the decorator: a **name** and a
+**kind**. Nothing else in your function changes.
+
+```python
+from chronicle import boundary
+
+@boundary("refund", kind="tool")   # name: any unique string; kind: "llm" | "tool" | "custom"
+def refund(order_id, amount_cents):
+    ...
+```
+
+The name is how you refer to it later (`ReplayPlan().stub("refund", 1)`). `kind`
+only affects metadata: `"llm"` also auto-captures the model version and sampling
+params from the result.
+
+**5. Does `wrap` work for other LLM providers?** `chronicle.wrap(client)`
+understands two response shapes out of the box:
+
+- **OpenAI**: `client.chat.completions.create(...)`
+- **Anthropic**: `client.messages.create(...)`
+
+For any other provider or call shape (Gemini, Cohere, a local model, a custom HTTP
+client), wrap the **callable** instead of the client:
+
+```python
+from chronicle import wrap_llm
+
+chat = wrap_llm("llm", my_completion_fn)   # then call chat(messages=[...]) as usual
+```
+
+or put a thin function around the call and decorate it with
+`@boundary("llm", kind="llm")`. (Streaming with `stream=True` is not handled by
+`wrap` yet.)
 
 ---
 
@@ -174,8 +219,26 @@ with chronicle.replay_trace(
     assert session.captured_result("refund", 1)["blocked"] is True
 ```
 
-`stub` = use the recorded output. `live` = actually run your code. Your fix sees
-the exact inputs that caused the incident, deterministically, with no LLM cost.
+**What are `stub` and `live`?** They are the two settings a `ReplayPlan` puts on a
+boundary:
+
+- **stub** = the boundary does **not** run; Chronicle returns the output it
+  recorded. The step is frozen to exactly what happened in the incident.
+- **live** = the boundary **runs your current code**.
+
+So you `stub` everything upstream (to reproduce the exact inputs), and set the one
+boundary you are fixing to `live`. With plain `replay_trace(trace)` and no plan,
+**every** boundary is stubbed.
+
+```mermaid
+flowchart LR
+  P["ReplayPlan()"] --> S["stub('agent', 1)<br/>frozen: recorded output"]
+  P --> L["live('refund', 1)<br/>runs your NEW code"]
+  L --> A["assert on its result"]
+```
+
+Your fix sees the exact inputs that caused the incident, deterministically, with no
+LLM cost.
 
 ---
 
