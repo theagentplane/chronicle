@@ -19,7 +19,10 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install ruff
-        run: pip install "ruff>=0.6"
+        # Pinned: an unpinned ruff changes its default rule set between releases
+        # (e.g. 0.16 expanded defaults), which would turn CI red with no code
+        # change. Bump this deliberately when adopting newer rules.
+        run: pip install "ruff==0.15.22"
       - name: Lint
         run: ruff check .
 
