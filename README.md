@@ -315,25 +315,38 @@ It runs after a live envelope record and a live cut-point capture, and does not
 run on stub replay. See `tests/test_cost_management_e2e.py` for an end-to-end
 ledger and budget pattern.
 
-### Wrapping LLM dispatch (`wrap_llm`)
+### `wrap_llm`: record an LLM call that is a plain function
 
-When the LLM entry point is a callable (not a decorate-able function), use
-`wrap_llm` gives the same record + `on_crossing` contract as `@boundary(..., kind="llm")`:
+Use `wrap_llm` when your model call is a **function you pass around**: not an
+OpenAI/Anthropic client (use `wrap` for those), and not a named function you can
+decorate (use `@boundary` for those). It gives that function the same record /
+stub-on-replay / cut-point behavior.
 
 ```python
 from chronicle import wrap_llm
 
-def complete(provider, model, messages, **kwargs):
-    ...
+def complete(model, messages, **kwargs):
+    ...                                    # your existing function that calls the model
 
-traced = wrap_llm("agent.chat", complete)
-# LIVE: executes, records envelope kind=llm, fires on_crossing
-# REPLAY stub: returns fixture without calling complete
-result = traced("openai", "gpt-4o-mini", [{"role": "user", "content": "hi"}])
+complete = wrap_llm("llm", complete)       # now it records and replays
+
+result = complete("gpt-4o", [{"role": "user", "content": "hi"}])   # use it as before
 ```
 
-Also accepts `(messages) -> result`. Pass `extract_input` / `extract_result` /
-`extract_metadata` when the signature differs.
+- **Live run:** executes `complete`, records an envelope (`kind="llm"`, with the
+  model and token usage), and fires `on_crossing`.
+- **Replay (stubbed):** returns the recorded result without calling `complete`.
+
+It reads `messages` (and `model` / `provider` if present) from the arguments
+automatically. Pass `extract_input` only if your function's signature is unusual.
+
+**Which recorder do I use?**
+
+| You have | Use |
+|---|---|
+| An OpenAI or Anthropic client | `chronicle.wrap(client)` |
+| A named function you can edit | `@boundary("name", kind="llm")` |
+| A completion function you pass around, or a provider not auto-detected | `wrap_llm("name", fn)` |
 
 ## Environment variables
 
