@@ -86,9 +86,21 @@ pip install agent-chronicle
 
 ## Quick start
 
-Annotate a decision boundary once with `@boundary`; it records in live mode and
-stubs from a fixture in replay mode. Record a run, and freeze it as a committed
-fixture, in a single block:
+The fastest start is to **wrap your LLM client**: no decorators, and every model
+call is recorded and replayable:
+
+```python
+import chronicle
+from openai import OpenAI
+
+client = chronicle.wrap(OpenAI())
+client.chat.completions.create(model="gpt-4o", messages=[...])   # recorded
+```
+
+For control over what counts as a boundary, annotate the functions that call the
+model or a tool with `@boundary`; it records in live mode and stubs from a fixture
+in replay mode. Record a run, and freeze it as a committed fixture, in a single
+block:
 
 ```python
 import chronicle
@@ -247,8 +259,19 @@ chronicle list-fixtures                             # list committed envelope fi
 
 ## LangGraph integration (optional)
 
+Wrap every node in one call, so each records and replays via `@boundary` (async
+nodes supported):
+
+```python
+import chronicle
+
+nodes = chronicle.instrument_langgraph({"agent": agent_node, "tools": tool_node})
+for name, fn in nodes.items():
+    graph.add_node(name, fn)
+```
+
 <details>
-<summary><b>Wrap LangGraph nodes as an alternative to <code>@boundary</code></b></summary>
+<summary><b>Lower-level: EnvelopeRecorder</b></summary>
 
 ```python
 from chronicle.envelope.capture import EnvelopeRecorder
@@ -342,10 +365,9 @@ This work was presented at the **AI Engineer World's Fair 2026**.
 
 Chronicle is early (0.x), and the Envelope schema may still change. Near-term:
 
-- Drop-in provider capture: `chronicle.wrap(client)` for OpenAI and Anthropic.
-- One-call LangGraph instrumentation (auto-record every node) and a docs site.
 - A pytest plugin so a committed incident becomes a one-decorator regression test.
-- Async generators / streaming (SSE) capture.
+- Auto-instrument a compiled LangGraph app and capture routing / edge decisions.
+- Async generators / streaming (SSE) capture, and a docs site.
 
 Ideas and priorities are welcome in [Discussions](https://github.com/theagentplane/chronicle/discussions).
 
