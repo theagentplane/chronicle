@@ -8,8 +8,8 @@ from chronicle.judge.runner import (
 
 __all__ = [
     "Criterion",
-    "EvaluationRubric",
     "EvaluationResult",
+    "EvaluationRubric",
     "JudgeRunner",
     "MockJudgeClient",
     "OpenAIJudgeClient",
