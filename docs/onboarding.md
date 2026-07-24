@@ -1,80 +1,139 @@
 # Onboarding: record and replay your agent
 
-A step-by-step guide, no assumptions. By the end you will have recorded a run,
-replayed it with no LLM call, tested a fix against the real incident, and turned
-it into a permanent test.
+This guide assumes you have never used Chronicle. It explains every word and shows
+exactly which file each piece of code goes in. By the end you will have saved a run
+of your agent, played it back with no AI call, tested a fix against the real bug,
+and turned it into a test that runs forever.
 
-## 0. The one idea
+## What is Chronicle, in one sentence
 
-An agent (or a multi-agent system) is a series of **decisions**:
+Chronicle is a **flight recorder for your AI agent**. It saves what your agent did,
+so you can play it back later, without calling the AI again, to reproduce a bug and
+prove your fix.
 
-- an **LLM call** (the model decides what to do),
-- a **tool call** (`search`, `query_db`, `refund`, ...),
-- a **routing / hand-off** (which agent or node runs next).
+## Words you will see (plain English)
 
-Chronicle calls each decision a **boundary** and records what crossed it (the
-input and the output). A whole run is a **trace** (the ordered boundaries).
+| Word | What it means |
+|---|---|
+| **LLM / model** | The AI, like GPT-4. It generates text and decides what to do. |
+| **Tool** | A normal function your agent can call: `search`, `refund`, `delete_file`. |
+| **Agent** | Your program that asks the model what to do, calls tools, and repeats. |
+| **Boundary** | One decision point: a single model call, or a single tool call. **You tell Chronicle which of your functions are boundaries.** |
+| **Envelope** | The saved record of **one boundary**: its input and its output. Like one photo. |
+| **Trace** | All the envelopes from **one run**, in order. Like an album of the whole run. |
+| **Fixture** | A trace saved into your project and committed to git, so it can be used as a test. |
+| **Record** | Run your agent once and save everything (produces a trace). |
+| **Replay** | Run the saved trace again. The model does **not** run; Chronicle hands back the saved answers. Fast, free, and identical every time. |
+| **stub** | During replay: a boundary that returns its **saved** answer (frozen). |
+| **live** | During replay: a boundary that **actually runs your code**. |
+| **Cut-point** | Freeze everything (stub) except the one function you fixed (live), to test the fix against the real bug. |
+| **pytest** | The standard tool that runs your Python tests automatically (locally and in CI). |
 
-**Your only job is to tell Chronicle which functions are boundaries.** That is the
-setup. Everything else is record and replay on top.
+Do not worry if some are fuzzy now. They will make sense as you go.
 
-The whole loop at a glance:
+The whole idea in one picture:
 
 ```mermaid
 flowchart LR
   A["run_agent()"] --> B["@boundary<br/>agent (llm)"] --> C["@boundary<br/>refund (tool)"]
-  B -. one envelope .-> E[("trace<br/>fixtures/traces/incident-001/")]
-  C -. one envelope .-> E
-  E --> R["replay_trace(...)<br/>in tests/, no LLM"]
-  R --> V["assert<br/>captured_result(...)"]
+  B -. saves one envelope .-> E[("trace<br/>fixtures/traces/incident-001/")]
+  C -. saves one envelope .-> E
+  E --> R["replay_trace(...)<br/>in tests/, no AI call"]
+  R --> V["assert<br/>the fix worked"]
 ```
+
+---
+
+## Before you start: what is `run_agent(...)`?
+
+Throughout this guide, `run_agent(...)` means **your own function that runs your
+agent one time.** Chronicle does not give you this; you already have some way to
+run your agent, and that is `run_agent`.
+
+Here is a tiny complete agent so the examples are concrete. Put it in a file called
+`agent.py`:
+
+```python
+# agent.py  (this is YOUR code)
+from openai import OpenAI
+
+client = OpenAI()
+
+def agent(state):
+    "Ask the model. It decides to call the refund tool."
+    resp = client.chat.completions.create(model="gpt-4o", messages=state["messages"])
+    # (in a real agent you would parse resp; we hardcode the decision to keep it short)
+    return {"tool": "refund", "order_id": "A-4471", "amount_cents": 9_800_000}
+
+def refund(order_id, amount_cents):
+    "The tool that moves money. Today it has a bug: no limit."
+    return {"status": "refunded", "amount_cents": amount_cents}
+
+def run_agent(question):
+    "Run the whole agent once. THIS is run_agent."
+    decision = agent({"messages": [{"role": "user", "content": question}]})
+    return refund(decision["order_id"], decision["amount_cents"])
+```
+
+The bug: the model asked to refund **$98,000** on a $47 order, and `refund` had no
+limit, so it went through. We will record this, then prove a fix.
 
 ---
 
 ## Step 1: Install
 
+In your terminal:
+
 ```bash
 pip install agent-chronicle
 ```
-```python
-import chronicle
-```
-Requires Python 3.10+. Nothing else to configure.
+
+Then, in any Python file, you can write `import chronicle`. That is the whole
+install. (You need Python 3.10 or newer.)
 
 ---
 
-## Step 2: Mark your boundaries
+## Step 2: Tell Chronicle which functions are boundaries
 
-You mark boundaries because only you know which functions are the meaningful
-decision points. There are three ways; use whichever fits your code.
+Chronicle cannot guess which of your functions are the important decision points.
+**You** point them out. There are three ways. Use whichever matches your code.
 
-| Your setup | Do you mark manually? | How |
-|---|---|---|
-| The **LLM call** (any framework) | No | `client = chronicle.wrap(OpenAI())` |
-| Your **tool / step functions** (plain Python) | Yes, one decorator each | `@boundary("refund", kind="tool")` |
-| **LangGraph** | No | `chronicle.instrument_langgraph(nodes)` |
+### Way A: the model call (wrap the client)
 
-**a) The LLM call: wrap the client where you create it.** No decorators:
+If you use an OpenAI or Anthropic client, wrap it **once, on the line where you
+create it.** After that, every call it makes is recorded. No decorators.
 
 ```python
-from openai import OpenAI
+# agent.py
 import chronicle
+from openai import OpenAI
 
-client = chronicle.wrap(OpenAI())   # do this once, where you build the client
-# every client.chat.completions.create(...) is now recorded
+client = chronicle.wrap(OpenAI())   # <-- the only change
 ```
 
-**b) Your tool / step functions: one decorator on the definition:**
+Using a different provider (Gemini, Cohere, a local model)? See "Other providers"
+at the bottom.
+
+### Way B: your tool functions (add one decorator)
+
+Put `@boundary(...)` on the line **above** each function you care about. You give
+it a **name** (any short unique string) and a **kind** (`"llm"`, `"tool"`, or
+`"custom"`). Nothing else in your function changes.
 
 ```python
+# agent.py
 from chronicle import boundary
 
-@boundary("refund", kind="tool")            # name it; kind is "llm" | "tool" | "custom"
-def refund(order_id: str, amount_cents: int) -> dict:
+@boundary("refund", kind="tool")     # <-- the only change to this function
+def refund(order_id, amount_cents):
     ...
 ```
 
-**c) LangGraph: one call wraps every node:**
+That is all "adding a boundary" means: one decorator, a name, and a kind.
+
+### Way C: LangGraph (one call, all nodes)
+
+If you use LangGraph, do not decorate each node. Wrap them all at once:
 
 ```python
 import chronicle
@@ -84,204 +143,193 @@ for name, fn in nodes.items():
     graph.add_node(name, fn)
 ```
 
-`@boundary` never changes what your function returns or raises, and it works on
-`async def` too, so this is safe to leave on in production.
+**Which do I use?** Wrap the client (Way A) for the model call, and add `@boundary`
+(Way B) to the tool functions you want to check. For LangGraph, just Way C.
 
----
+### When exactly is a record (an "envelope") created?
 
-## A few things people ask here
-
-**1. What is `run_agent(...)`?** It is **your** function that runs your agent one
-time. Chronicle does not provide it; it is a stand-in for however you already
-invoke your agent. For the example above it might be:
-
-```python
-def run_agent(question):
-    decision = agent({"messages": [{"role": "user", "content": question}]})
-    args = decision["tool_calls"][0]["arguments"]
-    return refund(args["order_id"], args["amount_cents"])
-```
-
-`run_agent("refund order A-4471")` runs the whole flow. Because `agent` and
-`refund` are boundaries, each call is captured. **The same `run_agent` is used for
-record and for replay** - you never write two versions. Chronicle just switches
-behavior based on the mode.
-
-**2. Where does this code live? Inside your own repo.** Chronicle is a library you
-`pip install`; everything here is your code:
-
-- **Record** runs wherever you run your agent: a small script (e.g.
-  `scripts/record_incident.py`), your app, or a notebook. You record once, to
-  capture an incident.
-- **Replay and cut-point tests** live in your **test suite** (`tests/`) and run
-  under `pytest` on every commit.
-- The **boundaries** are your own functions; the **fixtures** (`fixtures/traces/`)
-  are committed in your repo. Nothing runs "outside" - Chronicle just wraps your
-  functions.
-
-**3. When is an envelope created?** One envelope, per boundary call, the instant
-that call finishes:
+One envelope is created **per boundary call, the moment that call finishes**:
 
 ```
-you call agent(state)
-   -> Chronicle captures the INPUT (the arguments)
-   -> your function runs and returns (or raises)
-   -> Chronicle builds the ENVELOPE (input + output + metadata)   <-- formed here
-   -> appends it to the trace, and returns your real result
+you call refund(...)
+   -> Chronicle notes the INPUT (the arguments)
+   -> your function runs and returns
+   -> Chronicle saves the ENVELOPE (input + output + which model, when, etc.)  <-- here
+   -> your real return value comes back to you, unchanged
 ```
 
-Call `agent` once and `refund` once -> 2 envelopes. A boundary called 3 times in a
-loop -> 3 envelopes (invocation 1, 2, 3). An envelope is the input and output of
-one crossing plus context; it does not capture the inside of your function.
-
-**4. What exactly do I add for a boundary?** Just the decorator: a **name** and a
-**kind**. Nothing else in your function changes.
-
-```python
-from chronicle import boundary
-
-@boundary("refund", kind="tool")   # name: any unique string; kind: "llm" | "tool" | "custom"
-def refund(order_id, amount_cents):
-    ...
-```
-
-The name is how you refer to it later (`ReplayPlan().stub("refund", 1)`). `kind`
-only affects metadata: `"llm"` also auto-captures the model version and sampling
-params from the result.
-
-**5. Does `wrap` work for other LLM providers?** `chronicle.wrap(client)`
-understands two response shapes out of the box:
-
-- **OpenAI**: `client.chat.completions.create(...)`
-- **Anthropic**: `client.messages.create(...)`
-
-For any other provider or call shape (Gemini, Cohere, a local model, a custom HTTP
-client), wrap the **callable** instead of the client:
-
-```python
-from chronicle import wrap_llm
-
-chat = wrap_llm("llm", my_completion_fn)   # then call chat(messages=[...]) as usual
-```
-
-or put a thin function around the call and decorate it with
-`@boundary("llm", kind="llm")`. (Streaming with `stream=True` is not handled by
-`wrap` yet.)
+Call `agent` once and `refund` once = **2 envelopes**. A tool called 3 times in a
+loop = **3 envelopes**. Chronicle never changes what your function returns; it just
+watches and saves.
 
 ---
 
 ## Step 3: Record a run
 
-Wrap the run you want to capture:
+Now run your agent inside a `with chronicle.record(...)` block. This runs your
+agent normally **and** saves the trace. Put this in a small script, for example
+`scripts/record_incident.py`:
 
 ```python
+# scripts/record_incident.py  (run this once, by hand)
+import chronicle
+from agent import run_agent
+
 with chronicle.record(
-    "incident-001",
-    store=".chronicle/runs/incident.jsonl",        # raw log (optional)
-    export="fixtures/traces/incident-001/",         # the committed fixture
+    "incident-001",                                 # a name for this trace
+    export="fixtures/traces/incident-001/",         # where to save it (see below)
 ):
-    run_agent(...)                                   # runs normally, and is recorded
+    run_agent("please refund order A-4471")
 ```
 
-- `store=` writes the raw run as it happens (survives a crash). Optional.
-- `export=` writes the trace you keep and commit. This is what makes a test.
+Run it once:
+
+```bash
+python scripts/record_incident.py
+```
+
+You now have a saved trace in `fixtures/traces/incident-001/`. Commit that folder
+to git. It is the permanent record of the bug.
 
 ---
 
-## Step 4: Replay to reproduce
+## Step 4: Play it back (replay)
 
-Load the trace and run again. **No LLM call**: each boundary returns its recorded
-output:
+Replay runs the trace again, but **the model never runs** and no tool side effect
+happens; each boundary just hands back what it saved. This proves you can
+reproduce the run exactly:
 
 ```python
+import chronicle
+from agent import run_agent
+
 with chronicle.replay_trace("fixtures/traces/incident-001/") as session:
-    run_agent(...)     # deterministic reproduction; the model never runs
+    run_agent("please refund order A-4471")   # same call; no AI, no real refund
 ```
+
+Nothing new is saved to disk here. This step is just to confirm the recording
+works.
 
 ---
 
-## Step 5: Fix, then cut-point test
+## Step 5: Fix the bug, then prove it with a cut-point test
 
-Change the boundary you are fixing (e.g. cap the refund). Now prove the fix
-against the real incident: freeze everything upstream, run your new code live,
-assert:
+First, fix the code. Add a limit to `refund`:
 
 ```python
+# agent.py
+MAX_REFUND_CENTS = 1_000_000   # $10,000 cap
+
+@boundary("refund", kind="tool")
+def refund(order_id, amount_cents):
+    if amount_cents > MAX_REFUND_CENTS:
+        return {"status": "blocked", "reason": "over the limit"}
+    return {"status": "refunded", "amount_cents": amount_cents}
+```
+
+Now prove the fix against the **real** incident. This is the cut-point:
+
+```python
+import chronicle
 from chronicle import ReplayPlan
+from agent import run_agent
 
 with chronicle.replay_trace(
     "fixtures/traces/incident-001/",
     ReplayPlan()
-    .stub("agent", 1)          # freeze the model's exact decision from the incident
-    .live("refund", 1),        # run your NEW refund() live, on those exact inputs
+    .stub("agent", 1)       # keep the model's exact decision from the incident
+    .live("refund", 1)      # run your NEW refund() for real, on that exact input
 ) as session:
-    run_agent(...)
-    assert session.captured_result("refund", 1)["blocked"] is True
+    run_agent("please refund order A-4471")
+    result = session.captured_result("refund", 1)   # what your new refund() returned
+    assert result["status"] == "blocked"
 ```
 
-**What are `stub` and `live`?** They are the two settings a `ReplayPlan` puts on a
-boundary:
+**What are `stub` and `live`?**
 
-- **stub** = the boundary does **not** run; Chronicle returns the output it
-  recorded. The step is frozen to exactly what happened in the incident.
-- **live** = the boundary **runs your current code**.
-
-So you `stub` everything upstream (to reproduce the exact inputs), and set the one
-boundary you are fixing to `live`. With plain `replay_trace(trace)` and no plan,
-**every** boundary is stubbed.
+- **stub** = frozen. The boundary does not run; Chronicle returns the answer it
+  saved. Use it for everything **before** the part you fixed, so the inputs are
+  exactly the same as the real bug.
+- **live** = real. The boundary runs your current code. Use it for the one function
+  you are fixing.
 
 ```mermaid
 flowchart LR
-  P["ReplayPlan()"] --> S["stub('agent', 1)<br/>frozen: recorded output"]
+  P["ReplayPlan()"] --> S["stub('agent', 1)<br/>frozen: the recorded decision"]
   P --> L["live('refund', 1)<br/>runs your NEW code"]
-  L --> A["assert on its result"]
+  L --> A["assert it is now blocked"]
 ```
 
-Your fix sees the exact inputs that caused the incident, deterministically, with no
-LLM cost.
+So your new `refund` sees the exact $98,000 request from the incident, and you
+check that it is now blocked. No AI call, and it is the same every time.
 
 ---
 
-## Step 6: Commit it as a test
+## Step 6: Turn it into a test that runs forever
 
-Put Step 5 in `tests/` and commit the `fixtures/traces/` folder:
+Move Step 5 into a test file. A "test" is just a function whose name starts with
+`test_`, that uses `assert`. `pytest` finds and runs these automatically.
 
 ```python
 # tests/test_refund_incident.py
+import chronicle
+from chronicle import ReplayPlan
+from agent import run_agent
+
 def test_refund_is_capped():
     with chronicle.replay_trace(
         "fixtures/traces/incident-001/",
         ReplayPlan().stub("agent", 1).live("refund", 1),
     ) as session:
-        run_agent(...)
-        assert session.captured_result("refund", 1)["blocked"] is True
+        run_agent("please refund order A-4471")
+        assert session.captured_result("refund", 1)["status"] == "blocked"
 ```
 
-`pytest` runs it on every commit. If the guard ever breaks again, CI turns red on
-the pull request, not on a customer.
+Run your tests:
+
+```bash
+pytest
+```
+
+Commit this test **and** the `fixtures/traces/incident-001/` folder. From now on,
+every time anyone changes the code, `pytest` re-runs this. If someone breaks the
+limit again, the test fails on their pull request, before it reaches a customer.
 
 ---
 
-## Where outputs are stored
+## Where does everything get stored?
 
-| Stage | Written to | Notes |
-|---|---|---|
-| **Record** | `fixtures/traces/<name>/` (committed) and `.chronicle/runs/*.jsonl` (gitignored) | The fixture is `graph.json` + one JSON file per boundary. The `.jsonl` is the raw scratch log. |
-| **Replay** | nothing new on disk | Results live in the session: `session.captured_result(id, n)`, `session.call_log()`. |
-| **Verify** | test result / scores | Layer 1 is a `pytest` pass/fail; Layer 2 (judge) returns scores in memory. Optional HTML view: `chronicle show-graph <trace> --html out.html`. |
+| Step | What is written, and where |
+|---|---|
+| **Record** | The trace, into `fixtures/traces/<name>/` (a folder with one JSON file per boundary, plus `graph.json`). **Commit this.** Optionally also a raw log at `.chronicle/runs/<name>.jsonl` (a scratch file; it is gitignored, so it is not committed). |
+| **Replay** | Nothing new on disk. The results live in memory during the test: `session.captured_result(name, n)` and `session.call_log()`. |
+| **Verify** | Nothing new on disk. Layer 1 is a `pytest` pass or fail. The optional LLM judge (below) returns a score in memory. You can save an HTML view with `chronicle show-graph <trace> --html out.html`. |
 
-`.chronicle/runs/` is gitignored by default (scratch); `fixtures/` is committed
-(the incidents you keep). Redact before committing production traffic:
-`session.redactors = chronicle.default_redactors()`.
+Recording can capture secrets (prompts, arguments). Before recording real
+production traffic, turn on redaction so secrets are removed before anything is
+saved: `session.redactors = chronicle.default_redactors()`.
+
+## Your project ends up looking like this
+
+```
+your-project/
+├── agent.py                              # your agent, with @boundary / wrap
+├── scripts/record_incident.py            # run once to record
+├── fixtures/traces/incident-001/         # the saved trace (committed)
+└── tests/test_refund_incident.py         # the regression test (runs in CI)
+```
 
 ---
 
-## When is the LLM-as-judge needed?
+## When do I need the "LLM judge"?
 
-Steps 4-5 (Layer 1 replay) check **structure**: right tool, right arguments, was
-the dangerous action blocked. That is exact and free. If your fix is a **prompt or
-model change**, the new output is text that should be *as good*, not identical, so
-equality assertions do not work. That is Layer 2:
+Steps 4 to 6 check **structure**: did the right tool run, with the right numbers,
+and was the bad action blocked. That is exact and free, and covers most fixes.
+
+But if your fix changes a **prompt or the model**, the new answer is *text* that
+should be *as good*, not word-for-word identical, so you cannot just compare
+strings. For that, Chronicle can ask a second model to **judge** whether the new
+answer still means the same thing (is it grounded, safe, correct):
 
 ```python
 from chronicle.judge import JudgeRunner, OpenAIJudgeClient
@@ -290,14 +338,35 @@ result = JudgeRunner(OpenAIJudgeClient(model="gpt-4o-mini")).evaluate(envelope)
 assert result.overall_passed
 ```
 
-Layer 1 proves the machinery; Layer 2 proves the words. Layer 2 does call a model
-(the judge), so use it only when structure cannot answer the question.
+This one **does** call a model (the judge), so use it only when a structural check
+cannot answer the question.
 
 ---
 
-## The loop, in one line
+## Other providers (not OpenAI or Anthropic)
 
-**Install → Mark boundaries → Record → Replay → Cut-point test → Commit.**
+`chronicle.wrap(client)` only knows the OpenAI and Anthropic response shapes. For
+any other provider, do not wrap the client. Instead wrap the **function that makes
+the call**:
 
-More questions? See the [FAQ](https://github.com/theagentplane/chronicle#faq) or
-open a [Discussion](https://github.com/theagentplane/chronicle/discussions).
+```python
+from chronicle import wrap_llm
+
+def call_gemini(messages):
+    ...   # your call to any provider
+
+chat = wrap_llm("llm", call_gemini)   # then use chat(messages=[...]) everywhere
+```
+
+Or write a small function around the call and put `@boundary("llm", kind="llm")` on
+it. (Streaming responses, `stream=True`, are not supported by `wrap` yet.)
+
+---
+
+## The whole thing in one line
+
+**Install -> mark boundaries -> record once -> replay to reproduce -> cut-point
+test the fix -> commit the test.**
+
+Stuck? Open a [Discussion](https://github.com/theagentplane/chronicle/discussions)
+or read the [FAQ](https://github.com/theagentplane/chronicle#faq).
