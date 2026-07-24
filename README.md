@@ -25,7 +25,7 @@ regression test and re-run your fix without live LLM calls. The target is one sp
 real problem: control-flow and tool-safety regressions in multi-agent systems, caught
 deterministically from recorded incidents.
 
-**[Why](#why-chronicle) · [Architecture](#architecture) · [Install](#install) · [Quick start](#quick-start) · [Verification](#verification-layers) · [Demos](#demos) · [Comparison](#how-chronicle-compares) · [CLI](#cli) · [Roadmap](#roadmap)**
+**[Why](#why-chronicle) · [Architecture](#architecture) · [Install](#install) · [Quick start](#quick-start) · [Verification](#verification-layers) · [Demos](#demos) · [Comparison](#how-chronicle-compares) · [CLI](#cli) · [Roadmap](#roadmap) · [FAQ](#faq)**
 
 ## Why Chronicle
 
@@ -343,11 +343,51 @@ This work was presented at the **AI Engineer World's Fair 2026**.
 Chronicle is early (0.x), and the Envelope schema may still change. Near-term:
 
 - Drop-in provider capture: `chronicle.wrap(client)` for OpenAI and Anthropic.
-- Async `@boundary` for async agents and graph nodes.
+- One-call LangGraph instrumentation (auto-record every node) and a docs site.
 - A pytest plugin so a committed incident becomes a one-decorator regression test.
-- One-call LangGraph instrumentation and a documentation site.
+- Async generators / streaming (SSE) capture.
 
 Ideas and priorities are welcome in [Discussions](https://github.com/theagentplane/chronicle/discussions).
+
+## FAQ
+
+**Does replaying call my LLM?**
+No. Layer 1 replay never calls the model; it returns the outputs recorded during the
+live run, so tests are deterministic, free, and fast. Only the optional Layer 2
+(LLM-as-judge) makes calls, and only when you ask it to.
+
+**How is this different from LangSmith, Langfuse, or Phoenix?**
+Those are tracing and eval dashboards for observing runs. Chronicle turns a recorded
+run into a deterministic, replayable regression test, and lets you re-run one boundary
+against a real incident (cut-point replay). They are complementary: trace with one,
+reproduce and test with Chronicle.
+
+**Does it work with async / FastAPI?**
+Yes. `async def` boundaries record, stub, and cut-point exactly like sync ones, and the
+session is per-request isolated, so concurrent requests never share a trace.
+
+**Does it work with LangGraph?**
+Yes. Decorate nodes with `@boundary`, or wrap them with `EnvelopeRecorder`. One-call
+graph instrumentation is on the roadmap.
+
+**What about non-determinism?**
+You do not force the model to be deterministic. You record the run and replay it, which
+is the only thing you actually need. (More in the
+[write-up](https://dev.to/tisha/your-agent-failed-in-prod-good-luck-reproducing-it-56ci).)
+
+**Will recording change production behavior?**
+No. `@boundary` is transparent: it never changes what your function returns or raises.
+Enable it where you want to record.
+
+**What about secrets and PII?**
+Turn on redaction before recording production traffic
+(`session.redactors = chronicle.default_redactors()`); secrets are masked before
+anything is stored or committed.
+
+**What does Chronicle not do?**
+It reproduces control-flow and tool-safety bugs deterministically. It does not fix a bad
+generation: if the model hallucinated, replay serves that back, which is what the Layer 2
+judge is for.
 
 ## Contributing
 
