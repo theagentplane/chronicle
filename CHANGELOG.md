@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-24
+
+### Added
+- **`session.on_enter` / `session.on_leave`**: pre-call and paired cleanup hooks on
+  `@boundary` / `wrap_llm` (LIVE + live cut-point). `on_enter` runs after input
+  capture and before the wrapped function; it may raise to abort the call, or
+  return a kwargs mapping to merge (MUTATE). `on_leave` runs after the attempt
+  when `on_enter` completed, including when the function raises. Governors
+  (e.g. TokenOps) use this for LLM-kind pre_call without a separate wrap.
+
 ## [0.2.0] - 2026-07-23
 
 ### Changed

@@ -54,6 +54,15 @@ class ChronicleSession:
     # Optional observer for boundary crossings (LIVE record + LIVE cut-point).
     # Signature: (boundary_id, kind, input_state, result) -> None
     on_crossing: Callable[[str, str, InputState, Any], None] | None = None
+    # Optional pre-call hook (LIVE record + LIVE cut-point), after input capture
+    # and before the wrapped function runs. May raise to abort (e.g. a governor
+    # Halt). May return a mapping of kwargs to merge into the call (MUTATE).
+    # Signature: (boundary_id, kind, input_state) -> Mapping[str, Any] | None
+    on_enter: Callable[[str, str, InputState], Mapping[str, Any] | None] | None = None
+    # Optional post-call cleanup (LIVE), always run after a successful on_enter
+    # whether the function returned or raised. Signature:
+    # (boundary_id, kind, input_state) -> None
+    on_leave: Callable[[str, str, InputState], None] | None = None
     # Applied to each envelope before it is retained or stored, so secrets never
     # reach a committed fixture. Empty by default; set to default_redactors() or
     # your own. Signature: (str) -> str. See chronicle.redaction.
