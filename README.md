@@ -373,43 +373,67 @@ Ideas and priorities are welcome in [Discussions](https://github.com/theagentpla
 
 ## FAQ
 
-**Does replaying call my LLM?**
+<details>
+<summary><b>Does replaying call my LLM?</b></summary>
+
 No. Layer 1 replay never calls the model; it returns the outputs recorded during the
 live run, so tests are deterministic, free, and fast. Only the optional Layer 2
 (LLM-as-judge) makes calls, and only when you ask it to.
+</details>
 
-**How is this different from LangSmith, Langfuse, or Phoenix?**
+<details>
+<summary><b>How is this different from LangSmith, Langfuse, or Phoenix?</b></summary>
+
 Those are tracing and eval dashboards for observing runs. Chronicle turns a recorded
 run into a deterministic, replayable regression test, and lets you re-run one boundary
 against a real incident (cut-point replay). They are complementary: trace with one,
 reproduce and test with Chronicle.
+</details>
 
-**Does it work with async / FastAPI?**
+<details>
+<summary><b>Does it work with async / FastAPI?</b></summary>
+
 Yes. `async def` boundaries record, stub, and cut-point exactly like sync ones, and the
 session is per-request isolated, so concurrent requests never share a trace.
+</details>
 
-**Does it work with LangGraph?**
-Yes. Decorate nodes with `@boundary`, or wrap them with `EnvelopeRecorder`. One-call
-graph instrumentation is on the roadmap.
+<details>
+<summary><b>Does it work with LangGraph?</b></summary>
 
-**What about non-determinism?**
+Yes. `chronicle.instrument_langgraph(nodes)` wraps every node in one call, or decorate
+nodes with `@boundary`. Auto-instrumenting a compiled graph is on the roadmap.
+</details>
+
+<details>
+<summary><b>What about non-determinism?</b></summary>
+
 You do not force the model to be deterministic. You record the run and replay it, which
 is the only thing you actually need. (More in the
 [write-up](https://dev.to/tisha/your-agent-failed-in-prod-good-luck-reproducing-it-56ci).)
+</details>
 
-**Will recording change production behavior?**
+<details>
+<summary><b>Will recording change production behavior?</b></summary>
+
 No. `@boundary` is transparent: it never changes what your function returns or raises.
 Enable it where you want to record.
+</details>
 
-**What about secrets and PII?**
+<details>
+<summary><b>What about secrets and PII?</b></summary>
+
 Turn on redaction before recording production traffic
 (`session.redactors = chronicle.default_redactors()`); secrets are masked before
 anything is stored or committed.
+</details>
 
-**What does Chronicle not do?**
+<details>
+<summary><b>What does Chronicle not do?</b></summary>
+
 It reproduces control-flow and tool-safety bugs deterministically. It does not fix a bad
 generation: if the model hallucinated, replay serves that back, which is what the Layer 2
 judge is for.
+</details>
 
 ## Contributing
 
