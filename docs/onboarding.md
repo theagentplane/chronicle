@@ -78,6 +78,53 @@ for name, fn in nodes.items():
 
 ---
 
+## First, three things people ask here
+
+**1. What is `run_agent(...)`?** It is **your** function that runs your agent one
+time. Chronicle does not provide it; it is a stand-in for however you already
+invoke your agent. For the example above it might be:
+
+```python
+def run_agent(question):
+    decision = agent({"messages": [{"role": "user", "content": question}]})
+    args = decision["tool_calls"][0]["arguments"]
+    return refund(args["order_id"], args["amount_cents"])
+```
+
+`run_agent("refund order A-4471")` runs the whole flow. Because `agent` and
+`refund` are boundaries, each call is captured. **The same `run_agent` is used for
+record and for replay** - you never write two versions. Chronicle just switches
+behavior based on the mode.
+
+**2. Where does this code live? Inside your own repo.** Chronicle is a library you
+`pip install`; everything here is your code:
+
+- **Record** runs wherever you run your agent: a small script (e.g.
+  `scripts/record_incident.py`), your app, or a notebook. You record once, to
+  capture an incident.
+- **Replay and cut-point tests** live in your **test suite** (`tests/`) and run
+  under `pytest` on every commit.
+- The **boundaries** are your own functions; the **fixtures** (`fixtures/traces/`)
+  are committed in your repo. Nothing runs "outside" - Chronicle just wraps your
+  functions.
+
+**3. When is an envelope created?** One envelope, per boundary call, the instant
+that call finishes:
+
+```
+you call agent(state)
+   -> Chronicle captures the INPUT (the arguments)
+   -> your function runs and returns (or raises)
+   -> Chronicle builds the ENVELOPE (input + output + metadata)   <-- formed here
+   -> appends it to the trace, and returns your real result
+```
+
+Call `agent` once and `refund` once -> 2 envelopes. A boundary called 3 times in a
+loop -> 3 envelopes (invocation 1, 2, 3). An envelope is the input and output of
+one crossing plus context; it does not capture the inside of your function.
+
+---
+
 ## Step 3: Record a run
 
 Wrap the run you want to capture:
