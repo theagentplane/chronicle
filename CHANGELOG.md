@@ -20,6 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for some call patterns, so fixtures recorded before 0.2 may need re-recording.
 
 ### Added
+- **`chronicle.wrap(client)`**: record every model call an OpenAI/Anthropic-style
+  client makes, with no decorators; in replay it returns the recorded response
+  (attribute/index access) and makes no API call.
+- **`chronicle.instrument_langgraph(nodes)`**: wrap every LangGraph node as a
+  `@boundary` in one call (record / stub-replay / cut-point; async supported).
 - **Async support**: `async def` boundaries record, stub on replay, and run live at
   a cut-point exactly like sync ones (via `@boundary` and `wrap_llm`); LangGraph
   `EnvelopeRecorder.wrap_node` gains the same async path.
