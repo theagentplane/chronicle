@@ -11,8 +11,8 @@ from chronicle.instrumentation.openinference import (
 
 __all__ = [
     "bootstrap_tracing",
-    "instrument_langchain",
     "instrument_graph_nodes",
+    "instrument_langchain",
     "langgraph_input_extractor",
     "langgraph_result_extractor",
     "span_envelope_attributes",
