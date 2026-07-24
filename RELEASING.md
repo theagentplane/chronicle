@@ -25,8 +25,12 @@ Chronicle publishes to PyPI as **`agent-chronicle`** using GitHub Actions with
 
 1. Move the `CHANGELOG.md` `[Unreleased]` items under a new version heading with
    today's date; start a fresh empty `[Unreleased]`.
-2. Bump `version` in `pyproject.toml` following SemVer
-   (`0.1.0` → `0.1.1` patch, `0.2.0` minor, `1.0.0` first stable API).
+2. Bump the version in **both** places (they must match, or the CLI reports the
+   wrong version and the release tag-guard fails):
+   - `version` in `pyproject.toml`
+   - `__version__` in `chronicle/__init__.py`
+
+   Follow SemVer (`0.1.0` -> `0.1.1` patch, `0.2.0` minor, `1.0.0` first stable API).
 3. Commit and tag:
    ```bash
    git commit -am "Release vX.Y.Z"
