@@ -12,6 +12,14 @@ from chronicle.envelope.schema import (
     ToolCall,
     ToolSchema,
 )
+from chronicle.envelope.backends import (
+    JsonlStore,
+    RemoteStore,
+    SqliteStore,
+    Store,
+    open_store,
+)
+from chronicle.envelope.store import EnvelopeStore
 from chronicle.execution_graph import ExecutionGraph
 from chronicle.redaction import apply_redactors, default_redactors, redact_secrets
 from chronicle.replay.plan import BoundaryMode, ReplayPlan
@@ -26,12 +34,17 @@ __all__ = [
     "ChronicleSession",
     "ContextMetadata",
     "Envelope",
+    "EnvelopeStore",
     "ExecutionGraph",
     "InputState",
+    "JsonlStore",
     "RagChunk",
+    "RemoteStore",
     "ReplayPlan",
     "SamplingParams",
     "SessionMode",
+    "SqliteStore",
+    "Store",
     "ToolCall",
     "ToolSchema",
     "apply_redactors",
@@ -39,6 +52,7 @@ __all__ = [
     "default_redactors",
     "get_session",
     "instrument_langgraph",
+    "open_store",
     "record",
     "redact_secrets",
     "replay_trace",
