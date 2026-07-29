@@ -12,6 +12,8 @@ is nothing new to learn: same envelopes, same ``ReplayPlan``, same ``on_crossing
 
 from __future__ import annotations
 
+import asyncio
+import contextvars
 import functools
 import inspect
 from collections.abc import Callable, Mapping
@@ -32,8 +34,103 @@ def instrument_langgraph(nodes: Mapping[str, Callable], *, kind: str = "custom")
     Each node keeps its behavior (transparent) and gains record / stub-replay /
     cut-point. Async nodes are supported. Use ``kind="llm"`` for nodes that call a
     model so their envelopes capture model metadata.
+
+    For a graph you already build with ``StateGraph`` (rather than a bare dict of
+    node functions), prefer ``chronicle.instrument(graph)``: it wraps every node in
+    place *and* records routing decisions from ``add_conditional_edges``.
     """
     return {name: boundary(name, kind=kind)(fn) for name, fn in nodes.items()}
+
+
+def instrument(graph: Any, *, kind: str = "custom") -> Any:
+    """Auto-instrument every node and every conditional-edge routing decision on
+    a LangGraph graph, in one call, before or after ``.compile()``.
+
+        graph = StateGraph(State)
+        graph.add_node("agent", agent_node)
+        graph.add_conditional_edges("agent", route_fn, {"tools": "tools", END: END})
+        app = chronicle.instrument(graph).compile()
+
+    A ``CompiledStateGraph`` keeps a live reference to the ``StateGraph`` builder
+    it was compiled from (``compiled.builder``), and each node's underlying
+    callable is mutated in place rather than replaced wholesale, so
+    ``chronicle.instrument(app)`` also works *after* ``.compile()`` — the
+    already-compiled graph's execution is rerouted too.
+
+    Every node becomes a ``@boundary(name, kind=kind)`` crossing: same
+    transparent record / stub-replay / cut-point contract as everywhere else in
+    Chronicle, sync or async. Every ``add_conditional_edges`` routing function
+    becomes a ``kind="router"`` boundary, so *which branch was taken* is
+    captured and replays deterministically too, not just each node's
+    input/output. Static (unconditional) edges need no boundary — there is no
+    decision to record.
+
+    Idempotent: instrumenting the same graph twice wraps each node/router once.
+    Requires ``langgraph`` (``pip install chronicle[langgraph]``); this function
+    only touches the public ``StateGraph`` builder attributes (``nodes``,
+    ``branches``), never langgraph's compiled Pregel internals.
+    """
+    builder = getattr(graph, "builder", graph)
+    for node_id, spec in getattr(builder, "nodes", {}).items():
+        runnable = getattr(spec, "runnable", None)
+        if runnable is not None:
+            _instrument_runnable(runnable, node_id, kind)
+    for source, branches in getattr(builder, "branches", {}).items():
+        for name, branch_spec in branches.items():
+            path = getattr(branch_spec, "path", None)
+            if path is not None:
+                _instrument_runnable(path, f"{source}:{name}", "router")
+    return graph
+
+
+def _instrument_runnable(runnable: Any, boundary_id: str, kind: str) -> None:
+    """Wrap a langgraph ``RunnableCallable``'s underlying function(s) as a
+    Chronicle boundary, in place, so both ``invoke`` and ``ainvoke`` record.
+
+    A sync-only node gets an auto-generated ``afunc`` from langgraph — a
+    ``functools.partial`` that runs ``func`` in a thread executor. Rewiring
+    ``func`` alone would leave that partial's closure pointing at the
+    *original*, unwrapped function, silently skipping the boundary whenever the
+    graph is run with ``ainvoke``/``astream``. So the executor shim is rebuilt
+    around the wrapped function instead of touching ``func`` and ``afunc``
+    independently.
+    """
+    if getattr(runnable, "_chronicle_instrumented", False):
+        return
+    func = getattr(runnable, "func", None)
+    afunc = getattr(runnable, "afunc", None)
+    if func is not None:
+        wrapped_sync = boundary(boundary_id, kind=kind)(func)
+        runnable.func = wrapped_sync
+        if isinstance(afunc, functools.partial):
+            runnable.afunc = _executor_shim(wrapped_sync)
+        elif afunc is not None:
+            runnable.afunc = boundary(boundary_id, kind=kind)(afunc)
+    elif afunc is not None:
+        runnable.afunc = boundary(boundary_id, kind=kind)(afunc)
+    runnable._chronicle_instrumented = True
+
+
+def _executor_shim(sync_fn: Callable) -> Callable[..., Any]:
+    """Stdlib rebuild of langgraph's 'run this sync function in a thread
+    executor' shim, around an already-instrumented function — so async graph
+    execution keeps the same off-loop behavior without depending on
+    langgraph's private executor helper.
+
+    The thread pool executor does not inherit the calling thread's
+    ``ContextVar`` state (that is how ``ChronicleSession`` is scoped), so the
+    context is copied explicitly and run inside the worker thread — the same
+    fix langgraph's own ``run_in_executor`` applies, for the same reason.
+    """
+
+    async def _call(*args: Any, **kwargs: Any) -> Any:
+        loop = asyncio.get_event_loop()
+        ctx = contextvars.copy_context()
+        return await loop.run_in_executor(
+            None, ctx.run, functools.partial(sync_fn, *args, **kwargs)
+        )
+
+    return _call
 
 
 def wrap(client: Any, *, boundary_id: str = "llm") -> Any:

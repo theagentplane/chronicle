@@ -24,7 +24,7 @@ from chronicle.execution_graph import ExecutionGraph
 from chronicle.redaction import apply_redactors, default_redactors, redact_secrets
 from chronicle.replay.plan import BoundaryMode, ReplayPlan
 from chronicle.session import ChronicleSession, SessionMode, get_session, reset_session
-from chronicle.wrap import instrument_langgraph, wrap
+from chronicle.wrap import instrument, instrument_langgraph, wrap
 
 __version__ = "0.3.0"
 
@@ -51,6 +51,7 @@ __all__ = [
     "boundary",
     "default_redactors",
     "get_session",
+    "instrument",
     "instrument_langgraph",
     "open_store",
     "record",
