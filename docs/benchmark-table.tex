@@ -2,8 +2,9 @@
 \newcommand{\numincidents}{6}
 \newcommand{\detectionrate}{6/6}
 \newcommand{\specificity}{6/6}
-\newcommand{\recoverheadus}{19.5}
-\newcommand{\recoverheadpct}{0.007}
+\newcommand{\benignspecificity}{30/30}
+\newcommand{\recoverheadus}{23.0}
+\newcommand{\recoverheadpct}{0.008}
 \newcommand{\kbpercrossing}{1.44}
 \newcommand{\modellatencyms}{300}
 
@@ -15,12 +16,12 @@
 Scenario & Cross. & $t_{\mathrm{base}}$ & $t_{\mathrm{rec}}$ & Rec./cross. \\
  & & (\textmu s) & (\textmu s) & (\textmu s) \\
 \midrule
-Refund & 3 & 3.8 & 62.1 & 19.4 \\
-Invoice & 3 & 4.2 & 63.0 & 19.6 \\
-Trade & 3 & 4.2 & 65.7 & 20.5 \\
-Email & 3 & 3.2 & 56.9 & 17.9 \\
-Payout & 3 & 3.6 & 58.8 & 18.4 \\
-Deletion & 3 & 3.3 & 62.8 & 19.8 \\
+Refund & 3 & 3.7 & 72.5 & 22.9 \\
+Invoice & 3 & 4.6 & 74.4 & 23.3 \\
+Trade & 3 & 4.3 & 72.1 & 22.6 \\
+Email & 3 & 3.5 & 72.5 & 23.0 \\
+Payout & 3 & 3.6 & 74.7 & 23.7 \\
+Deletion & 3 & 2.9 & 71.8 & 23.0 \\
 \bottomrule
 \end{tabular}
 \caption{Recording adds \recoverheadus{}~\textmu s per crossing (\recoverheadpct\% of a \modellatencyms~ms model call). Replaying the suite makes zero model calls; cut-point tests flag \detectionrate{} incidents and pass on \specificity{} guarded and benign changes. The store grows by at most \kbpercrossing{}~KB per crossing.}

@@ -64,3 +64,31 @@ def test_benign_differs_from_gated_but_stays_safe(tmp_path):
     assert gated["blocked"] is True and benign["blocked"] is True  # both safe
     assert benign != gated  # but the benign change is real (audit_id / message)
     assert "audit_id" in benign
+
+
+@pytest.mark.parametrize("name,mod", SCENARIOS, ids=[n for n, _ in SCENARIOS])
+def test_over_fitting_resistance(name, mod, tmp_path):
+    trace_dir, _, _ = harness._record_incident(mod, tmp_path)
+    survived, total = harness._benign_specificity(mod, trace_dir)
+    assert total >= 5
+    assert survived == total  # invariant to every unrelated output change
+
+
+def test_benign_sweep_is_not_vacuous(tmp_path):
+    """Negative control: a transform that unblocks the tool must NOT survive, proving
+    the sweep would catch a genuine safety regression."""
+    import chronicle
+    from chronicle import ReplayPlan
+
+    mod = harness.refund_order_id
+    trace_dir, _, _ = harness._record_incident(mod, tmp_path)
+    mod.set_mode("gated")
+    session = chronicle.reset_session()
+    session.load_trace(trace_dir)
+    session.enable_replay(ReplayPlan().stub("agent", 1).live(mod.TOOL, 1).live("agent", 2))
+    result = mod.run_agent(user_message="stubbed")
+    live = session.captured_result(mod.TOOL, 1)
+
+    broken = {**live, "blocked": False, "status": "refunded"}  # safety-breaking change
+    downstream = mod.agent_finalize.__wrapped__(dict(result), broken)
+    assert mod.safe(downstream, broken) is False
