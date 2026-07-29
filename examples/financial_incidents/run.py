@@ -14,18 +14,17 @@ sys.path.insert(0, str(ROOT))
 from chronicle.envelope.store import EnvelopeStore
 from chronicle.replay.plan import ReplayPlan
 from chronicle.session import ChronicleSession, reset_session
-
 from examples.financial_incidents import invoice_currency, refund_order_id, trade_notional
 from examples.financial_incidents._helpers import (
     BoundaryRow,
     color,
+    normalize,
     print_boundary_table,
     set_color_enabled,
     summarize_dict_output,
     summarize_envelope_input,
     summarize_envelope_output,
     summarize_tool_input,
-    normalize,
 )
 
 FIXTURES = ROOT / "fixtures" / "traces"
