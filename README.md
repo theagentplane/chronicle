@@ -391,6 +391,26 @@ pattern.
 </details>
 
 <details>
+<summary><b>OpenTelemetry export (spans in Phoenix or any OTel backend)</b></summary>
+
+<br>
+
+Emit one OpenTelemetry span per boundary crossing, using OpenInference semantic
+conventions, so recorded runs show up in Phoenix or any OTel backend as LLM and tool
+spans (input/output, model, token counts), nested by the run's call graph:
+
+```python
+with chronicle.record("run-1") as session:
+    chronicle.instrument_otel()      # attaches to the active recording session
+    run_agent(...)
+```
+
+Call it inside the `record` block, or pass `session=`. Needs the OTel extra
+(`pip install agent-chronicle[phoenix]`); the base install imports no OpenTelemetry.
+
+</details>
+
+<details>
 <summary><b>Lower-level recorder (<code>EnvelopeRecorder</code>)</b></summary>
 
 <br>

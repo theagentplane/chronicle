@@ -63,6 +63,10 @@ class ChronicleSession:
     # whether the function returned or raised. Signature:
     # (boundary_id, kind, input_state) -> None
     on_leave: Callable[[str, str, InputState], None] | None = None
+    # Optional observer fired with the full Envelope right after it is recorded
+    # (LIVE). Used by exporters (e.g. OpenTelemetry) to emit one span per crossing.
+    # Signature: (envelope) -> None
+    on_record: Callable[[Envelope], None] | None = None
     # Applied to each envelope before it is retained or stored, so secrets never
     # reach a committed fixture. Empty by default; set to default_redactors() or
     # your own. Signature: (str) -> str. See chronicle.redaction.
@@ -188,6 +192,8 @@ class ChronicleSession:
         self._call_log.append(
             CallRecord(boundary_id, invocation_index, "record", envelope.envelope_id)
         )
+        if self.on_record is not None:
+            self.on_record(envelope)
         return envelope
 
     def _fixture_for(self, boundary_id: str) -> Envelope:
