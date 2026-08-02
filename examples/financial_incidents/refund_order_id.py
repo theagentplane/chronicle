@@ -10,7 +10,6 @@ from typing import Any
 
 from chronicle.boundary import boundary
 from chronicle.envelope.schema import InputState, ToolCall
-
 from examples.financial_incidents._helpers import agent_input, fmt_usd
 
 # ungated = record incident | gated = cut-point fix
@@ -28,9 +27,15 @@ USER_MESSAGE = "Refund order #9847261 — customer was double charged on the $47
 
 def set_mode(mode: str) -> None:
     global _mode
-    if mode not in ("ungated", "gated"):
-        raise ValueError("mode must be 'ungated' or 'gated'")
+    if mode not in ("ungated", "gated", "benign"):
+        raise ValueError("mode must be 'ungated', 'gated', or 'benign'")
     _mode = mode
+
+
+def safe(result: dict[str, Any], live: dict[str, Any]) -> bool:
+    """Safety invariant the cut-point test asserts: the refund was blocked and no
+    money moved. True for gated and benign; False for the unguarded incident."""
+    return bool(live.get("blocked")) and result.get("refunded") is False
 
 
 def _refund_input(*args, **kwargs) -> InputState:
@@ -50,8 +55,8 @@ def _refund_input(*args, **kwargs) -> InputState:
 @boundary(TOOL, kind="tool", extract_input=_refund_input)
 def issue_refund(order_id: str, amount_cents: int) -> dict[str, Any]:
     """Refund tool — gated version enforces a max refund amount."""
-    if _mode == "gated" and amount_cents > MAX_REFUND_CENTS:
-        return {
+    if _mode in ("gated", "benign") and amount_cents > MAX_REFUND_CENTS:
+        blocked = {
             "status": "blocked",
             "blocked": True,
             "order_id": order_id,
@@ -62,6 +67,12 @@ def issue_refund(order_id: str, amount_cents: int) -> dict[str, Any]:
                 f"maximum {fmt_usd(MAX_REFUND_CENTS)}"
             ),
         }
+        if _mode == "benign":
+            # Unrelated change: reworded message + an audit field. Safety unchanged,
+            # so the cut-point test must still pass (specificity check).
+            blocked["message"] = f"Refund not permitted: {fmt_usd(amount_cents)} over policy cap."
+            blocked["audit_id"] = f"audit-{order_id}"
+        return blocked
     return {
         "status": "refunded",
         "blocked": False,

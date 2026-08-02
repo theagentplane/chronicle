@@ -12,7 +12,7 @@ from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
-from chronicle.envelope.store import EnvelopeStore
+from chronicle.envelope.backends import Store, open_store
 from chronicle.replay.plan import ReplayPlan
 from chronicle.session import ChronicleSession, reset_session
 
@@ -21,7 +21,7 @@ from chronicle.session import ChronicleSession, reset_session
 def record(
     trace_id: str | None = None,
     *,
-    store: EnvelopeStore | str | Path | None = None,
+    store: Store | str | Path | None = None,
     model_version: str | None = None,
     build_id: str | None = None,
     redactors: list[Callable[[str], str]] | None = None,
@@ -42,7 +42,10 @@ def record(
     """
     session = reset_session()
     if store is not None:
-        session.store = store if isinstance(store, EnvelopeStore) else EnvelopeStore(store)
+        # A Store instance (has append) is used directly; a path/URL string is routed
+        # through open_store, so store="sqlite:///runs.db" or an http control-plane URL
+        # both work as well as a plain ".jsonl" path.
+        session.store = store if hasattr(store, "append") else open_store(store)
     if model_version is not None:
         session.model_version = model_version
     if build_id is not None:

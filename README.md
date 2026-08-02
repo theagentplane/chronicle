@@ -372,6 +372,31 @@ chronicle list-fixtures                             # list committed envelope fi
 </details>
 
 <details>
+<summary><b>Storage backends (local file, SQLite, or a shared control plane)</b></summary>
+
+<br>
+
+Recording writes to a **store**. The default is a local JSONL file, which is all you
+need for development and CI. For deployed agents, point at SQLite or a shared control
+plane instead. All backends implement the same `Store` protocol, so nothing else changes.
+
+```python
+import chronicle
+
+with chronicle.record("run-1", store="runs.jsonl"):        ...   # local file (default)
+with chronicle.record("run-1", store="sqlite:///runs.db"): ...   # deployed instance
+with chronicle.record("run-1", store="https://chronicle.internal"): ...  # control plane
+```
+
+`open_store(target)` picks the backend from the string, or pass a `SqliteStore` /
+`RemoteStore` instance directly. `RemoteStore` ships each envelope to a shared HTTP
+service and never raises into the agent (a failed send is warned and dropped). A minimal
+reference control plane (stdlib, SQLite-backed) is in `examples/control_plane/server.py`;
+TokenOps can point at the same service to co-locate its cost ledger with trace storage.
+
+</details>
+
+<details>
 <summary><b>Cost and governance observers (<code>on_crossing</code>)</b></summary>
 
 <br>
