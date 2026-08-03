@@ -28,6 +28,17 @@ from chronicle.wrap import instrument_langgraph, wrap
 
 __version__ = "0.3.0"
 
+
+def __getattr__(name: str):
+    # Lazy so the base install never imports opentelemetry. `chronicle.instrument_otel`
+    # (and the attribute mapper) load the optional OTel export on first access.
+    if name in ("instrument_otel", "envelope_span_attributes"):
+        from chronicle import otel
+
+        return getattr(otel, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
 __all__ = [
     "ActionResult",
     "BoundaryMode",
@@ -50,8 +61,10 @@ __all__ = [
     "apply_redactors",
     "boundary",
     "default_redactors",
+    "envelope_span_attributes",
     "get_session",
     "instrument_langgraph",
+    "instrument_otel",
     "open_store",
     "record",
     "redact_secrets",
