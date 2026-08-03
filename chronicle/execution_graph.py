@@ -67,6 +67,17 @@ class ExecutionGraph:
                 for eid, node in graph.nodes.items()
                 if node.envelope.parent_envelope_id is None
             ]
+
+        stored = meta.get("checksum")
+        if stored is not None:
+            from chronicle.replay.checksum import ChecksumMismatch, trace_checksum
+
+            recomputed = trace_checksum([node.envelope for node in graph.nodes.values()])
+            if recomputed != stored:
+                raise ChecksumMismatch(
+                    f"fixture checksum mismatch in {root}: a recorded input was modified "
+                    "after the trace was committed"
+                )
         return graph
 
     def save(self, directory: str | Path) -> None:
@@ -97,11 +108,14 @@ class ExecutionGraph:
             if node.envelope.parent_envelope_id:
                 edges.append([node.envelope.parent_envelope_id, node.envelope.envelope_id])
 
+        from chronicle.replay.checksum import trace_checksum
+
         graph_json = {
             "trace_id": self.trace_id,
             "nodes": node_entries,
             "edges": edges,
             "roots": self.root_ids,
+            "checksum": trace_checksum([node.envelope for node in ordered]),
         }
         (root / "graph.json").write_text(json.dumps(graph_json, indent=2))
 
