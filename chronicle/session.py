@@ -277,10 +277,32 @@ def envelope_to_return_value(envelope: Envelope, kind: str) -> Any:
         state["completion"] = envelope.action_result.completion
         state["finish_reason"] = envelope.action_result.finish_reason
         return state
+    if kind == "router":
+        # A router's return value is a plain node-name (or list of names), not a
+        # dict, so it lives inside raw_response under a fixed key rather than
+        # being raw_response itself — the generic dict-passthrough below would
+        # otherwise hand back {"decision": ...} instead of the decision itself.
+        raw = envelope.action_result.raw_response
+        if raw is not None and "decision" in raw:
+            return raw["decision"]
+        return envelope.action_result.completion
     raw = envelope.action_result.raw_response
     if raw is not None:
         return raw
     return envelope.action_result.completion
+
+
+def _router_decision(result: Any) -> Any:
+    """Coerce a routing function's return value into a JSON-safe, faithfully
+    replayable shape. LangGraph routing functions return a node name or a list
+    of node names (``Hashable | list[Hashable]``); node names are strings in
+    practice (``END`` included), so this covers the real range without needing
+    general-purpose JSON coercion."""
+    if isinstance(result, str):
+        return result
+    if isinstance(result, (list, tuple)):
+        return [str(v) for v in result]
+    return str(result)
 
 
 def result_to_action_result(result: Any, kind: str) -> ActionResult:
@@ -288,6 +310,12 @@ def result_to_action_result(result: Any, kind: str) -> ActionResult:
         return ActionResult(
             completion=result.get("status", str(result)),
             raw_response=result,
+        )
+    if kind == "router":
+        decision = _router_decision(result)
+        return ActionResult(
+            completion=decision if isinstance(decision, str) else str(decision),
+            raw_response={"decision": decision},
         )
     if kind == "llm" and isinstance(result, dict):
         tool_calls = [

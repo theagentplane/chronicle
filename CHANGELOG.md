@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`chronicle.instrument(graph)`**: one call auto-instruments every node *and*
+  every `add_conditional_edges` routing function on a LangGraph `StateGraph`,
+  before or after `.compile()`. Routing decisions are now recorded as
+  `kind="router"` boundaries and replay deterministically (which branch was
+  taken), not just each node's input/output. (#22)
+
 ## [0.3.0] - 2026-07-24
 
 ### Added
