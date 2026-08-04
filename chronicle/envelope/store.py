@@ -3,33 +3,49 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import IO, Text
 
 from chronicle.envelope.schema import Envelope
 
 
 class EnvelopeStore:
-    """Append-only JSONL store for immutable envelope records."""
+    """Append-only JSONL store for immutable envelope records.
 
-    def __init__(self, path: str | Path) -> None:
+    Set ``keep_open=True`` to hold one append file handle across writes (and
+    ``append_many`` flushes). Call ``close()`` when done — ``BufferedStore`` does
+    this on context exit.
+    """
+
+    def __init__(self, path: str | Path, *, keep_open: bool = False) -> None:
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         if not self.path.exists():
             self.path.touch()
+        self._fp: IO[str] | None = None
+        if keep_open:
+            self._fp = open(self.path, "a", encoding="utf-8")
 
     def append(self, envelope: Envelope) -> None:
-        line = envelope.model_dump_json()
+        line = envelope.model_dump_json() + "\n"
+        if self._fp is not None:
+            self._fp.write(line)
+            return
         with open(self.path, "a", encoding="utf-8") as f:
-            f.write(line + "\n")
+            f.write(line)
 
     def append_many(self, envelopes: list[Envelope]) -> None:
-        """Append a batch in one open/write — used by ``BufferedStore`` flushes."""
+        """Append a batch in one write — used by ``BufferedStore`` flushes."""
         if not envelopes:
             return
         payload = "".join(e.model_dump_json() + "\n" for e in envelopes)
+        if self._fp is not None:
+            self._fp.write(payload)
+            return
         with open(self.path, "a", encoding="utf-8") as f:
             f.write(payload)
 
     def read_all(self) -> list[Envelope]:
+        self.flush()
         envelopes: list[Envelope] = []
         with open(self.path, encoding="utf-8") as f:
             for line in f:
@@ -46,6 +62,22 @@ class EnvelopeStore:
             if envelope.envelope_id == envelope_id:
                 return envelope
         return None
+
+    def flush(self) -> None:
+        if self._fp is not None:
+            self._fp.flush()
+
+    def close(self) -> None:
+        if self._fp is not None:
+            self._fp.flush()
+            self._fp.close()
+            self._fp = None
+
+    def __enter__(self) -> EnvelopeStore:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self.close()
 
     @staticmethod
     def load_fixture(path: str | Path) -> Envelope:

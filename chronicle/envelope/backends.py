@@ -247,6 +247,11 @@ def open_store(target: str | Path, **kwargs) -> Store:
         batch_kwargs = {k: v for k, v in kwargs.items() if k == "batch_size"}
         inner_kwargs = {k: v for k, v in kwargs.items() if k != "batch_size"}
         batch_size = int(batch_kwargs.get("batch_size", size_str))
+        # Prefer a kept-open JSONL handle under the buffer — one fd for the run.
+        if "keep_open" not in inner_kwargs and not str(inner).startswith(
+            ("http://", "https://", "sqlite:///", "buffered:")
+        ) and not str(inner).endswith((".db", ".sqlite")):
+            inner_kwargs["keep_open"] = True
         return BufferedStore(open_store(inner, **inner_kwargs), batch_size=batch_size)
     if text.startswith(("http://", "https://")):
         return RemoteStore(text, **kwargs)
@@ -254,4 +259,7 @@ def open_store(target: str | Path, **kwargs) -> Store:
         return SqliteStore(text[len("sqlite:///"):], **kwargs)
     if text.endswith((".db", ".sqlite")):
         return SqliteStore(text, **kwargs)
-    return JsonlStore(text)
+    keep_open = bool(kwargs.pop("keep_open", False))
+    if kwargs:
+        raise TypeError(f"unexpected open_store kwargs for JsonlStore: {sorted(kwargs)}")
+    return JsonlStore(text, keep_open=keep_open)

@@ -16,6 +16,7 @@ Both sync functions and ``async def`` coroutines are supported. Async generators
 
 from __future__ import annotations
 
+import dataclasses
 import functools
 import inspect
 from collections.abc import Callable, Mapping
@@ -121,6 +122,12 @@ def _bind_boundary(
 ) -> Callable[..., Any]:
     """Shared LIVE / replay wrapper for ``@boundary`` and ``wrap_llm`` (sync + async)."""
 
+    # Resolve once — inspect.signature dominates per-crossing cost otherwise.
+    try:
+        cached_sig: inspect.Signature | None = inspect.signature(fn)
+    except (TypeError, ValueError):
+        cached_sig = None
+
     if inspect.iscoroutinefunction(fn):
 
         @functools.wraps(fn)
@@ -135,14 +142,14 @@ def _bind_boundary(
             if session.mode == SessionMode.LIVE:
                 return await _record_call_async(
                     session, fn, boundary_id, kind, args, kwargs,
-                    extract_input, extract_result, extract_metadata,
+                    extract_input, extract_result, extract_metadata, cached_sig,
                 )
             invocation_index = session._replay_cursor.get(boundary_id, 0) + 1
             if session.replay_plan.should_stub(boundary_id, invocation_index):
                 return session.stub_result(boundary_id, kind)
             return await _live_cutpoint_call_async(
                 session, fn, boundary_id, kind, args, kwargs,
-                extract_input, invocation_index,
+                extract_input, invocation_index, cached_sig,
             )
 
         return async_wrapper
@@ -159,14 +166,14 @@ def _bind_boundary(
         if session.mode == SessionMode.LIVE:
             return _record_call(
                 session, fn, boundary_id, kind, args, kwargs,
-                extract_input, extract_result, extract_metadata,
+                extract_input, extract_result, extract_metadata, cached_sig,
             )
         invocation_index = session._replay_cursor.get(boundary_id, 0) + 1
         if session.replay_plan.should_stub(boundary_id, invocation_index):
             return session.stub_result(boundary_id, kind)
         return _live_cutpoint_call(
             session, fn, boundary_id, kind, args, kwargs,
-            extract_input, invocation_index,
+            extract_input, invocation_index, cached_sig,
         )
 
     return wrapper
@@ -197,8 +204,11 @@ def _run_on_leave(session, boundary_id, kind, input_state, entered: bool) -> Non
         session.on_leave(boundary_id, kind, input_state)
 
 
-def _record_call(session, fn, boundary_id, kind, args, kwargs, extract_input, extract_result, extract_metadata):
-    input_state = _capture_input(fn, args, kwargs, extract_input)
+def _record_call(
+    session, fn, boundary_id, kind, args, kwargs,
+    extract_input, extract_result, extract_metadata, cached_sig=None,
+):
+    input_state = _capture_input(fn, args, kwargs, extract_input, cached_sig)
     call_kwargs, entered = _apply_on_enter(session, boundary_id, kind, input_state, kwargs)
     try:
         try:
@@ -212,8 +222,11 @@ def _record_call(session, fn, boundary_id, kind, args, kwargs, extract_input, ex
         _run_on_leave(session, boundary_id, kind, input_state, entered)
 
 
-async def _record_call_async(session, fn, boundary_id, kind, args, kwargs, extract_input, extract_result, extract_metadata):
-    input_state = _capture_input(fn, args, kwargs, extract_input)
+async def _record_call_async(
+    session, fn, boundary_id, kind, args, kwargs,
+    extract_input, extract_result, extract_metadata, cached_sig=None,
+):
+    input_state = _capture_input(fn, args, kwargs, extract_input, cached_sig)
     call_kwargs, entered = _apply_on_enter(session, boundary_id, kind, input_state, kwargs)
     try:
         try:
@@ -270,8 +283,10 @@ def _call_metadata(result, kind, extract_metadata):
 # Cut-point (REPLAY mode, live boundary). No envelope; capture for assertions.
 # --------------------------------------------------------------------------- #
 
-def _live_cutpoint_call(session, fn, boundary_id, kind, args, kwargs, extract_input, invocation_index):
-    input_state = _capture_input(fn, args, kwargs, extract_input)
+def _live_cutpoint_call(
+    session, fn, boundary_id, kind, args, kwargs, extract_input, invocation_index, cached_sig=None,
+):
+    input_state = _capture_input(fn, args, kwargs, extract_input, cached_sig)
     session.capture_live_input(boundary_id, invocation_index, input_state)
     call_kwargs, entered = _apply_on_enter(session, boundary_id, kind, input_state, kwargs)
     try:
@@ -286,8 +301,10 @@ def _live_cutpoint_call(session, fn, boundary_id, kind, args, kwargs, extract_in
         _run_on_leave(session, boundary_id, kind, input_state, entered)
 
 
-async def _live_cutpoint_call_async(session, fn, boundary_id, kind, args, kwargs, extract_input, invocation_index):
-    input_state = _capture_input(fn, args, kwargs, extract_input)
+async def _live_cutpoint_call_async(
+    session, fn, boundary_id, kind, args, kwargs, extract_input, invocation_index, cached_sig=None,
+):
+    input_state = _capture_input(fn, args, kwargs, extract_input, cached_sig)
     session.capture_live_input(boundary_id, invocation_index, input_state)
     call_kwargs, entered = _apply_on_enter(session, boundary_id, kind, input_state, kwargs)
     try:
@@ -321,23 +338,26 @@ def _advance_cutpoint(session, boundary_id, invocation_index):
 _IO_KEYS = ("messages", "system_prompt", "rag_chunks")
 
 
-def _capture_input(fn, args, kwargs, extract_input) -> InputState:
+def _capture_input(fn, args, kwargs, extract_input, cached_sig=None) -> InputState:
     if extract_input is not None:
         return extract_input(*args, **kwargs)
     # The default capture must never break the wrapped call.
     try:
-        return _bind_input_state(fn, args, kwargs)
+        return _bind_input_state(fn, args, kwargs, cached_sig)
     except Exception:
         return InputState(messages=[], graph_state={"args": _json_safe(list(args)), "kwargs": _json_safe(dict(kwargs))})
 
 
-def _bind_input_state(fn, args, kwargs) -> InputState:
-    graph_state = _bound_arguments(fn, args, kwargs)
+def _bind_input_state(fn, args, kwargs, cached_sig=None) -> InputState:
+    graph_state = _bound_arguments(fn, args, kwargs, cached_sig)
     source = _io_source(graph_state)
     messages = source.get("messages") or []
     if not messages and "user_message" in source:
         messages = [{"role": "user", "content": source["user_message"]}]
-    return InputState(
+    # Messages must be dicts for the envelope schema; coerce dataclass rows.
+    if messages and not isinstance(messages[0], Mapping):
+        messages = [_json_safe(m) for m in messages]
+    return InputState.model_construct(
         messages=messages,
         system_prompt=source.get("system_prompt"),
         rag_chunks=_coerce_rag_chunks(source.get("rag_chunks")),
@@ -345,14 +365,16 @@ def _bind_input_state(fn, args, kwargs) -> InputState:
     )
 
 
-def _bound_arguments(fn, args, kwargs) -> dict[str, Any]:
+def _bound_arguments(fn, args, kwargs, cached_sig=None) -> dict[str, Any]:
     """Record the call by real parameter names. Skip self/cls, flatten **kwargs.
 
     Falls back to positional capture when the callable has no introspectable
     signature (some builtins / C callables).
     """
+    sig = cached_sig
     try:
-        sig = inspect.signature(fn)
+        if sig is None:
+            sig = inspect.signature(fn)
         bound = sig.bind_partial(*args, **kwargs)
     except (TypeError, ValueError):
         return {"args": _json_safe(list(args)), "kwargs": _json_safe(dict(kwargs))}
@@ -409,6 +431,16 @@ def _json_safe(value: Any, _depth: int = 0) -> Any:
         return {str(k): _json_safe(v, _depth + 1) for k, v in value.items()}
     if isinstance(value, (list, tuple, set)):
         return [_json_safe(v, _depth + 1) for v in value]
+    # Fast path for chat-message shaped dataclasses (role/content) used by most agents.
+    role = getattr(value, "role", None)
+    content = getattr(value, "content", None)
+    if isinstance(role, str) and isinstance(content, str):
+        return {"role": role, "content": content}
+    if dataclasses.is_dataclass(value) and not isinstance(value, type):
+        return {
+            f.name: _json_safe(getattr(value, f.name), _depth + 1)
+            for f in dataclasses.fields(value)
+        }
     if hasattr(value, "model_dump"):
         try:
             return value.model_dump()

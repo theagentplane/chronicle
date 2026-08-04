@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`BufferedStore`**: in-memory buffer with batched flush over any inner store
   (`JsonlStore.append_many` for one open/write). Also
   `open_store("buffered:32:runs.jsonl")`.
+- **Recording hot-path speedups**: cache `inspect.signature` per boundary,
+  dataclass-aware `_json_safe`, `Envelope.model_construct` on LIVE record,
+  `JsonlStore(keep_open=True)`, and `retain_envelopes=` on `record()` /
+  session (skip in-memory list when only the store write is needed).
 
 ## [0.3.0] - 2026-07-24
 
