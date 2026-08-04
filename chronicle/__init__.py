@@ -14,6 +14,7 @@ from chronicle.envelope.schema import (
     ToolSchema,
 )
 from chronicle.envelope.backends import (
+    BufferedStore,
     JsonlStore,
     RemoteStore,
     SqliteStore,
@@ -43,6 +44,7 @@ def __getattr__(name: str):
 __all__ = [
     "ActionResult",
     "BoundaryMode",
+    "BufferedStore",
     "ChronicleSession",
     "ContextMetadata",
     "Envelope",

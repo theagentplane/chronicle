@@ -10,6 +10,7 @@ import warnings
 
 import chronicle
 from chronicle import (
+    BufferedStore,
     EnvelopeStore,
     JsonlStore,
     RemoteStore,
@@ -50,6 +51,7 @@ def test_backends_satisfy_store_protocol(tmp_path):
     assert isinstance(SqliteStore(":memory:"), Store)
     assert isinstance(JsonlStore(tmp_path / "r.jsonl"), Store)
     assert isinstance(RemoteStore("http://localhost:1"), Store)
+    assert isinstance(BufferedStore(JsonlStore(tmp_path / "b.jsonl")), Store)
 
 
 def test_open_store_dispatch(tmp_path):
@@ -57,6 +59,22 @@ def test_open_store_dispatch(tmp_path):
     assert isinstance(open_store(str(tmp_path / "r.db")), SqliteStore)
     assert isinstance(open_store("sqlite:///" + str(tmp_path / "x.db")), SqliteStore)
     assert isinstance(open_store("https://cp.example"), RemoteStore)
+    buffered = open_store(f"buffered:8:{tmp_path / 'buf.jsonl'}")
+    assert isinstance(buffered, BufferedStore)
+    assert buffered.batch_size == 8
+
+
+def test_buffered_store_batches_jsonl_flush(tmp_path):
+    path = tmp_path / "runs.jsonl"
+    store = BufferedStore(JsonlStore(path), batch_size=3)
+    store.append(_env("t", 1))
+    store.append(_env("t", 2))
+    assert path.read_text(encoding="utf-8").strip() == ""  # still buffered
+    store.append(_env("t", 3))  # hits batch_size -> flush
+    assert len(JsonlStore(path).read_all()) == 3
+    store.append(_env("t", 4))
+    store.flush()
+    assert len(store.read_all()) == 4
 
 
 def test_record_into_sqlite(tmp_path):

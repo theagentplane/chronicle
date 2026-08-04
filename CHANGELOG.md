@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   recording. `@boundary`, `wrap`, `wrap_llm`, `record()`, and `EnvelopeRecorder`
   become passthrough so an agent can be run with and without Chronicle. Replay is
   unaffected. Check with `chronicle.is_enabled()`.
+- **`BufferedStore`**: in-memory buffer with batched flush over any inner store
+  (`JsonlStore.append_many` for one open/write). Also
+  `open_store("buffered:32:runs.jsonl")`.
 
 ## [0.3.0] - 2026-07-24
 

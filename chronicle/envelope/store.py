@@ -21,6 +21,14 @@ class EnvelopeStore:
         with open(self.path, "a", encoding="utf-8") as f:
             f.write(line + "\n")
 
+    def append_many(self, envelopes: list[Envelope]) -> None:
+        """Append a batch in one open/write — used by ``BufferedStore`` flushes."""
+        if not envelopes:
+            return
+        payload = "".join(e.model_dump_json() + "\n" for e in envelopes)
+        with open(self.path, "a", encoding="utf-8") as f:
+            f.write(payload)
+
     def read_all(self) -> list[Envelope]:
         envelopes: list[Envelope] = []
         with open(self.path, encoding="utf-8") as f:
