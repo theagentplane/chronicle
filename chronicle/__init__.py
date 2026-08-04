@@ -22,6 +22,7 @@ from chronicle.envelope.backends import (
 from chronicle.envelope.store import EnvelopeStore
 from chronicle.execution_graph import ExecutionGraph
 from chronicle.redaction import apply_redactors, default_redactors, redact_secrets
+from chronicle.replay.checksum import ChecksumMismatch
 from chronicle.replay.plan import BoundaryMode, ReplayPlan
 from chronicle.session import ChronicleSession, SessionMode, get_session, reset_session
 from chronicle.wrap import instrument_langgraph, wrap
@@ -42,6 +43,7 @@ def __getattr__(name: str):
 __all__ = [
     "ActionResult",
     "BoundaryMode",
+    "ChecksumMismatch",
     "ChronicleSession",
     "ContextMetadata",
     "Envelope",

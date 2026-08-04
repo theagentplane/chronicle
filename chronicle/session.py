@@ -71,6 +71,9 @@ class ChronicleSession:
     # reach a committed fixture. Empty by default; set to default_redactors() or
     # your own. Signature: (str) -> str. See chronicle.redaction.
     redactors: list[Callable[[str], str]] = field(default_factory=list)
+    # Guard replay fidelity: verify that stubbed crossings occur in the recorded
+    # order, so a control-flow divergence cannot pair a stub with the wrong envelope.
+    verify_checksum: bool = True
 
     _sequence: int = 0
     _invocation_counts: dict[str, int] = field(default_factory=dict)
@@ -80,6 +83,7 @@ class ChronicleSession:
     _captured_results: dict[tuple[str, int], Any] = field(default_factory=dict)
     _recorded_envelopes: list[Envelope] = field(default_factory=list)
     _last_envelope_id: str | None = None
+    _verifier: Any = None
 
     def begin_trace(self, trace_id: str | None = None) -> str:
         if trace_id:
@@ -101,6 +105,7 @@ class ChronicleSession:
         self.mode = SessionMode.REPLAY
         self.replay_plan = plan or ReplayPlan()
         self._replay_cursor.clear()
+        self._verifier = None
 
     def enable_live(self) -> None:
         self.mode = SessionMode.LIVE
@@ -112,6 +117,7 @@ class ChronicleSession:
         self.fixture_graph = ExecutionGraph.load(path)
         self.trace_id = self.fixture_graph.trace_id
         self._replay_cursor.clear()
+        self._verifier = None
         return self.fixture_graph
 
     def current_parent_id(self) -> str | None:
@@ -202,10 +208,21 @@ class ChronicleSession:
         cursor = self._replay_cursor.get(boundary_id, 0) + 1
         self._replay_cursor[boundary_id] = cursor
         envelope = self.fixture_graph.envelope(boundary_id, cursor)
+        if self.verify_checksum:
+            self._ensure_verifier().check(boundary_id, cursor, envelope)
         self._call_log.append(
             CallRecord(boundary_id, cursor, "stub", envelope.envelope_id)
         )
         return envelope
+
+    def _ensure_verifier(self):
+        if self._verifier is None:
+            from chronicle.replay.checksum import build_verifier
+
+            self._verifier = build_verifier(
+                self.fixture_graph.timeline(), self.replay_plan.should_stub
+            )
+        return self._verifier
 
     def stub_result(self, boundary_id: str, kind: str) -> Any:
         envelope = self._fixture_for(boundary_id)
