@@ -2,6 +2,7 @@
 
 from chronicle.api import record, replay_trace
 from chronicle.boundary import boundary, wrap_llm
+from chronicle.config import is_enabled
 from chronicle.envelope.schema import (
     ActionResult,
     ContextMetadata,
@@ -65,6 +66,7 @@ __all__ = [
     "get_session",
     "instrument_langgraph",
     "instrument_otel",
+    "is_enabled",
     "open_store",
     "record",
     "redact_secrets",

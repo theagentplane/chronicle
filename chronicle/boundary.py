@@ -21,11 +21,13 @@ import inspect
 from collections.abc import Callable, Mapping
 from typing import Any, TypeVar
 
+from chronicle.config import is_enabled
 from chronicle.envelope.schema import ActionResult, InputState
 from chronicle.session import (
     SessionMode,
     get_session,
     model_version_from,
+    peek_session,
     result_to_action_result,
     sampling_params_from,
 )
@@ -123,7 +125,13 @@ def _bind_boundary(
 
         @functools.wraps(fn)
         async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
-            session = get_session()
+            if not is_enabled():
+                # Passthrough for LIVE; still honor an active REPLAY session.
+                session = peek_session()
+                if session is None or session.mode == SessionMode.LIVE:
+                    return await fn(*args, **kwargs)
+            else:
+                session = get_session()
             if session.mode == SessionMode.LIVE:
                 return await _record_call_async(
                     session, fn, boundary_id, kind, args, kwargs,
@@ -141,7 +149,13 @@ def _bind_boundary(
 
     @functools.wraps(fn)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
-        session = get_session()
+        if not is_enabled():
+            # Passthrough for LIVE; still honor an active REPLAY session.
+            session = peek_session()
+            if session is None or session.mode == SessionMode.LIVE:
+                return fn(*args, **kwargs)
+        else:
+            session = get_session()
         if session.mode == SessionMode.LIVE:
             return _record_call(
                 session, fn, boundary_id, kind, args, kwargs,

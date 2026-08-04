@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`CHRONICLE_ENABLED`**: set to `0` / `false` / `off` / `no` to turn off LIVE
+  recording. `@boundary`, `wrap`, `wrap_llm`, `record()`, and `EnvelopeRecorder`
+  become passthrough so an agent can be run with and without Chronicle. Replay is
+  unaffected. Check with `chronicle.is_enabled()`.
+
 ## [0.3.0] - 2026-07-24
 
 ### Added

@@ -256,6 +256,11 @@ def get_session() -> ChronicleSession:
     return session
 
 
+def peek_session() -> ChronicleSession | None:
+    """Return the context session if one exists, without creating one."""
+    return _session.get()
+
+
 def reset_session() -> ChronicleSession:
     session = ChronicleSession()
     _session.set(session)

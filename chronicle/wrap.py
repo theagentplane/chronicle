@@ -18,8 +18,9 @@ from collections.abc import Callable, Mapping
 from typing import Any
 
 from chronicle.boundary import boundary
+from chronicle.config import is_enabled
 from chronicle.envelope.schema import ActionResult, InputState
-from chronicle.session import SessionMode, get_session, sampling_params_from
+from chronicle.session import SessionMode, get_session, peek_session, sampling_params_from
 
 
 def instrument_langgraph(nodes: Mapping[str, Callable], *, kind: str = "custom") -> dict[str, Callable]:
@@ -72,7 +73,12 @@ def _wrap_completion(create: Callable, boundary_id: str) -> Callable:
     if inspect.iscoroutinefunction(create):
         @functools.wraps(create)
         async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
-            session = get_session()
+            if not is_enabled():
+                session = peek_session()
+                if session is None or session.mode is SessionMode.LIVE:
+                    return await create(*args, **kwargs)
+            else:
+                session = get_session()
             input_state = _input_state(kwargs)
             if session.mode is SessionMode.REPLAY and _should_stub(session, boundary_id):
                 return _stub(session, boundary_id)
@@ -84,7 +90,12 @@ def _wrap_completion(create: Callable, boundary_id: str) -> Callable:
 
     @functools.wraps(create)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
-        session = get_session()
+        if not is_enabled():
+            session = peek_session()
+            if session is None or session.mode is SessionMode.LIVE:
+                return create(*args, **kwargs)
+        else:
+            session = get_session()
         input_state = _input_state(kwargs)
         if session.mode is SessionMode.REPLAY and _should_stub(session, boundary_id):
             return _stub(session, boundary_id)

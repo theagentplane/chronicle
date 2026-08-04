@@ -12,6 +12,7 @@ from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
+from chronicle.config import is_enabled
 from chronicle.envelope.backends import Store, open_store
 from chronicle.replay.plan import ReplayPlan
 from chronicle.session import ChronicleSession, reset_session
@@ -39,8 +40,15 @@ def record(
             export="fixtures/traces/incident-001/",
         ) as session:
             run_agent(...)
+
+    When ``CHRONICLE_ENABLED`` is off, this is a no-op: yields a fresh session
+    with no store and does not export. Boundaries inside the block also skip
+    LIVE recording.
     """
     session = reset_session()
+    if not is_enabled():
+        yield session
+        return
     if store is not None:
         # A Store instance (has append) is used directly; a path/URL string is routed
         # through open_store, so store="sqlite:///runs.db" or an http control-plane URL

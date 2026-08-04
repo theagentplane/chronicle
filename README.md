@@ -464,6 +464,7 @@ See `examples/langgraph_demo/agent.py`.
 
 | Variable | Purpose |
 |---|---|
+| `CHRONICLE_ENABLED` | Set to `0` / `false` / `off` / `no` to disable LIVE recording (`@boundary`, `wrap`, `record()`, `EnvelopeRecorder` become passthrough). Default on. Replay is unaffected. |
 | `CHRONICLE_BUILD_ID` | Pin runtime build ID in envelope metadata |
 | `CHRONICLE_STORE` | Default envelope store path |
 | `PHOENIX_COLLECTOR_ENDPOINT` | Phoenix OTLP endpoint (default `http://localhost:4317`) |
@@ -578,7 +579,7 @@ during the live run, so tests are deterministic, free, and fast. Only the option
 `@boundary` and `wrap()` are **transparent**: they never change what your function
 returns or raises. Recording adds one wrapper call and one JSON append per boundary
 crossing, so the cost scales with how many boundaries you mark, not with anything in a
-hot loop. Enable it where you want a record; leave it off elsewhere.
+hot loop. Set `CHRONICLE_ENABLED=0` to make LIVE recording a no-op for A/B runs.
 </details>
 
 <details>
