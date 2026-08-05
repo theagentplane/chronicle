@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import IO, Text
+from typing import IO
 
 from chronicle.envelope.schema import Envelope
 
