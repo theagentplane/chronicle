@@ -66,7 +66,16 @@ def record(
         session.redactors = redactors
     session.retain_envelopes = retain_envelopes
     session.begin_trace(trace_id)
-    yield session
+    try:
+        yield session
+    finally:
+        # Buffered (and keep-open) stores must flush so a short run or remainder
+        # batch is not left only in memory when the context exits.
+        store_obj = session.store
+        if store_obj is not None:
+            flush = getattr(store_obj, "flush", None)
+            if callable(flush):
+                flush()
     # Export only on a clean exit, so a crash mid-run doesn't overwrite a fixture
     # with a partial trace. Call session.export_trace(...) yourself if you need it.
     if export is not None and retain_envelopes:

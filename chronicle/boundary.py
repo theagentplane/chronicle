@@ -354,9 +354,9 @@ def _bind_input_state(fn, args, kwargs, cached_sig=None) -> InputState:
     messages = source.get("messages") or []
     if not messages and "user_message" in source:
         messages = [{"role": "user", "content": source["user_message"]}]
-    # Messages must be dicts for the envelope schema; coerce dataclass rows.
-    if messages and not isinstance(messages[0], Mapping):
-        messages = [_json_safe(m) for m in messages]
+    # Messages must be dicts for the envelope schema; coerce each non-mapping row.
+    if messages:
+        messages = [m if isinstance(m, Mapping) else _json_safe(m) for m in messages]
     return InputState.model_construct(
         messages=messages,
         system_prompt=source.get("system_prompt"),
@@ -431,11 +431,7 @@ def _json_safe(value: Any, _depth: int = 0) -> Any:
         return {str(k): _json_safe(v, _depth + 1) for k, v in value.items()}
     if isinstance(value, (list, tuple, set)):
         return [_json_safe(v, _depth + 1) for v in value]
-    # Fast path for chat-message shaped dataclasses (role/content) used by most agents.
-    role = getattr(value, "role", None)
-    content = getattr(value, "content", None)
-    if isinstance(role, str) and isinstance(content, str):
-        return {"role": role, "content": content}
+    # Prefer full structured dumps so tool_calls / name / id are not stripped.
     if dataclasses.is_dataclass(value) and not isinstance(value, type):
         return {
             f.name: _json_safe(getattr(value, f.name), _depth + 1)
@@ -446,4 +442,16 @@ def _json_safe(value: Any, _depth: int = 0) -> Any:
             return value.model_dump()
         except Exception:
             return repr(value)
+    # Duck-typed chat message: keep every public attribute, not just role/content.
+    role = getattr(value, "role", None)
+    content = getattr(value, "content", None)
+    if isinstance(role, str) and isinstance(content, str):
+        data = getattr(value, "__dict__", None)
+        if isinstance(data, dict) and data:
+            return {
+                str(k): _json_safe(v, _depth + 1)
+                for k, v in data.items()
+                if not str(k).startswith("_")
+            }
+        return {"role": role, "content": content}
     return repr(value)

@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dataclass-aware `_json_safe`, `Envelope.model_construct` on LIVE record,
   `JsonlStore(keep_open=True)`, and `retain_envelopes=` on `record()` /
   session (skip in-memory list when only the store write is needed).
+- **BufferedStore durability**: `record()` flushes the store on context exit;
+  failed flushes restore the in-memory batch instead of dropping it.
+- **Message capture**: `_json_safe` keeps full dataclass / duck-typed message
+  fields (not just `role`/`content`); every messages entry is coerced to a dict.
 
 ## [0.3.0] - 2026-07-24
 

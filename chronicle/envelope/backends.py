@@ -88,10 +88,20 @@ class BufferedStore:
         self._buf = []
         append_many = getattr(self.inner, "append_many", None)
         if callable(append_many):
-            append_many(batch)
-        else:
-            for envelope in batch:
+            try:
+                append_many(batch)
+            except Exception:
+                # Nothing committed — put the batch back ahead of any newer appends.
+                self._buf = batch + self._buf
+                raise
+            return
+        for i, envelope in enumerate(batch):
+            try:
                 self.inner.append(envelope)
+            except Exception:
+                # Keep the failed envelope and everything after it.
+                self._buf = batch[i:] + self._buf
+                raise
 
     def read_all(self) -> list[Envelope]:
         self.flush()
