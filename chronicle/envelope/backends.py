@@ -5,6 +5,8 @@ Every backend satisfies the ``Store`` protocol, so `chronicle.record(store=...)`
 
 - ``JsonlStore`` (the default ``EnvelopeStore``): append-only JSONL on local disk.
   Zero config, perfect for local development and CI fixtures.
+- ``BufferedStore``: in-memory buffer + batched flush over any inner store. Cuts
+  per-crossing disk/network cost; use ``buffered:32:runs.jsonl`` via ``open_store``.
 - ``SqliteStore``: durable, queryable SQLite. Zero dependency (stdlib ``sqlite3``).
   A good fit for a single deployed agent instance.
 - ``RemoteStore``: ships envelopes to a Chronicle control plane over HTTP. Point many
@@ -45,6 +47,85 @@ class Store(Protocol):
     def read_all(self) -> list[Envelope]: ...
     def find_by_trace_id(self, trace_id: str) -> list[Envelope]: ...
     def find_by_envelope_id(self, envelope_id: str) -> Envelope | None: ...
+
+
+class BufferedStore:
+    """In-memory buffer in front of any ``Store``, with batched flush to disk/network.
+
+    ``append`` is cheap (list append under a lock). When the buffer reaches
+    ``batch_size``, or when ``flush()`` / context-exit is called, envelopes are
+    written to the inner store in one batch. Prefer an inner store that implements
+    ``append_many`` (``JsonlStore`` does) so a flush is a single open/write.
+    """
+
+    def __init__(
+        self,
+        inner: Store,
+        *,
+        batch_size: int = 32,
+    ) -> None:
+        if batch_size < 1:
+            raise ValueError("batch_size must be >= 1")
+        self.inner = inner
+        self.batch_size = batch_size
+        self._buf: list[Envelope] = []
+        self._lock = threading.Lock()
+
+    def append(self, envelope: Envelope) -> None:
+        with self._lock:
+            self._buf.append(envelope)
+            if len(self._buf) >= self.batch_size:
+                self._flush_unlocked()
+
+    def flush(self) -> None:
+        with self._lock:
+            self._flush_unlocked()
+
+    def _flush_unlocked(self) -> None:
+        if not self._buf:
+            return
+        batch = self._buf
+        self._buf = []
+        append_many = getattr(self.inner, "append_many", None)
+        if callable(append_many):
+            try:
+                append_many(batch)
+            except Exception:
+                # Nothing committed — put the batch back ahead of any newer appends.
+                self._buf = batch + self._buf
+                raise
+            return
+        for i, envelope in enumerate(batch):
+            try:
+                self.inner.append(envelope)
+            except Exception:
+                # Keep the failed envelope and everything after it.
+                self._buf = batch[i:] + self._buf
+                raise
+
+    def read_all(self) -> list[Envelope]:
+        self.flush()
+        return self.inner.read_all()
+
+    def find_by_trace_id(self, trace_id: str) -> list[Envelope]:
+        self.flush()
+        return self.inner.find_by_trace_id(trace_id)
+
+    def find_by_envelope_id(self, envelope_id: str) -> Envelope | None:
+        self.flush()
+        return self.inner.find_by_envelope_id(envelope_id)
+
+    def __enter__(self) -> BufferedStore:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self.flush()
+
+    def close(self) -> None:
+        self.flush()
+        close = getattr(self.inner, "close", None)
+        if callable(close):
+            close()
 
 
 class SqliteStore:
@@ -160,13 +241,35 @@ def open_store(target: str | Path, **kwargs) -> Store:
 
     - ``http(s)://...``            -> RemoteStore (control plane), accepts api_key/timeout
     - ``sqlite:///path`` or ``*.db`` / ``*.sqlite`` -> SqliteStore
+    - ``buffered:N:inner``         -> BufferedStore(batch_size=N) over open_store(inner)
+      e.g. ``buffered:32:runs.jsonl`` or ``buffered:64:sqlite:///runs.db``
     - anything else                -> JsonlStore (local file, the default)
     """
     text = str(target)
+    if text.startswith("buffered:"):
+        # buffered:<batch_size>:<inner-target>
+        rest = text[len("buffered:") :]
+        size_str, _, inner = rest.partition(":")
+        if not size_str or not inner:
+            raise ValueError(
+                "buffered store target must look like 'buffered:32:runs.jsonl'"
+            )
+        batch_kwargs = {k: v for k, v in kwargs.items() if k == "batch_size"}
+        inner_kwargs = {k: v for k, v in kwargs.items() if k != "batch_size"}
+        batch_size = int(batch_kwargs.get("batch_size", size_str))
+        # Prefer a kept-open JSONL handle under the buffer — one fd for the run.
+        if "keep_open" not in inner_kwargs and not str(inner).startswith(
+            ("http://", "https://", "sqlite:///", "buffered:")
+        ) and not str(inner).endswith((".db", ".sqlite")):
+            inner_kwargs["keep_open"] = True
+        return BufferedStore(open_store(inner, **inner_kwargs), batch_size=batch_size)
     if text.startswith(("http://", "https://")):
         return RemoteStore(text, **kwargs)
     if text.startswith("sqlite:///"):
         return SqliteStore(text[len("sqlite:///"):], **kwargs)
     if text.endswith((".db", ".sqlite")):
         return SqliteStore(text, **kwargs)
-    return JsonlStore(text)
+    keep_open = bool(kwargs.pop("keep_open", False))
+    if kwargs:
+        raise TypeError(f"unexpected open_store kwargs for JsonlStore: {sorted(kwargs)}")
+    return JsonlStore(text, keep_open=keep_open)

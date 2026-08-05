@@ -8,8 +8,11 @@ from __future__ import annotations
 import threading
 import warnings
 
+import pytest
+
 import chronicle
 from chronicle import (
+    BufferedStore,
     EnvelopeStore,
     JsonlStore,
     RemoteStore,
@@ -50,6 +53,7 @@ def test_backends_satisfy_store_protocol(tmp_path):
     assert isinstance(SqliteStore(":memory:"), Store)
     assert isinstance(JsonlStore(tmp_path / "r.jsonl"), Store)
     assert isinstance(RemoteStore("http://localhost:1"), Store)
+    assert isinstance(BufferedStore(JsonlStore(tmp_path / "b.jsonl")), Store)
 
 
 def test_open_store_dispatch(tmp_path):
@@ -57,6 +61,63 @@ def test_open_store_dispatch(tmp_path):
     assert isinstance(open_store(str(tmp_path / "r.db")), SqliteStore)
     assert isinstance(open_store("sqlite:///" + str(tmp_path / "x.db")), SqliteStore)
     assert isinstance(open_store("https://cp.example"), RemoteStore)
+    buffered = open_store(f"buffered:8:{tmp_path / 'buf.jsonl'}")
+    assert isinstance(buffered, BufferedStore)
+    assert buffered.batch_size == 8
+
+
+def test_buffered_store_batches_jsonl_flush(tmp_path):
+    path = tmp_path / "runs.jsonl"
+    store = BufferedStore(JsonlStore(path), batch_size=3)
+    store.append(_env("t", 1))
+    store.append(_env("t", 2))
+    assert path.read_text(encoding="utf-8").strip() == ""  # still buffered
+    store.append(_env("t", 3))  # hits batch_size -> flush
+    assert len(JsonlStore(path).read_all()) == 3
+    store.append(_env("t", 4))
+    store.flush()
+    assert len(store.read_all()) == 4
+
+
+def test_record_flushes_buffered_store_on_exit(tmp_path):
+    """Short runs below batch_size must still land on disk when record() exits."""
+    path = tmp_path / "runs.jsonl"
+    store = BufferedStore(JsonlStore(path), batch_size=32)
+
+    with chronicle.record("t-buf", store=store):
+
+        @boundary("agent", kind="tool")
+        def do(x):
+            return {"ok": x}
+
+        do(1)
+
+    assert len(JsonlStore(path).read_all()) == 1
+
+
+def test_buffered_store_restores_batch_when_append_many_fails(tmp_path):
+    class BoomStore:
+        def append(self, envelope):
+            raise AssertionError("should use append_many")
+
+        def append_many(self, envelopes):
+            raise OSError("disk full")
+
+        def read_all(self):
+            return []
+
+        def find_by_trace_id(self, trace_id):
+            return []
+
+        def find_by_envelope_id(self, envelope_id):
+            return None
+
+    store = BufferedStore(BoomStore(), batch_size=2)
+    store.append(_env("t", 1))
+    with pytest.raises(OSError, match="disk full"):
+        store.append(_env("t", 2))  # triggers flush
+    # Failed batch is back in the buffer, not silently dropped.
+    assert len(store._buf) == 2
 
 
 def test_record_into_sqlite(tmp_path):

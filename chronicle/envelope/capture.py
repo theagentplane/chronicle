@@ -9,6 +9,7 @@ import uuid
 from collections.abc import Callable
 from typing import Any, ParamSpec, TypeVar
 
+from chronicle.config import is_enabled
 from chronicle.envelope.schema import (
     ActionResult,
     ContextMetadata,
@@ -141,6 +142,8 @@ class EnvelopeRecorder:
             if inspect.iscoroutinefunction(fn):
                 @functools.wraps(fn)
                 async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+                    if not is_enabled():
+                        return await fn(*args, **kwargs)
                     state, input_state = _prepare(args, kwargs)
                     try:
                         result = await fn(*args, **kwargs)
@@ -154,6 +157,8 @@ class EnvelopeRecorder:
 
             @functools.wraps(fn)
             def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+                if not is_enabled():
+                    return fn(*args, **kwargs)
                 state, input_state = _prepare(args, kwargs)
                 try:
                     result = fn(*args, **kwargs)

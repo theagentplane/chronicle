@@ -12,6 +12,7 @@ from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
+from chronicle.config import is_enabled
 from chronicle.envelope.backends import Store, open_store
 from chronicle.replay.plan import ReplayPlan
 from chronicle.session import ChronicleSession, reset_session
@@ -26,6 +27,7 @@ def record(
     build_id: str | None = None,
     redactors: list[Callable[[str], str]] | None = None,
     export: str | Path | None = None,
+    retain_envelopes: bool = True,
 ) -> Iterator[ChronicleSession]:
     """Record a run in one block.
 
@@ -39,8 +41,18 @@ def record(
             export="fixtures/traces/incident-001/",
         ) as session:
             run_agent(...)
+
+    When ``CHRONICLE_ENABLED`` is off, this is a no-op: yields a fresh session
+    with no store and does not export. Boundaries inside the block also skip
+    LIVE recording.
+
+    Set ``retain_envelopes=False`` when you only need the store write (skips the
+    in-session list; ``export_trace`` will be empty).
     """
     session = reset_session()
+    if not is_enabled():
+        yield session
+        return
     if store is not None:
         # A Store instance (has append) is used directly; a path/URL string is routed
         # through open_store, so store="sqlite:///runs.db" or an http control-plane URL
@@ -52,11 +64,21 @@ def record(
         session.build_id = build_id
     if redactors is not None:
         session.redactors = redactors
+    session.retain_envelopes = retain_envelopes
     session.begin_trace(trace_id)
-    yield session
+    try:
+        yield session
+    finally:
+        # Buffered (and keep-open) stores must flush so a short run or remainder
+        # batch is not left only in memory when the context exits.
+        store_obj = session.store
+        if store_obj is not None:
+            flush = getattr(store_obj, "flush", None)
+            if callable(flush):
+                flush()
     # Export only on a clean exit, so a crash mid-run doesn't overwrite a fixture
     # with a partial trace. Call session.export_trace(...) yourself if you need it.
-    if export is not None:
+    if export is not None and retain_envelopes:
         session.export_trace(export)
 
 
