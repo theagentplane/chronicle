@@ -88,10 +88,20 @@ class BufferedStore:
         self._buf = []
         append_many = getattr(self.inner, "append_many", None)
         if callable(append_many):
-            append_many(batch)
-        else:
-            for envelope in batch:
+            try:
+                append_many(batch)
+            except Exception:
+                # Nothing committed — put the batch back ahead of any newer appends.
+                self._buf = batch + self._buf
+                raise
+            return
+        for i, envelope in enumerate(batch):
+            try:
                 self.inner.append(envelope)
+            except Exception:
+                # Keep the failed envelope and everything after it.
+                self._buf = batch[i:] + self._buf
+                raise
 
     def read_all(self) -> list[Envelope]:
         self.flush()
@@ -247,6 +257,11 @@ def open_store(target: str | Path, **kwargs) -> Store:
         batch_kwargs = {k: v for k, v in kwargs.items() if k == "batch_size"}
         inner_kwargs = {k: v for k, v in kwargs.items() if k != "batch_size"}
         batch_size = int(batch_kwargs.get("batch_size", size_str))
+        # Prefer a kept-open JSONL handle under the buffer — one fd for the run.
+        if "keep_open" not in inner_kwargs and not str(inner).startswith(
+            ("http://", "https://", "sqlite:///", "buffered:")
+        ) and not str(inner).endswith((".db", ".sqlite")):
+            inner_kwargs["keep_open"] = True
         return BufferedStore(open_store(inner, **inner_kwargs), batch_size=batch_size)
     if text.startswith(("http://", "https://")):
         return RemoteStore(text, **kwargs)
@@ -254,4 +269,7 @@ def open_store(target: str | Path, **kwargs) -> Store:
         return SqliteStore(text[len("sqlite:///"):], **kwargs)
     if text.endswith((".db", ".sqlite")):
         return SqliteStore(text, **kwargs)
-    return JsonlStore(text)
+    keep_open = bool(kwargs.pop("keep_open", False))
+    if kwargs:
+        raise TypeError(f"unexpected open_store kwargs for JsonlStore: {sorted(kwargs)}")
+    return JsonlStore(text, keep_open=keep_open)

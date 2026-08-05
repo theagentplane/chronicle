@@ -7,6 +7,7 @@ import uuid
 from collections.abc import Callable, Mapping
 from contextvars import ContextVar
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -71,6 +72,9 @@ class ChronicleSession:
     # reach a committed fixture. Empty by default; set to default_redactors() or
     # your own. Signature: (str) -> str. See chronicle.redaction.
     redactors: list[Callable[[str], str]] = field(default_factory=list)
+    # When False, envelopes are written to ``store`` only and not kept on the
+    # session (``export_trace`` will be empty). Cuts memory traffic on hot paths.
+    retain_envelopes: bool = True
 
     _sequence: int = 0
     _invocation_counts: dict[str, int] = field(default_factory=dict)
@@ -153,23 +157,31 @@ class ChronicleSession:
         sequence = self.next_sequence()
         parent_id = self._last_envelope_id
 
-        envelope = Envelope(
+        # model_construct: fields are produced by Chronicle itself; skip pydantic
+        # validation on the hot LIVE path.
+        envelope = Envelope.model_construct(
+            schema_version="1.0",
+            envelope_id=str(uuid.uuid4()),
             trace_id=self.trace_id,
             node_id=boundary_id,
             boundary_kind=kind,
             parent_envelope_id=parent_id,
             sequence=sequence,
             invocation_index=invocation_index,
-            metadata=ContextMetadata(
+            timestamp=datetime.now(timezone.utc),
+            metadata=ContextMetadata.model_construct(
                 # Prefer what the call actually used; fall back to the session
                 # default only when the boundary surfaced no real metadata.
                 model_version=model_version or self.model_version,
                 build_id=self.build_id,
-                sampling_params=sampling_params or SamplingParams(),
+                sampling_params=sampling_params or SamplingParams.model_construct(
+                    temperature=None, top_p=None, max_tokens=None, seed=None, extra={},
+                ),
                 tool_schemas=tool_schemas or [],
                 framework="chronicle.boundary",
                 node_id=boundary_id,
                 trace_id=self.trace_id,
+                extra={},
             ),
             input_state=input_state,
             action_result=action_result,
@@ -182,7 +194,8 @@ class ChronicleSession:
 
         self._push_envelope(envelope.envelope_id)
         try:
-            self._recorded_envelopes.append(envelope)
+            if self.retain_envelopes:
+                self._recorded_envelopes.append(envelope)
             self._last_envelope_id = envelope.envelope_id
             if self.store is not None:
                 self.store.append(envelope)
@@ -290,26 +303,42 @@ def envelope_to_return_value(envelope: Envelope, kind: str) -> Any:
 
 def result_to_action_result(result: Any, kind: str) -> ActionResult:
     if kind == "tool" and isinstance(result, dict):
-        return ActionResult(
+        return ActionResult.model_construct(
+            tool_calls=[],
             completion=result.get("status", str(result)),
+            finish_reason=None,
+            token_usage={},
             raw_response=result,
+            error=None,
+            error_type=None,
         )
     if kind == "llm" and isinstance(result, dict):
         tool_calls = [
-            ToolCall(
+            ToolCall.model_construct(
                 id=tc.get("id"),
                 name=tc.get("name", ""),
                 arguments=tc.get("arguments", {}),
             )
             for tc in result.get("tool_calls", [])
         ]
-        return ActionResult(
+        return ActionResult.model_construct(
             tool_calls=tool_calls,
             completion=result.get("completion"),
             finish_reason=result.get("finish_reason"),
             token_usage=_as_token_usage(result.get("token_usage") or result.get("usage")),
+            raw_response=None,
+            error=None,
+            error_type=None,
         )
-    return ActionResult(completion=str(result), raw_response=result if isinstance(result, dict) else None)
+    return ActionResult.model_construct(
+        tool_calls=[],
+        completion=str(result),
+        finish_reason=None,
+        token_usage={},
+        raw_response=result if isinstance(result, dict) else None,
+        error=None,
+        error_type=None,
+    )
 
 
 def _as_token_usage(source: Any) -> dict[str, int]:
