@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`examples/financial_incidents/run.py`** crashed on a fresh Windows install
+  (`UnicodeEncodeError` from the console's default `cp1252` codepage) when running
+  the exact command the README's Demos table advertises. Stdout/stderr now force
+  UTF-8 if the console isn't already.
+
 ### Added
 - **`CHRONICLE_ENABLED`**: set to `0` / `false` / `off` / `no` to turn off LIVE
   recording. `@boundary`, `wrap`, `wrap_llm`, `record()`, and `EnvelopeRecorder`
