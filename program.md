@@ -66,7 +66,8 @@ LOOP for the agreed number of iterations:
 5. Append a row to `results.tsv` (commit hash, score, ttfsr_pass, tests_green, status,
    description).
 6. If `score` improved and both `ttfsr_pass` and `tests_green` are true: **keep** —
-   advance the branch, update `train.md` with what worked and why.
+   advance the branch, update `train.md` with what worked and why, and add an entry
+   to `docs/growth/fixes-log.md` (what broke, what changed, before/after score).
 7. Otherwise: **discard** — `git reset` back to the prior commit, note in `train.md`
    why it didn't pan out so the next iteration doesn't repeat it.
 
