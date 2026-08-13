@@ -48,16 +48,24 @@ def make_server(host: str = "127.0.0.1", port: int = 8900, db: str = ":memory:")
             return [json.loads(e.model_dump_json()) for e in envelopes]
 
         def do_POST(self) -> None:
-            if self.path.rstrip("/") == "/envelopes":
+            path = self.path.rstrip("/")
+            if path in {"/v1/envelopes:batch", "/envelopes:batch"}:
                 length = int(self.headers.get("Content-Length", 0))
                 raw = self.rfile.read(length)
                 try:
-                    envelope = Envelope.from_json(raw)
-                except Exception as exc:  # noqa: BLE001 - report bad input, do not crash
-                    self._send(400, {"error": f"invalid envelope: {exc}"})
+                    payload = json.loads(raw)
+                    items = payload.get("envelopes") if isinstance(payload, dict) else None
+                    if not isinstance(items, list):
+                        raise ValueError("expected {envelopes: [...]}")
+                    ids = []
+                    for item in items:
+                        envelope = Envelope.from_json(json.dumps(item) if isinstance(item, dict) else item)
+                        store.append(envelope)
+                        ids.append(envelope.envelope_id)
+                except Exception as exc:  # noqa: BLE001
+                    self._send(400, {"error": f"invalid batch: {exc}"})
                     return
-                store.append(envelope)
-                self._send(201, {"status": "stored", "envelope_id": envelope.envelope_id})
+                self._send(201, {"status": "stored", "accepted": len(ids), "deduped": 0, "envelope_ids": ids})
             else:
                 self._send(404, {"error": "not found"})
 
@@ -65,14 +73,9 @@ def make_server(host: str = "127.0.0.1", port: int = 8900, db: str = ":memory:")
             path = self.path.rstrip("/") or "/"
             if path == "/health":
                 self._send(200, {"status": "ok"})
-            elif path == "/envelopes":
-                self._send(200, self._dump(store.read_all()))
-            elif path.startswith("/traces/") and path.endswith("/envelopes"):
-                trace_id = path[len("/traces/"):-len("/envelopes")]
-                self._send(200, self._dump(store.find_by_trace_id(trace_id)))
-            elif path.startswith("/envelopes/"):
-                envelope = store.find_by_envelope_id(path[len("/envelopes/"):])
-                self._send(200, self._dump([envelope] if envelope else []))
+            elif path.startswith("/v1/traces/") and path.endswith("/envelopes"):
+                trace_id = path[len("/v1/traces/"):-len("/envelopes")]
+                self._send(200, {"envelopes": self._dump(store.find_by_trace_id(trace_id))})
             else:
                 self._send(404, {"error": "not found"})
 

@@ -185,17 +185,31 @@ class SqliteStore:
 
 
 class RemoteStore:
-    """Ships envelopes to a Chronicle control plane over HTTP (stdlib ``urllib``).
+    """Ships envelopes to the AgentPlane control plane over HTTP.
 
-    Point deployed agents at one shared service. Recording must never break the agent,
-    so a failed append is warned and dropped rather than raised. Reads return an empty
-    list on failure. See ``examples/control_plane/server.py`` for a reference service.
+    Ingest is **batch-only** (``POST /v1/envelopes:batch``). ``batch_size=1`` (default)
+    flushes on every append. The agent sidecar reads fixtures with
+    ``GET /v1/traces/{trace_id}/envelopes`` only — no dump-all.
+
+    Failed writes are warned and dropped so recording never breaks the agent.
     """
 
-    def __init__(self, base_url: str, *, api_key: str | None = None, timeout: float = 5.0) -> None:
+    def __init__(
+        self,
+        base_url: str,
+        *,
+        api_key: str | None = None,
+        timeout: float = 5.0,
+        batch_size: int = 1,
+    ) -> None:
+        if batch_size < 1:
+            raise ValueError("batch_size must be >= 1")
         self.base_url = base_url.rstrip("/")
         self.api_key = api_key
         self.timeout = timeout
+        self.batch_size = batch_size
+        self._buf: list[Envelope] = []
+        self._lock = threading.Lock()
 
     def _headers(self) -> dict[str, str]:
         headers = {"Content-Type": "application/json"}
@@ -204,36 +218,75 @@ class RemoteStore:
         return headers
 
     def append(self, envelope: Envelope) -> None:
-        request = urllib.request.Request(
-            f"{self.base_url}/envelopes",
-            data=envelope.model_dump_json().encode("utf-8"),
-            headers=self._headers(),
-            method="POST",
-        )
+        with self._lock:
+            self._buf.append(envelope)
+            if len(self._buf) >= self.batch_size:
+                self._flush_unlocked()
+
+    def append_many(self, envelopes: list[Envelope]) -> None:
+        self._post_batch(list(envelopes))
+
+    def flush(self) -> None:
+        with self._lock:
+            self._flush_unlocked()
+
+    def _flush_unlocked(self) -> None:
+        if not self._buf:
+            return
+        batch = self._buf
+        self._buf = []
         try:
-            urllib.request.urlopen(request, timeout=self.timeout).read()
+            self._post_batch(batch)
         except (urllib.error.URLError, OSError) as exc:
             warnings.warn(f"chronicle RemoteStore append dropped: {exc}", stacklevel=2)
 
+    def _post_batch(self, envelopes: list[Envelope]) -> None:
+        payload = json.dumps({"envelopes": [json.loads(e.model_dump_json()) for e in envelopes]})
+        request = urllib.request.Request(
+            f"{self.base_url}/v1/envelopes:batch",
+            data=payload.encode("utf-8"),
+            headers=self._headers(),
+            method="POST",
+        )
+        urllib.request.urlopen(request, timeout=self.timeout).read()
+
     def read_all(self) -> list[Envelope]:
-        return self._get("/envelopes")
+        # Not an agent API — UI searches traces on the plane. Keep protocol shape.
+        return []
 
     def find_by_trace_id(self, trace_id: str) -> list[Envelope]:
-        return self._get(f"/traces/{trace_id}/envelopes")
-
-    def find_by_envelope_id(self, envelope_id: str) -> Envelope | None:
-        found = self._get(f"/envelopes/{envelope_id}")
-        return found[0] if found else None
-
-    def _get(self, path: str) -> list[Envelope]:
-        request = urllib.request.Request(f"{self.base_url}{path}", headers=self._headers())
+        self.flush()
+        request = urllib.request.Request(
+            f"{self.base_url}/v1/traces/{trace_id}/envelopes",
+            headers=self._headers(),
+        )
         try:
             body = urllib.request.urlopen(request, timeout=self.timeout).read()
         except (urllib.error.URLError, OSError):
             return []
         payload = json.loads(body)
-        items = payload if isinstance(payload, list) else [payload]
-        return [Envelope.from_json(json.dumps(item)) for item in items]
+        items = payload.get("envelopes") if isinstance(payload, dict) else payload
+        if not isinstance(items, list):
+            return []
+        out: list[Envelope] = []
+        for item in items:
+            try:
+                out.append(Envelope.from_json(json.dumps(item)))
+            except Exception:
+                continue
+        return out
+
+    def find_by_envelope_id(self, envelope_id: str) -> Envelope | None:
+        return None
+
+    def close(self) -> None:
+        self.flush()
+
+    def __enter__(self) -> RemoteStore:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self.flush()
 
 
 def open_store(target: str | Path, **kwargs) -> Store:

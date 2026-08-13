@@ -158,11 +158,8 @@ def test_remote_store_end_to_end():
         a, b = _env("rt", 1), _env("rt", 2)
         store.append(a)
         store.append(b)
+        store.flush()
         assert [e.sequence for e in store.find_by_trace_id("rt")] == [1, 2]
-        assert len(store.read_all()) == 2
-        one = store.find_by_envelope_id(a.envelope_id)
-        assert one is not None and one.envelope_id == a.envelope_id
-        assert store.find_by_envelope_id("missing") is None
     finally:
         server.shutdown()
 
