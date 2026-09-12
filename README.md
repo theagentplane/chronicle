@@ -10,7 +10,8 @@ Turn a production agent failure into a committed regression test, and re-run you
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://pypi.org/project/agent-chronicle/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](https://github.com/theagentplane/chronicle/blob/main/LICENSE.txt)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![Stars](https://img.shields.io/github/stars/theagentplane/chronicle?style=flat&color=yellow)](https://github.com/theagentplane/chronicle/stargazers)
+[![Writing & talks](https://img.shields.io/badge/Writing%20%26%20talks-The%20Agent%20Plane-7B61FF?style=flat)](https://theagentplane.github.io/media.html)
+[![Discussions](https://img.shields.io/badge/GitHub-Discussions-7B61FF?style=flat)](https://github.com/theagentplane/chronicle/discussions)
 
 <sub>To appear at <a href="https://realm-workshop.github.io/">REALM</a> (Research on Agent Language Models), a workshop at EMNLP 2026</sub>
 
@@ -742,9 +743,22 @@ Presented at the **AI Engineer World's Fair 2026**.
 - [Your Agent Failed in Prod. Good Luck Reproducing It](https://dev.to/tisha/your-agent-failed-in-prod-good-luck-reproducing-it-56ci): why record and replay beats forcing determinism.
 - [You Recorded the Incident. Now Prove Your Fix Actually Works](https://dev.to/tisha/you-recorded-the-incident-now-prove-your-fix-actually-works-2cni): cut-point replay, turning an incident into a regression test.
 
+Everything we write and talk about, on agent observability, replay testing and token
+infrastructure, is collected at
+**[theagentplane.github.io/media](https://theagentplane.github.io/media.html)**.
+
 ## Contributing
 
-Contributions are welcome. See [CONTRIBUTING.md](https://github.com/theagentplane/chronicle/blob/main/CONTRIBUTING.md)
+Contributions are welcome, and two areas take them without touching the replay core:
+
+- **An instrumentation entry point** for a framework Chronicle does not cover yet, under
+  `chronicle/instrumentation/`. `instrument(graph)` for LangGraph is the reference.
+- **A store backend** in `chronicle/envelope/backends.py`, alongside the JSONL, buffered
+  and remote ones.
+
+Start at [`good first issue`](https://github.com/theagentplane/chronicle/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+and [`help wanted`](https://github.com/theagentplane/chronicle/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22).
+See [CONTRIBUTING.md](https://github.com/theagentplane/chronicle/blob/main/CONTRIBUTING.md)
 for dev setup, the DCO sign-off, and the record-and-replay reviewer checklist, and please
 read our [Code of Conduct](https://github.com/theagentplane/chronicle/blob/main/CODE_OF_CONDUCT.md).
 
