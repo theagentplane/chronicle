@@ -11,6 +11,13 @@ from types import ModuleType
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
+# Windows consoles default to the system codepage (e.g. cp1252), which can't
+# encode the box-drawing characters this demo prints. Force UTF-8 so the
+# README's advertised command works out of the box on every platform.
+if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 from chronicle.envelope.store import EnvelopeStore
 from chronicle.replay.plan import ReplayPlan
 from chronicle.session import ChronicleSession, reset_session
