@@ -17,3 +17,7 @@ htmlcov/
 *.sqlite
 .DS_Store
 **/.DS_Store
+
+# Growth-loop per-iteration log: rewritten every run, would just be commit-hash
+# churn if tracked (a row can't cite its own commit's hash until after it exists).
+results.tsv

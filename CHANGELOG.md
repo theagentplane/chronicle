@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`examples/financial_incidents/run.py`** crashed on a fresh Windows install
+  (`UnicodeEncodeError` from the console's default `cp1252` codepage) when running
+  the exact command the README's Demos table advertises. Stdout/stderr now force
+  UTF-8 if the console isn't already.
+
 ### Added
 - **`chronicle.instrument(graph)`**: one call auto-instruments every node *and*
   every `add_conditional_edges` routing function on a LangGraph `StateGraph`,
