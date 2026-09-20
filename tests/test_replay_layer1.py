@@ -43,7 +43,7 @@ def test_replay_asserts_tool_calls(sample_envelope: Envelope):
 
     def agent(state, inj):
         inj.stub_llm()
-        for tc in sample_envelope.action_result.tool_calls:
+        for tc in sample_envelope.output.tool_calls:
             inj.stub_tool(tc.name, tc.arguments)
         return {"finish_reason": "tool_calls"}
 
@@ -69,11 +69,11 @@ def test_fixture_regression_suite(sample_envelope: Envelope):
 
     def replay_agent(state, inj):
         inj.stub_llm()
-        for tc in sample_envelope.action_result.tool_calls:
+        for tc in sample_envelope.output.tool_calls:
             inj.stub_tool(tc.name, tc.arguments)
         return {
-            "completion": sample_envelope.action_result.completion,
-            "finish_reason": sample_envelope.action_result.finish_reason,
+            "completion": sample_envelope.output.completion,
+            "finish_reason": sample_envelope.output.finish_reason,
         }
 
     _, _, assertions = injector.replay(replay_agent)
@@ -94,9 +94,9 @@ def test_all_fixtures_pass_layer1(fixture_path: Path):
 
     def agent(state, inj):
         inj.stub_llm()
-        for tc in envelope.action_result.tool_calls:
+        for tc in envelope.output.tool_calls:
             inj.stub_tool(tc.name, tc.arguments)
-        return {"finish_reason": envelope.action_result.finish_reason}
+        return {"finish_reason": envelope.output.finish_reason}
 
     _, _, assertions = injector.replay(agent)
     assert all(a.passed for a in assertions)

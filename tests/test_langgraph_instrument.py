@@ -51,7 +51,7 @@ def test_instrument_records_nodes_and_router_decision():
 
     router_env = next(e for e in session._recorded_envelopes if e.name == "a:route")
     assert router_env.kind == "router"
-    assert router_env.action_result.completion == "b"
+    assert router_env.output.completion == "b"
 
 
 @pytest.mark.layer1

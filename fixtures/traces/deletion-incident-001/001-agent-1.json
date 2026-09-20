@@ -1,20 +1,20 @@
 {
-  "schema_version": "1.0",
-  "envelope_id": "094d67cafb409425",
-  "trace_id": "ffc77d2b4623e0d378a8585d71358f91",
+  "schema_version": "2.0",
+  "envelope_id": "b37b77cd3a8b71c8",
+  "trace_id": "ed02ac6aedb5fb2bc16f8121178e5369",
   "name": "agent",
   "kind": "llm",
   "parent_envelope_id": null,
   "sequence": 1,
   "invocation_index": 1,
-  "start_time": "2026-09-20T14:03:12.518443Z",
-  "end_time": "2026-09-20T14:03:12.518577Z",
+  "start_time": "2026-09-20T14:25:23.560258Z",
+  "end_time": "2026-09-20T14:25:23.560420Z",
   "status": {
     "code": "UNSET",
     "message": null
   },
   "metadata": {
-    "model_version": "unknown",
+    "model": "unknown",
     "sampling_params": {
       "temperature": null,
       "top_p": null,
@@ -22,12 +22,9 @@
       "seed": null,
       "extra": {}
     },
-    "build_id": "deletion-demo-record",
-    "tool_schemas": [],
-    "framework": "chronicle.boundary",
-    "extra": {}
+    "tool_schemas": []
   },
-  "input_state": {
+  "input": {
     "messages": [
       {
         "role": "user",
@@ -53,7 +50,7 @@
       "blocked": false
     }
   },
-  "action_result": {
+  "output": {
     "tool_calls": [
       {
         "id": "call_delete_1",

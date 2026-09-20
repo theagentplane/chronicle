@@ -134,7 +134,7 @@ class ExecutionGraph:
         shared = dict(timelines[0].attributes)
         for env in timelines[1:]:
             shared = {k: v for k, v in shared.items() if env.attributes.get(k) == v}
-        for key in ("model_version", "error.type"):
+        for key in ("error.type",):
             shared.pop(key, None)
         return shared
 
@@ -146,11 +146,11 @@ class ExecutionGraph:
                 f"{node.name}@{node.invocation_index}"
                 f"<br/>{node.kind}"
             )
-            if node.action_result.tool_calls:
-                tools = ",".join(tc.name for tc in node.action_result.tool_calls)
+            if node.output.tool_calls:
+                tools = ",".join(tc.name for tc in node.output.tool_calls)
                 label += f"<br/>tools: {tools}"
-            elif node.action_result.completion:
-                short = node.action_result.completion[:40]
+            elif node.output.completion:
+                short = node.output.completion[:40]
                 label += f"<br/>{short}"
             lines.append(f'    {eid}["{label}"]')
             if node.parent_envelope_id:
@@ -308,4 +308,4 @@ class ExecutionGraph:
         if not self.timeline():
             return {}
         first = self.timeline()[0]
-        return dict(first.input_state.graph_state)
+        return dict(first.input.graph_state)

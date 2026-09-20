@@ -22,7 +22,6 @@ def main() -> None:
     set_delete_impl("ungated")
 
     session = reset_session()
-    session.build_id = os.environ.get("CHRONICLE_BUILD_ID", "deletion-demo-record")
     session.store = EnvelopeStore(STORE_PATH)
     session.begin_trace("trace-deletion-incident-001")
 

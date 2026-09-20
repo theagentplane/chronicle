@@ -93,11 +93,11 @@ deterministic.
 
 | Field | Contents |
 |---|---|
-| Contextual metadata | Model version, sampling parameters, runtime build ID |
-| Input state | Assembled prompt, graph state, retrieved context chunks |
-| Action / result | Structured tool calls and model completion |
+| Metadata | Resolved model, sampling parameters, tool schemas offered to the model |
+| Input | Assembled prompt, graph state, retrieved context chunks |
+| Output | Structured tool calls and model completion |
 | Graph linkage | `trace_id` (OTel, 32 hex), `envelope_id` (OTel span id, 16 hex), `parent_envelope_id`, `sequence`, `invocation_index` for retries |
-| Attributes | Flat `dict[str, str]` (trace-level via `record(..., attributes=...)`, plus span attrs like `model_version`) |
+| Attributes | Flat `dict[str, str]` (trace-level via `record(..., attributes=...)`, e.g. `session_id`) |
 
 ## Install
 
@@ -467,7 +467,7 @@ example TokenOps) attach an observer that fires after each live crossing:
 
 ```python
 session = reset_session()
-session.on_crossing = my_observer  # (boundary_id, kind, input_state, result) -> None
+session.on_crossing = my_observer  # (boundary_id, kind, input, result) -> None
 ```
 
 It runs after a live envelope record and a live cut-point capture, and does not run on
@@ -509,8 +509,7 @@ from chronicle.instrumentation import instrument_graph_nodes
 
 recorder = EnvelopeRecorder(
     store=EnvelopeStore(".chronicle/runs/envelopes.jsonl"),
-    model_version="gpt-4o-2024-08-06",
-    build_id="deploy-abc123",
+    model="gpt-4o-2024-08-06",
 )
 wrapped_nodes = instrument_graph_nodes(recorder, {"agent": agent_node})
 ```
@@ -527,7 +526,6 @@ See `examples/langgraph_demo/agent.py`.
 | Variable | Purpose |
 |---|---|
 | `CHRONICLE_ENABLED` | Set to `0` / `false` / `off` / `no` to disable LIVE recording (`@boundary`, `wrap`, `record()`, `EnvelopeRecorder` become passthrough). Default on. Replay is unaffected. |
-| `CHRONICLE_BUILD_ID` | Pin runtime build ID in envelope metadata |
 | `CHRONICLE_STORE` | Default envelope store path |
 | `PHOENIX_COLLECTOR_ENDPOINT` | Phoenix OTLP endpoint (default `http://localhost:4317`) |
 

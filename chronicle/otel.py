@@ -50,12 +50,12 @@ def _span_kind(kind: str) -> str:
 
 
 def _input_value(envelope: Envelope) -> Any:
-    state = envelope.input_state
+    state = envelope.input
     return state.messages or state.graph_state or {}
 
 
 def _output_value(envelope: Envelope) -> Any:
-    action = envelope.action_result
+    action = envelope.output
     if envelope.status.code == "ERROR":
         return {"error": envelope.status.message, "error_type": envelope.attributes.get("error.type")}
     if action.tool_calls:
@@ -86,12 +86,10 @@ def envelope_span_attributes(envelope: Envelope) -> dict[str, Any]:
         S.OUTPUT_VALUE: _as_json(_output_value(envelope)),
         "chronicle.invocation_index": envelope.invocation_index,
     }
-    if envelope.metadata.build_id:
-        attributes["chronicle.build_id"] = envelope.metadata.build_id
     if envelope.kind == "llm":
-        if envelope.metadata.model_version:
-            attributes[S.LLM_MODEL_NAME] = envelope.metadata.model_version
-        usage = envelope.action_result.token_usage or {}
+        if envelope.metadata.model:
+            attributes[S.LLM_MODEL_NAME] = envelope.metadata.model
+        usage = envelope.output.token_usage or {}
         prompt = usage.get("prompt_tokens", usage.get("input_tokens"))
         completion = usage.get("completion_tokens", usage.get("output_tokens"))
         if prompt is not None:

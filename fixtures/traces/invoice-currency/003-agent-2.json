@@ -1,20 +1,20 @@
 {
-  "schema_version": "1.0",
-  "envelope_id": "da4cfa7664d32ad9",
-  "trace_id": "86afc39289c94e8fee14da815de3939d",
+  "schema_version": "2.0",
+  "envelope_id": "08b5e002d7565f5a",
+  "trace_id": "971fa51cb43438b6206676496b840132",
   "name": "agent",
   "kind": "llm",
   "parent_envelope_id": null,
   "sequence": 3,
   "invocation_index": 2,
-  "start_time": "2026-09-20T14:03:12.004453Z",
-  "end_time": "2026-09-20T14:03:12.004478Z",
+  "start_time": "2026-09-20T14:25:23.057430Z",
+  "end_time": "2026-09-20T14:25:23.057462Z",
   "status": {
     "code": "UNSET",
     "message": null
   },
   "metadata": {
-    "model_version": "unknown",
+    "model": "unknown",
     "sampling_params": {
       "temperature": null,
       "top_p": null,
@@ -22,12 +22,9 @@
       "seed": null,
       "extra": {}
     },
-    "build_id": "financial-demo-invoice-currency",
-    "tool_schemas": [],
-    "framework": "chronicle.boundary",
-    "extra": {}
+    "tool_schemas": []
   },
-  "input_state": {
+  "input": {
     "messages": [
       {
         "role": "user",
@@ -72,7 +69,7 @@
       }
     }
   },
-  "action_result": {
+  "output": {
     "tool_calls": [],
     "completion": "Invoice sent to Acme Corp for $2,000,000.00 USD.",
     "finish_reason": "stop",

@@ -32,12 +32,28 @@ DOCS = [
 ]
 
 
+TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "search_docs",
+            "description": "Search internal documentation",
+            "parameters": {
+                "type": "object",
+                "properties": {"query": {"type": "string"}},
+                "required": ["query"],
+            },
+        },
+    }
+]
+
+
 def retrieve(question: str) -> list[dict]:
     return [c for c in DOCS if "api key" in question.lower()]
 
 
 @boundary("agent", kind="llm")
-def agent(messages: list[dict], system_prompt: str, rag_chunks: list[dict]) -> dict:
+def agent(messages: list[dict], system_prompt: str, rag_chunks: list[dict], tools: list[dict]) -> dict:
     """Stub model: answer from the retrieved chunk and ask for a follow-up search."""
     return {
         "completion": rag_chunks[0]["content"] if rag_chunks else "I don't know.",
@@ -59,6 +75,7 @@ def main() -> None:
             messages=[{"role": "user", "content": question}],
             system_prompt="You are a helpful support agent. Use search_docs for factual answers.",
             rag_chunks=retrieve(question),
+            tools=TOOLS,
         )
     (envelope,) = session.envelopes
     envelope.write_file(str(OUT))

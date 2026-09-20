@@ -98,7 +98,7 @@ def test_wrap_passthrough_when_disabled(monkeypatch):
 def test_envelope_recorder_passthrough_when_disabled(monkeypatch, tmp_path):
     monkeypatch.setenv("CHRONICLE_ENABLED", "0")
     store = EnvelopeStore(tmp_path / "runs.jsonl")
-    recorder = EnvelopeRecorder(store=store, model_version="m")
+    recorder = EnvelopeRecorder(store=store, model="m")
 
     @recorder.wrap_node("agent")
     def agent(state: dict) -> dict:

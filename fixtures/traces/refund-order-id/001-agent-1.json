@@ -1,20 +1,20 @@
 {
-  "schema_version": "1.0",
-  "envelope_id": "246bcf2b6a324127",
-  "trace_id": "f9e78007223ce174a7b561a70e76eac9",
+  "schema_version": "2.0",
+  "envelope_id": "11841894155022a7",
+  "trace_id": "397626bbc4c7502de9cfde91e6a5d6b7",
   "name": "agent",
   "kind": "llm",
   "parent_envelope_id": null,
   "sequence": 1,
   "invocation_index": 1,
-  "start_time": "2026-09-20T14:03:11.997161Z",
-  "end_time": "2026-09-20T14:03:11.997332Z",
+  "start_time": "2026-09-20T14:25:23.050416Z",
+  "end_time": "2026-09-20T14:25:23.050574Z",
   "status": {
     "code": "UNSET",
     "message": null
   },
   "metadata": {
-    "model_version": "unknown",
+    "model": "unknown",
     "sampling_params": {
       "temperature": null,
       "top_p": null,
@@ -22,12 +22,9 @@
       "seed": null,
       "extra": {}
     },
-    "build_id": "financial-demo-refund-order-id",
-    "tool_schemas": [],
-    "framework": "chronicle.boundary",
-    "extra": {}
+    "tool_schemas": []
   },
-  "input_state": {
+  "input": {
     "messages": [
       {
         "role": "user",
@@ -52,7 +49,7 @@
       "blocked": false
     }
   },
-  "action_result": {
+  "output": {
     "tool_calls": [
       {
         "id": "call_refund_1",

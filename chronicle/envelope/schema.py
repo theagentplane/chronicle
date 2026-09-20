@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
-import json
 from datetime import datetime, timezone
 from typing import Any, Literal
 
@@ -26,15 +24,13 @@ class ToolSchema(BaseModel):
     parameters: dict[str, Any] = Field(default_factory=dict)
 
 
-class ContextMetadata(BaseModel):
-    """Pinned runtime context — model version must be resolved, not an alias."""
+class Metadata(BaseModel):
+    """What the call ran with: the resolved model (not an alias), its sampling
+    parameters, and the tool schemas offered to it."""
 
-    model_version: str
+    model: str
     sampling_params: SamplingParams = Field(default_factory=SamplingParams)
-    build_id: str
     tool_schemas: list[ToolSchema] = Field(default_factory=list)
-    framework: str | None = None
-    extra: dict[str, Any] = Field(default_factory=dict)
 
 
 class RagChunk(BaseModel):
@@ -46,26 +42,13 @@ class RagChunk(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
-class InputState(BaseModel):
+class Input(BaseModel):
     """Full assembled prompt and retrieved context at the graph boundary."""
 
     messages: list[dict[str, Any]]
     system_prompt: str | None = None
     rag_chunks: list[RagChunk] = Field(default_factory=list)
     graph_state: dict[str, Any] = Field(default_factory=dict)
-
-    @property
-    def content_hash(self) -> str:
-        payload = json.dumps(
-            {
-                "messages": self.messages,
-                "system_prompt": self.system_prompt,
-                "rag_chunks": [c.model_dump() for c in self.rag_chunks],
-            },
-            sort_keys=True,
-            default=str,
-        )
-        return hashlib.sha256(payload.encode()).hexdigest()
 
 
 class ToolCall(BaseModel):
@@ -74,7 +57,7 @@ class ToolCall(BaseModel):
     arguments: dict[str, Any] = Field(default_factory=dict)
 
 
-class ActionResult(BaseModel):
+class Output(BaseModel):
     """Structured tool calls and model completion emitted at this boundary."""
 
     tool_calls: list[ToolCall] = Field(default_factory=list)
@@ -123,9 +106,9 @@ class Envelope(BaseModel):
     # Span end: when the envelope was written.
     end_time: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     status: Status = Field(default_factory=Status)
-    metadata: ContextMetadata
-    input_state: InputState
-    action_result: ActionResult
+    metadata: Metadata
+    input: Input
+    output: Output
     # Flat string→string span attributes (OTel-style).
     attributes: dict[str, str] = Field(default_factory=dict)
 

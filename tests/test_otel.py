@@ -132,14 +132,14 @@ def test_uninstrument_stops_spans():
 
 
 def test_attribute_mapping_includes_model_and_tokens():
-    from chronicle.envelope.schema import ActionResult, ContextMetadata, Envelope, InputState
+    from chronicle.envelope.schema import Output, Metadata, Envelope, Input
 
     env = Envelope(
         name="llm",
         kind="llm",
-        metadata=ContextMetadata(model_version="gpt-4o", build_id="b"),
-        input_state=InputState(messages=[{"role": "user", "content": "hi"}]),
-        action_result=ActionResult(
+        metadata=Metadata(model="gpt-4o"),
+        input=Input(messages=[{"role": "user", "content": "hi"}]),
+        output=Output(
             completion="hey", token_usage={"prompt_tokens": 3, "completion_tokens": 2}
         ),
     )

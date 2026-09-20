@@ -1,20 +1,20 @@
 {
-  "schema_version": "1.0",
-  "envelope_id": "2f9d5712f535a77f",
-  "trace_id": "2b7e55f9f78388467ee53a6216c61e94",
+  "schema_version": "2.0",
+  "envelope_id": "28b70fa7f76efa97",
+  "trace_id": "84213a1e6758e8f6882eac1da5523cbc",
   "name": "agent",
   "kind": "llm",
   "parent_envelope_id": null,
   "sequence": 1,
   "invocation_index": 1,
-  "start_time": "2026-09-20T14:03:13.650335Z",
-  "end_time": "2026-09-20T14:03:13.650436Z",
+  "start_time": "2026-09-20T14:25:58.349375Z",
+  "end_time": "2026-09-20T14:25:58.349493Z",
   "status": {
     "code": "UNSET",
     "message": null
   },
   "metadata": {
-    "model_version": "stub-support-model-1",
+    "model": "stub-support-model-1",
     "sampling_params": {
       "temperature": 0.0,
       "top_p": 1.0,
@@ -22,12 +22,25 @@
       "seed": 42,
       "extra": {}
     },
-    "build_id": "dev-local",
-    "tool_schemas": [],
-    "framework": "chronicle.boundary",
-    "extra": {}
+    "tool_schemas": [
+      {
+        "name": "search_docs",
+        "description": "Search internal documentation",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "query"
+          ]
+        }
+      }
+    ]
   },
-  "input_state": {
+  "input": {
     "messages": [
       {
         "role": "user",
@@ -60,10 +73,30 @@
           "score": 0.92,
           "index_version": "v3.2.1"
         }
+      ],
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "search_docs",
+            "description": "Search internal documentation",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "query": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "query"
+              ]
+            }
+          }
+        }
       ]
     }
   },
-  "action_result": {
+  "output": {
     "tool_calls": [
       {
         "id": "call_1",
@@ -82,7 +115,6 @@
     "raw_response": null
   },
   "attributes": {
-    "chronicle.trace.name": "support-agent-001",
-    "model_version": "stub-support-model-1"
+    "chronicle.trace.name": "support-agent-001"
   }
 }

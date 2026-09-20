@@ -116,7 +116,6 @@ def _record_incident(mod: ModuleType, workdir: Path) -> tuple[Path, int, int]:
     mod.set_mode("ungated")
     store_path = workdir / f"{mod.NAME}.jsonl"
     session = reset_session()
-    session.build_id = f"bench-{mod.NAME}"
     session.store = EnvelopeStore(store_path)
     session.begin_trace(mod.TRACE_NAME)
     mod.run_agent()

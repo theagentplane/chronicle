@@ -1,20 +1,20 @@
 {
-  "schema_version": "1.0",
-  "envelope_id": "d635efab59e733e9",
-  "trace_id": "86afc39289c94e8fee14da815de3939d",
+  "schema_version": "2.0",
+  "envelope_id": "ac6c31179694e091",
+  "trace_id": "971fa51cb43438b6206676496b840132",
   "name": "agent",
   "kind": "llm",
   "parent_envelope_id": null,
   "sequence": 1,
   "invocation_index": 1,
-  "start_time": "2026-09-20T14:03:12.003748Z",
-  "end_time": "2026-09-20T14:03:12.003793Z",
+  "start_time": "2026-09-20T14:25:23.056644Z",
+  "end_time": "2026-09-20T14:25:23.056703Z",
   "status": {
     "code": "UNSET",
     "message": null
   },
   "metadata": {
-    "model_version": "unknown",
+    "model": "unknown",
     "sampling_params": {
       "temperature": null,
       "top_p": null,
@@ -22,12 +22,9 @@
       "seed": null,
       "extra": {}
     },
-    "build_id": "financial-demo-invoice-currency",
-    "tool_schemas": [],
-    "framework": "chronicle.boundary",
-    "extra": {}
+    "tool_schemas": []
   },
-  "input_state": {
+  "input": {
     "messages": [
       {
         "role": "user",
@@ -53,7 +50,7 @@
       "blocked": false
     }
   },
-  "action_result": {
+  "output": {
     "tool_calls": [
       {
         "id": "call_invoice_1",

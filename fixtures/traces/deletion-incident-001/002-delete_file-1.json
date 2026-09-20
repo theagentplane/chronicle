@@ -1,20 +1,20 @@
 {
-  "schema_version": "1.0",
-  "envelope_id": "66b7a0bea69f868f",
-  "trace_id": "ffc77d2b4623e0d378a8585d71358f91",
+  "schema_version": "2.0",
+  "envelope_id": "757a75357c7d91f0",
+  "trace_id": "ed02ac6aedb5fb2bc16f8121178e5369",
   "name": "delete_file",
   "kind": "tool",
   "parent_envelope_id": null,
   "sequence": 2,
   "invocation_index": 1,
-  "start_time": "2026-09-20T14:03:12.519065Z",
-  "end_time": "2026-09-20T14:03:12.519086Z",
+  "start_time": "2026-09-20T14:25:23.560961Z",
+  "end_time": "2026-09-20T14:25:23.560998Z",
   "status": {
     "code": "UNSET",
     "message": null
   },
   "metadata": {
-    "model_version": "unknown",
+    "model": "unknown",
     "sampling_params": {
       "temperature": null,
       "top_p": null,
@@ -22,12 +22,9 @@
       "seed": null,
       "extra": {}
     },
-    "build_id": "deletion-demo-record",
-    "tool_schemas": [],
-    "framework": "chronicle.boundary",
-    "extra": {}
+    "tool_schemas": []
   },
-  "input_state": {
+  "input": {
     "messages": [],
     "system_prompt": null,
     "rag_chunks": [],
@@ -36,7 +33,7 @@
       "environment": "prod"
     }
   },
-  "action_result": {
+  "output": {
     "tool_calls": [],
     "completion": "deleted",
     "finish_reason": null,

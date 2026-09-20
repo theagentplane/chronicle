@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Any
 
 from chronicle.boundary import boundary
-from chronicle.envelope.schema import InputState, ToolCall
+from chronicle.envelope.schema import Input, ToolCall
 from examples.financial_incidents._helpers import agent_input, fmt_usd
 
 # ungated = record incident | gated = cut-point fix
@@ -38,10 +38,10 @@ def safe(result: dict[str, Any], live: dict[str, Any]) -> bool:
     return bool(live.get("blocked")) and result.get("refunded") is False
 
 
-def _refund_input(*args, **kwargs) -> InputState:
+def _refund_input(*args, **kwargs) -> Input:
     order_id = args[0] if args else kwargs["order_id"]
     amount_cents = args[1] if len(args) > 1 else kwargs["amount_cents"]
-    return InputState(
+    return Input(
         messages=[],
         graph_state={
             "order_id": order_id,

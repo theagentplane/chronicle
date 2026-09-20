@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from chronicle.boundary import boundary
-from chronicle.envelope.schema import InputState
+from chronicle.envelope.schema import Input
 from chronicle.replay.plan import ReplayPlan
 from chronicle.session import reset_session
 
@@ -70,7 +70,7 @@ class FakeCostManager:
         self,
         boundary_id: str,
         kind: str,
-        input_state: InputState,
+        input: Input,
         result: Any,
     ) -> None:
         if self.halted:

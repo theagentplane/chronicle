@@ -1,12 +1,10 @@
-Trace: fe45a66c8171b01af1c84d5b38e2ae7e
+Trace: bfeaff4a2fb24cd89d588213ed3d9227
   resource/attributes: chronicle.trace.name=parent-calls-subagent-twice message_id=msg_042 scenario=parent_calls_subagent_twice session_id=sess_subagent_x2 user_id=dev
 
-└─ orchestrator#1 (custom)  span=569ec6d2 parent=—
-   ├─ researcher#1 (custom)  span=7e19a1fe parent=569ec6d2
-   │  ├─ llm#1 (llm)  span=a91de465 parent=7e19a1fe
-   │  │  attrs: model_version=stub-researcher
-   │  └─ web_search#1 (tool)  span=59fa9df4 parent=7e19a1fe
-   └─ researcher#2 (custom)  span=d93e606d parent=569ec6d2
-      ├─ llm#2 (llm)  span=34a199e5 parent=d93e606d
-      │  attrs: model_version=stub-researcher
-      └─ web_search#2 (tool)  span=c7cd2d42 parent=d93e606d
+└─ orchestrator#1 (custom)  span=da436f47 parent=—
+   ├─ researcher#1 (custom)  span=9761afd9 parent=da436f47
+   │  ├─ llm#1 (llm)  span=6516e8bd parent=9761afd9
+   │  └─ web_search#1 (tool)  span=bf75fe2e parent=9761afd9
+   └─ researcher#2 (custom)  span=c9230f61 parent=da436f47
+      ├─ llm#2 (llm)  span=279fb6af parent=c9230f61
+      └─ web_search#2 (tool)  span=ce98b1cf parent=c9230f61

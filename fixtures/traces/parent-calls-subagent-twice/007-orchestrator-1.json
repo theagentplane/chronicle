@@ -1,20 +1,20 @@
 {
-  "schema_version": "1.0",
-  "envelope_id": "569ec6d2cd850236",
-  "trace_id": "fe45a66c8171b01af1c84d5b38e2ae7e",
+  "schema_version": "2.0",
+  "envelope_id": "da436f47f0ecf1a4",
+  "trace_id": "bfeaff4a2fb24cd89d588213ed3d9227",
   "name": "orchestrator",
   "kind": "custom",
   "parent_envelope_id": null,
   "sequence": 7,
   "invocation_index": 1,
-  "start_time": "2026-09-20T14:03:13.013498Z",
-  "end_time": "2026-09-20T14:03:13.055774Z",
+  "start_time": "2026-09-20T14:25:24.055370Z",
+  "end_time": "2026-09-20T14:25:24.098379Z",
   "status": {
     "code": "UNSET",
     "message": null
   },
   "metadata": {
-    "model_version": "unknown",
+    "model": "unknown",
     "sampling_params": {
       "temperature": null,
       "top_p": null,
@@ -22,12 +22,9 @@
       "seed": null,
       "extra": {}
     },
-    "build_id": "dev-local",
-    "tool_schemas": [],
-    "framework": "chronicle.boundary",
-    "extra": {}
+    "tool_schemas": []
   },
-  "input_state": {
+  "input": {
     "messages": [],
     "system_prompt": null,
     "rag_chunks": [],
@@ -35,7 +32,7 @@
       "task": "Summarize token governance and agent cost controls"
     }
   },
-  "action_result": {
+  "output": {
     "tool_calls": [],
     "completion": "{'task': 'Summarize token governance and agent cost controls', 'findings': [{'topic': 'token governance', 'plan': \"Plan: search for 'token governance'\", 'results': ['result for token governance']}, {'topic': 'agent cost controls', 'plan': \"Plan: search for 'agent cost controls'\", 'results': ['result for agent cost controls']}]}",
     "finish_reason": null,

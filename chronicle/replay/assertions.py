@@ -33,7 +33,7 @@ class StructuralAssertions:
 
     def assert_tools_called(self, call_log: list[dict[str, Any]]) -> AssertionResult:
         expected = self.expected_tool_names or [
-            tc.name for tc in self.envelope.action_result.tool_calls
+            tc.name for tc in self.envelope.output.tool_calls
         ]
         actual = [
             entry["name"]
@@ -59,7 +59,7 @@ class StructuralAssertions:
     def assert_tool_argument_keys(
         self, call_log: list[dict[str, Any]]
     ) -> AssertionResult:
-        for recorded in self.envelope.action_result.tool_calls:
+        for recorded in self.envelope.output.tool_calls:
             matching = [
                 e
                 for e in call_log
@@ -97,7 +97,7 @@ class StructuralAssertions:
         return AssertionResult("result_structure", True, "Result structure valid")
 
     def assert_finish_reason(self, result: Any) -> AssertionResult:
-        expected = self.envelope.action_result.finish_reason
+        expected = self.envelope.output.finish_reason
         if expected is None:
             return AssertionResult("finish_reason", True, "No finish_reason to assert")
         actual = result.get("finish_reason") if isinstance(result, dict) else None

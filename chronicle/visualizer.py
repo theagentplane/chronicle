@@ -31,24 +31,23 @@ def _envelope_summary(envelope) -> dict[str, Any]:
         "parent_short_id": env.parent_envelope_id[:8] if env.parent_envelope_id else None,
         "kind_color": _KIND_COLORS.get(env.kind, "#6b7280"),
         "full_envelope": full_envelope,
-        "messages": env.input_state.messages,
-        "graph_state": env.input_state.graph_state,
-        "system_prompt": env.input_state.system_prompt,
-        "tool_calls": [tc.model_dump() for tc in env.action_result.tool_calls],
-        "completion": env.action_result.completion,
-        "finish_reason": env.action_result.finish_reason,
-        "raw_response": env.action_result.raw_response,
-        "model_version": env.metadata.model_version,
-        "build_id": env.metadata.build_id,
+        "messages": env.input.messages,
+        "graph_state": env.input.graph_state,
+        "system_prompt": env.input.system_prompt,
+        "tool_calls": [tc.model_dump() for tc in env.output.tool_calls],
+        "completion": env.output.completion,
+        "finish_reason": env.output.finish_reason,
+        "raw_response": env.output.raw_response,
+        "model": env.metadata.model,
     }
-    if env.action_result.tool_calls:
-        tc = env.action_result.tool_calls[0]
+    if env.output.tool_calls:
+        tc = env.output.tool_calls[0]
         detail["headline"] = f"tool_call({tc.name})"
-    elif env.action_result.raw_response:
-        status = env.action_result.raw_response.get("status", "")
+    elif env.output.raw_response:
+        status = env.output.raw_response.get("status", "")
         detail["headline"] = str(status)
-    elif env.action_result.completion:
-        detail["headline"] = env.action_result.completion[:72]
+    elif env.output.completion:
+        detail["headline"] = env.output.completion[:72]
     else:
         detail["headline"] = env.kind
     return detail
@@ -389,8 +388,7 @@ parent:   ${{esc(node.parent_envelope_id || "—")}}</pre>
           </div>
           <div class="card">
             <h3>Metadata</h3>
-            <pre>model: ${{esc(node.model_version)}}
-build: ${{esc(node.build_id)}}
+            <pre>model: ${{esc(node.model)}}
 finish: ${{esc(node.finish_reason || "—")}}</pre>
           </div>
         </div>

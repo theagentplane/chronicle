@@ -51,7 +51,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   its top-level `dims` is now `attributes`. The failure status message is redacted like
   the rest of the envelope. The `@boundary(kind=...)` argument is unchanged.
 
+- **Renames:** `ContextMetadata` → `Metadata`, `InputState` → `Input` (`Envelope.input_state`
+  → `Envelope.input`), `ActionResult` → `Output` (`Envelope.action_result` →
+  `Envelope.output`), `Metadata.model_version` → `model` (also `record(model=...)`,
+  `session.model`).
+- **Removed:** `Metadata.build_id`, `framework` and `extra` (and `record(build_id=)`,
+  `session.build_id`, the `CHRONICLE_BUILD_ID` variable, the `chronicle.build_id` span
+  attribute); `Input.content_hash`. The model is no longer copied into
+  `attributes["model_version"]`; `metadata.model` is the only home (the exporter already
+  reads it for `llm.model_name`).
+
 ### Added
+- `@boundary(kind="llm")` and `wrap()` now fill `Metadata.tool_schemas` from the tools the
+  model was given (a `tools` / `tool_schemas` argument, OpenAI / Anthropic / plain shapes),
+  or from `extract_metadata`.
 - `chronicle.Status` and `Envelope.status`; `boundary_id`, `span_id` and
   `parent_span_id` remain as getters.
 - `chronicle.ids`: `new_trace_id`, `new_span_id`, `is_trace_id`, `is_span_id`.

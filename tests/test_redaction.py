@@ -36,8 +36,8 @@ def test_llm_boundary_redacts_prompt_and_completion():
     # Secret is gone from both input and output...
     assert SECRET_KEY not in env.model_dump_json()
     # ...but structure is intact: role preserved, finish_reason preserved.
-    assert env.input_state.messages[0]["role"] == "user"
-    assert env.action_result.finish_reason == "stop"
+    assert env.input.messages[0]["role"] == "user"
+    assert env.output.finish_reason == "stop"
 
 
 @pytest.mark.layer1

@@ -1,5 +1,5 @@
 {
-  "trace_id": "fe45a66c8171b01af1c84d5b38e2ae7e",
+  "trace_id": "bfeaff4a2fb24cd89d588213ed3d9227",
   "attributes": {
     "session_id": "sess_subagent_x2",
     "message_id": "msg_042",
@@ -9,7 +9,7 @@
   },
   "spans": [
     {
-      "envelope_id": "a91de465d3fc0167",
+      "envelope_id": "6516e8bdaa480406",
       "name": "llm",
       "kind": "llm",
       "invocation_index": 1,
@@ -17,7 +17,7 @@
       "fixture": "001-llm-1.json"
     },
     {
-      "envelope_id": "59fa9df4e8b67a67",
+      "envelope_id": "bf75fe2eac4721b1",
       "name": "web_search",
       "kind": "tool",
       "invocation_index": 1,
@@ -25,7 +25,7 @@
       "fixture": "002-web_search-1.json"
     },
     {
-      "envelope_id": "7e19a1fe41977630",
+      "envelope_id": "9761afd96006c3ee",
       "name": "researcher",
       "kind": "custom",
       "invocation_index": 1,
@@ -33,7 +33,7 @@
       "fixture": "003-researcher-1.json"
     },
     {
-      "envelope_id": "34a199e5532ce7bd",
+      "envelope_id": "279fb6afa284067f",
       "name": "llm",
       "kind": "llm",
       "invocation_index": 2,
@@ -41,7 +41,7 @@
       "fixture": "004-llm-2.json"
     },
     {
-      "envelope_id": "c7cd2d42f4796ebb",
+      "envelope_id": "ce98b1cf58988f5f",
       "name": "web_search",
       "kind": "tool",
       "invocation_index": 2,
@@ -49,7 +49,7 @@
       "fixture": "005-web_search-2.json"
     },
     {
-      "envelope_id": "d93e606d7777f343",
+      "envelope_id": "c9230f61389882c6",
       "name": "researcher",
       "kind": "custom",
       "invocation_index": 2,
@@ -57,7 +57,7 @@
       "fixture": "006-researcher-2.json"
     },
     {
-      "envelope_id": "569ec6d2cd850236",
+      "envelope_id": "da436f47f0ecf1a4",
       "name": "orchestrator",
       "kind": "custom",
       "invocation_index": 1,
@@ -67,7 +67,7 @@
   ],
   "nodes": [
     {
-      "envelope_id": "a91de465d3fc0167",
+      "envelope_id": "6516e8bdaa480406",
       "name": "llm",
       "kind": "llm",
       "invocation_index": 1,
@@ -75,7 +75,7 @@
       "fixture": "001-llm-1.json"
     },
     {
-      "envelope_id": "59fa9df4e8b67a67",
+      "envelope_id": "bf75fe2eac4721b1",
       "name": "web_search",
       "kind": "tool",
       "invocation_index": 1,
@@ -83,7 +83,7 @@
       "fixture": "002-web_search-1.json"
     },
     {
-      "envelope_id": "7e19a1fe41977630",
+      "envelope_id": "9761afd96006c3ee",
       "name": "researcher",
       "kind": "custom",
       "invocation_index": 1,
@@ -91,7 +91,7 @@
       "fixture": "003-researcher-1.json"
     },
     {
-      "envelope_id": "34a199e5532ce7bd",
+      "envelope_id": "279fb6afa284067f",
       "name": "llm",
       "kind": "llm",
       "invocation_index": 2,
@@ -99,7 +99,7 @@
       "fixture": "004-llm-2.json"
     },
     {
-      "envelope_id": "c7cd2d42f4796ebb",
+      "envelope_id": "ce98b1cf58988f5f",
       "name": "web_search",
       "kind": "tool",
       "invocation_index": 2,
@@ -107,7 +107,7 @@
       "fixture": "005-web_search-2.json"
     },
     {
-      "envelope_id": "d93e606d7777f343",
+      "envelope_id": "c9230f61389882c6",
       "name": "researcher",
       "kind": "custom",
       "invocation_index": 2,
@@ -115,7 +115,7 @@
       "fixture": "006-researcher-2.json"
     },
     {
-      "envelope_id": "569ec6d2cd850236",
+      "envelope_id": "da436f47f0ecf1a4",
       "name": "orchestrator",
       "kind": "custom",
       "invocation_index": 1,
@@ -125,31 +125,31 @@
   ],
   "edges": [
     [
-      "7e19a1fe41977630",
-      "a91de465d3fc0167"
+      "9761afd96006c3ee",
+      "6516e8bdaa480406"
     ],
     [
-      "7e19a1fe41977630",
-      "59fa9df4e8b67a67"
+      "9761afd96006c3ee",
+      "bf75fe2eac4721b1"
     ],
     [
-      "569ec6d2cd850236",
-      "7e19a1fe41977630"
+      "da436f47f0ecf1a4",
+      "9761afd96006c3ee"
     ],
     [
-      "d93e606d7777f343",
-      "34a199e5532ce7bd"
+      "c9230f61389882c6",
+      "279fb6afa284067f"
     ],
     [
-      "d93e606d7777f343",
-      "c7cd2d42f4796ebb"
+      "c9230f61389882c6",
+      "ce98b1cf58988f5f"
     ],
     [
-      "569ec6d2cd850236",
-      "d93e606d7777f343"
+      "da436f47f0ecf1a4",
+      "c9230f61389882c6"
     ]
   ],
   "roots": [
-    "569ec6d2cd850236"
+    "da436f47f0ecf1a4"
   ]
 }

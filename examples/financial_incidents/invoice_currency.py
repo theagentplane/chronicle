@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Any
 
 from chronicle.boundary import boundary
-from chronicle.envelope.schema import InputState, ToolCall
+from chronicle.envelope.schema import Input, ToolCall
 from examples.financial_incidents._helpers import agent_input, fmt_eur, fmt_usd
 
 _mode = "ungated"
@@ -37,7 +37,7 @@ def safe(result: dict[str, Any], live: dict[str, Any]) -> bool:
     return bool(live.get("blocked")) and result.get("invoice_sent") is False
 
 
-def _invoice_input(*args, **kwargs) -> InputState:
+def _invoice_input(*args, **kwargs) -> Input:
     if args and isinstance(args[0], dict):
         graph_state = dict(args[0])
     else:
@@ -49,7 +49,7 @@ def _invoice_input(*args, **kwargs) -> InputState:
     graph_state.setdefault("contract_currency", CONTRACT_CURRENCY)
     graph_state.setdefault("contract_amount_cents", AMOUNT_CENTS)
     graph_state.setdefault("max_invoice_cents", MAX_INVOICE_CENTS)
-    return InputState(messages=[], graph_state=graph_state)
+    return Input(messages=[], graph_state=graph_state)
 
 
 @boundary(TOOL, kind="tool", extract_input=_invoice_input)

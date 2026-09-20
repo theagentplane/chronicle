@@ -1,20 +1,20 @@
 {
-  "schema_version": "1.0",
-  "envelope_id": "d59c070eadade28f",
-  "trace_id": "8a975e7d6e323653ea66240eb60f243a",
+  "schema_version": "2.0",
+  "envelope_id": "658c46323e503319",
+  "trace_id": "cecf472220ade00c84d1c1e0db57b793",
   "name": "agent",
   "kind": "llm",
   "parent_envelope_id": null,
   "sequence": 3,
   "invocation_index": 2,
-  "start_time": "2026-09-20T14:03:12.007827Z",
-  "end_time": "2026-09-20T14:03:12.007850Z",
+  "start_time": "2026-09-20T14:25:23.062144Z",
+  "end_time": "2026-09-20T14:25:23.062178Z",
   "status": {
     "code": "UNSET",
     "message": null
   },
   "metadata": {
-    "model_version": "unknown",
+    "model": "unknown",
     "sampling_params": {
       "temperature": null,
       "top_p": null,
@@ -22,12 +22,9 @@
       "seed": null,
       "extra": {}
     },
-    "build_id": "financial-demo-trade-notional",
-    "tool_schemas": [],
-    "framework": "chronicle.boundary",
-    "extra": {}
+    "tool_schemas": []
   },
-  "input_state": {
+  "input": {
     "messages": [
       {
         "role": "user",
@@ -73,7 +70,7 @@
       }
     }
   },
-  "action_result": {
+  "output": {
     "tool_calls": [],
     "completion": "Done. Sold 1000 ACME at $190.00 ($190,000.00 total)",
     "finish_reason": "stop",

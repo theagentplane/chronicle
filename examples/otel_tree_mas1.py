@@ -40,9 +40,9 @@ def _wrap_stub(client: StubClient):
         return client.complete(model, messages, **kwargs)
 
     def extract_input(model, messages, **kwargs):
-        from chronicle.envelope.schema import InputState
+        from chronicle.envelope.schema import Input
 
-        return InputState(
+        return Input(
             messages=[{"role": m.role, "content": m.content} for m in messages],
             graph_state={"model": model},
         )

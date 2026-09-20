@@ -1,20 +1,20 @@
 {
-  "schema_version": "1.0",
-  "envelope_id": "34a199e5532ce7bd",
-  "trace_id": "fe45a66c8171b01af1c84d5b38e2ae7e",
+  "schema_version": "2.0",
+  "envelope_id": "279fb6afa284067f",
+  "trace_id": "bfeaff4a2fb24cd89d588213ed3d9227",
   "name": "llm",
   "kind": "llm",
-  "parent_envelope_id": "d93e606d7777f343",
+  "parent_envelope_id": "c9230f61389882c6",
   "sequence": 4,
   "invocation_index": 2,
-  "start_time": "2026-09-20T14:03:13.034567Z",
-  "end_time": "2026-09-20T14:03:13.044801Z",
+  "start_time": "2026-09-20T14:25:24.076731Z",
+  "end_time": "2026-09-20T14:25:24.087584Z",
   "status": {
     "code": "UNSET",
     "message": null
   },
   "metadata": {
-    "model_version": "stub-researcher",
+    "model": "stub-researcher",
     "sampling_params": {
       "temperature": null,
       "top_p": null,
@@ -22,12 +22,9 @@
       "seed": null,
       "extra": {}
     },
-    "build_id": "dev-local",
-    "tool_schemas": [],
-    "framework": "chronicle.boundary",
-    "extra": {}
+    "tool_schemas": []
   },
-  "input_state": {
+  "input": {
     "messages": [
       {
         "role": "user",
@@ -45,7 +42,7 @@
       ]
     }
   },
-  "action_result": {
+  "output": {
     "tool_calls": [],
     "completion": "Plan: search for 'agent cost controls'",
     "finish_reason": "stop",
@@ -57,7 +54,6 @@
     "message_id": "msg_042",
     "user_id": "dev",
     "scenario": "parent_calls_subagent_twice",
-    "chronicle.trace.name": "parent-calls-subagent-twice",
-    "model_version": "stub-researcher"
+    "chronicle.trace.name": "parent-calls-subagent-twice"
   }
 }

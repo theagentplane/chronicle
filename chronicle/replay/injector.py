@@ -7,7 +7,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
-from chronicle.envelope.schema import ActionResult, Envelope, InputState
+from chronicle.envelope.schema import Output, Envelope, Input
 from chronicle.replay.assertions import AssertionResult, StructuralAssertions
 
 _REPLAY_GUARD = "CHRONICLE_LAYER1_REPLAY"
@@ -18,7 +18,7 @@ class ReplayContext:
     """Injected state for deterministic Layer 1 execution."""
 
     envelope: Envelope
-    input_state: InputState
+    input: Input
     stubbed_completion: str | None
     stubbed_tool_results: dict[str, Any] = field(default_factory=dict)
     call_log: list[dict[str, Any]] = field(default_factory=list)
@@ -60,25 +60,25 @@ class ReplayInjector:
         self.envelope = envelope
         self.context = ReplayContext(
             envelope=envelope,
-            input_state=envelope.input_state,
-            stubbed_completion=envelope.action_result.completion,
+            input=envelope.input,
+            stubbed_completion=envelope.output.completion,
         )
 
     def inject_state(self, state: dict[str, Any]) -> dict[str, Any]:
         """Merge recorded input state into a graph state dict."""
-        injected = {**state, **self.envelope.input_state.graph_state}
-        injected["messages"] = self.envelope.input_state.messages
-        if self.envelope.input_state.system_prompt:
-            injected["system_prompt"] = self.envelope.input_state.system_prompt
+        injected = {**state, **self.envelope.input.graph_state}
+        injected["messages"] = self.envelope.input.messages
+        if self.envelope.input.system_prompt:
+            injected["system_prompt"] = self.envelope.input.system_prompt
         injected["rag_chunks"] = [
-            c.model_dump() for c in self.envelope.input_state.rag_chunks
+            c.model_dump() for c in self.envelope.input.rag_chunks
         ]
         return injected
 
-    def stub_llm(self, prompt: str | None = None) -> ActionResult:
+    def stub_llm(self, prompt: str | None = None) -> Output:
         """Return the recorded completion without calling any LLM."""
         self.context.call_log.append({"type": "llm_stub", "prompt": prompt})
-        return self.envelope.action_result
+        return self.envelope.output
 
     def stub_tool(self, name: str, arguments: dict[str, Any]) -> Any:
         """Return a stubbed tool result from the recorded envelope."""
@@ -87,7 +87,7 @@ class ReplayInjector:
         )
         if name in self.context.stubbed_tool_results:
             return self.context.stubbed_tool_results[name]
-        for tc in self.envelope.action_result.tool_calls:
+        for tc in self.envelope.output.tool_calls:
             if tc.name == name:
                 return {"status": "recorded", "tool": name, "arguments": tc.arguments}
         return {"status": "stubbed", "tool": name}

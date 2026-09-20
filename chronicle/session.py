@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from collections.abc import Callable, Mapping
 from contextvars import ContextVar
 from dataclasses import dataclass, field
@@ -12,10 +11,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from chronicle.envelope.schema import (
-    ActionResult,
-    ContextMetadata,
+    Output,
+    Metadata,
     Envelope,
-    InputState,
+    Input,
     SamplingParams,
     Status,
     ToolCall,
@@ -55,20 +54,19 @@ class ChronicleSession:
     store: EnvelopeStore | None = None
     replay_plan: ReplayPlan = field(default_factory=ReplayPlan)
     fixture_graph: ExecutionGraph | None = None  # type: ignore[name-defined]
-    model_version: str = "unknown"
-    build_id: str = field(default_factory=lambda: os.environ.get("CHRONICLE_BUILD_ID", "dev-local"))
+    model: str = "unknown"
     # Optional observer for boundary crossings (LIVE record + LIVE cut-point).
-    # Signature: (boundary_id, kind, input_state, result) -> None
-    on_crossing: Callable[[str, str, InputState, Any], None] | None = None
+    # Signature: (boundary_id, kind, input, result) -> None
+    on_crossing: Callable[[str, str, Input, Any], None] | None = None
     # Optional pre-call hook (LIVE record + LIVE cut-point), after input capture
     # and before the wrapped function runs. May raise to abort (e.g. a governor
     # Halt). May return a mapping of kwargs to merge into the call (MUTATE).
-    # Signature: (boundary_id, kind, input_state) -> Mapping[str, Any] | None
-    on_enter: Callable[[str, str, InputState], Mapping[str, Any] | None] | None = None
+    # Signature: (boundary_id, kind, input) -> Mapping[str, Any] | None
+    on_enter: Callable[[str, str, Input], Mapping[str, Any] | None] | None = None
     # Optional post-call cleanup (LIVE), always run after a successful on_enter
     # whether the function returned or raised. Signature:
-    # (boundary_id, kind, input_state) -> None
-    on_leave: Callable[[str, str, InputState], None] | None = None
+    # (boundary_id, kind, input) -> None
+    on_leave: Callable[[str, str, Input], None] | None = None
     # Optional observer fired with the full Envelope right after it is recorded
     # (LIVE). Used by exporters (e.g. OpenTelemetry) to emit one span per crossing.
     # Signature: (envelope) -> None
@@ -87,7 +85,7 @@ class ChronicleSession:
     _invocation_counts: dict[str, int] = field(default_factory=dict)
     _replay_cursor: dict[str, int] = field(default_factory=dict)
     _call_log: list[CallRecord] = field(default_factory=list)
-    _captured_inputs: dict[tuple[str, int], InputState] = field(default_factory=dict)
+    _captured_inputs: dict[tuple[str, int], Input] = field(default_factory=dict)
     _captured_results: dict[tuple[str, int], Any] = field(default_factory=dict)
     _recorded_envelopes: list[Envelope] = field(default_factory=list)
     _last_envelope_id: str | None = None
@@ -186,10 +184,10 @@ class ChronicleSession:
         self,
         boundary_id: str,
         kind: str,
-        input_state: InputState,
-        action_result: ActionResult,
+        input: Input,
+        output: Output,
         *,
-        model_version: str | None = None,
+        model: str | None = None,
         sampling_params: SamplingParams | None = None,
         tool_schemas: list[ToolSchema] | None = None,
         envelope_id: str | None = None,
@@ -217,11 +215,9 @@ class ChronicleSession:
         else:
             parent_id = parent_envelope_id
 
-        resolved_model = model_version or self.model_version
-        # Trace attributes first; envelope attributes override. Promote the model.
+        resolved_model = model or self.model
+        # Trace attributes first; envelope attributes override.
         merged_attrs = {str(k): str(v) for k, v in self.attributes.items()}
-        if resolved_model and resolved_model != "unknown":
-            merged_attrs.setdefault("model_version", str(resolved_model))
         if attributes:
             merged_attrs.update({str(k): str(v) for k, v in attributes.items()})
 
@@ -239,20 +235,17 @@ class ChronicleSession:
             start_time=self._span_started_at.pop(envelope_id, None),
             end_time=datetime.now(timezone.utc),
             status=status or Status(),
-            metadata=ContextMetadata.model_construct(
+            metadata=Metadata.model_construct(
                 # Prefer what the call actually used; fall back to the session
                 # default only when the boundary surfaced no real metadata.
-                model_version=resolved_model,
-                build_id=self.build_id,
+                model=resolved_model,
                 sampling_params=sampling_params or SamplingParams.model_construct(
                     temperature=None, top_p=None, max_tokens=None, seed=None, extra={},
                 ),
                 tool_schemas=tool_schemas or [],
-                framework="chronicle.boundary",
-                extra={},
             ),
-            input_state=input_state,
-            action_result=action_result,
+            input=input,
+            output=output,
             attributes=merged_attrs,
         )
 
@@ -289,8 +282,8 @@ class ChronicleSession:
         envelope = self._fixture_for(boundary_id)
         return envelope_to_return_value(envelope, kind)
 
-    def capture_live_input(self, boundary_id: str, invocation_index: int, input_state: InputState) -> None:
-        self._captured_inputs[(boundary_id, invocation_index)] = input_state
+    def capture_live_input(self, boundary_id: str, invocation_index: int, input: Input) -> None:
+        self._captured_inputs[(boundary_id, invocation_index)] = input
 
     def capture_live_result(self, boundary_id: str, invocation_index: int, result: Any) -> None:
         self._captured_results[(boundary_id, invocation_index)] = result
@@ -298,7 +291,7 @@ class ChronicleSession:
             CallRecord(boundary_id, invocation_index, "live", None)
         )
 
-    def captured_input(self, boundary_id: str, invocation_index: int) -> InputState | None:
+    def captured_input(self, boundary_id: str, invocation_index: int) -> Input | None:
         return self._captured_inputs.get((boundary_id, invocation_index))
 
     def captured_result(self, boundary_id: str, invocation_index: int) -> Any:
@@ -352,32 +345,32 @@ def reset_session() -> ChronicleSession:
 
 def envelope_to_return_value(envelope: Envelope, kind: str) -> Any:
     if kind == "tool":
-        raw = envelope.action_result.raw_response
+        raw = envelope.output.raw_response
         if raw is not None:
             return raw
         return {
-            "status": envelope.action_result.completion or "ok",
+            "status": envelope.output.completion or "ok",
             "blocked": False,
         }
     if kind == "llm":
-        state = dict(envelope.input_state.graph_state)
-        state["tool_calls"] = [tc.model_dump() for tc in envelope.action_result.tool_calls]
-        state["completion"] = envelope.action_result.completion
-        state["finish_reason"] = envelope.action_result.finish_reason
+        state = dict(envelope.input.graph_state)
+        state["tool_calls"] = [tc.model_dump() for tc in envelope.output.tool_calls]
+        state["completion"] = envelope.output.completion
+        state["finish_reason"] = envelope.output.finish_reason
         return state
     if kind == "router":
         # A router's return value is a plain node-name (or list of names), not a
         # dict, so it lives inside raw_response under a fixed key rather than
         # being raw_response itself — the generic dict-passthrough below would
         # otherwise hand back {"decision": ...} instead of the decision itself.
-        raw = envelope.action_result.raw_response
+        raw = envelope.output.raw_response
         if raw is not None and "decision" in raw:
             return raw["decision"]
-        return envelope.action_result.completion
-    raw = envelope.action_result.raw_response
+        return envelope.output.completion
+    raw = envelope.output.raw_response
     if raw is not None:
         return raw
-    return envelope.action_result.completion
+    return envelope.output.completion
 
 
 def _router_decision(result: Any) -> Any:
@@ -393,9 +386,9 @@ def _router_decision(result: Any) -> Any:
     return str(result)
 
 
-def result_to_action_result(result: Any, kind: str) -> ActionResult:
+def result_to_output(result: Any, kind: str) -> Output:
     if kind == "tool" and isinstance(result, dict):
-        return ActionResult.model_construct(
+        return Output.model_construct(
             tool_calls=[],
             completion=result.get("status", str(result)),
             finish_reason=None,
@@ -404,7 +397,7 @@ def result_to_action_result(result: Any, kind: str) -> ActionResult:
         )
     if kind == "router":
         decision = _router_decision(result)
-        return ActionResult(
+        return Output(
             completion=decision if isinstance(decision, str) else str(decision),
             raw_response={"decision": decision},
         )
@@ -417,14 +410,14 @@ def result_to_action_result(result: Any, kind: str) -> ActionResult:
             )
             for tc in result.get("tool_calls", [])
         ]
-        return ActionResult.model_construct(
+        return Output.model_construct(
             tool_calls=tool_calls,
             completion=result.get("completion"),
             finish_reason=result.get("finish_reason"),
             token_usage=_as_token_usage(result.get("token_usage") or result.get("usage")),
             raw_response=None,
         )
-    return ActionResult.model_construct(
+    return Output.model_construct(
         tool_calls=[],
         completion=str(result),
         finish_reason=None,
@@ -477,7 +470,43 @@ def sampling_params_from(source: Any) -> SamplingParams | None:
     )
 
 
-def model_version_from(source: Any) -> str | None:
+def tool_schemas_from(source: Any) -> list[ToolSchema] | None:
+    """Best-effort extraction of the tool schemas offered to a model.
+
+    Reads ``tool_schemas`` or ``tools`` from a mapping and normalizes the common
+    shapes to :class:`ToolSchema`: OpenAI (``{"type": "function", "function": {...}}``),
+    Anthropic (``{"name", "description", "input_schema"}``) and plain
+    (``{"name", "description", "parameters"}``). Returns ``None`` when there are none,
+    so callers can fall back instead of recording an empty list.
+    """
+    if not isinstance(source, Mapping):
+        return None
+    tools = source.get("tool_schemas") or source.get("tools")
+    if not isinstance(tools, (list, tuple)):
+        return None
+    schemas: list[ToolSchema] = []
+    for tool in tools:
+        if isinstance(tool, ToolSchema):
+            schemas.append(tool)
+            continue
+        if not isinstance(tool, Mapping):
+            continue
+        spec = tool.get("function") if isinstance(tool.get("function"), Mapping) else tool
+        name = spec.get("name")
+        if not name:
+            continue
+        parameters = spec.get("parameters") or spec.get("input_schema") or {}
+        schemas.append(
+            ToolSchema(
+                name=str(name),
+                description=spec.get("description"),
+                parameters=dict(parameters) if isinstance(parameters, Mapping) else {},
+            )
+        )
+    return schemas or None
+
+
+def model_from(source: Any) -> str | None:
     """Best-effort extraction of the resolved model version from a result.
 
     Prefers an explicit ``model_version`` and falls back to ``model`` (what

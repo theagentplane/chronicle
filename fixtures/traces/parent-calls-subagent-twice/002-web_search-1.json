@@ -1,20 +1,20 @@
 {
-  "schema_version": "1.0",
-  "envelope_id": "59fa9df4e8b67a67",
-  "trace_id": "fe45a66c8171b01af1c84d5b38e2ae7e",
+  "schema_version": "2.0",
+  "envelope_id": "bf75fe2eac4721b1",
+  "trace_id": "bfeaff4a2fb24cd89d588213ed3d9227",
   "name": "web_search",
   "kind": "tool",
-  "parent_envelope_id": "7e19a1fe41977630",
+  "parent_envelope_id": "9761afd96006c3ee",
   "sequence": 2,
   "invocation_index": 1,
-  "start_time": "2026-09-20T14:03:13.023954Z",
-  "end_time": "2026-09-20T14:03:13.034265Z",
+  "start_time": "2026-09-20T14:25:24.066402Z",
+  "end_time": "2026-09-20T14:25:24.076532Z",
   "status": {
     "code": "UNSET",
     "message": null
   },
   "metadata": {
-    "model_version": "unknown",
+    "model": "unknown",
     "sampling_params": {
       "temperature": null,
       "top_p": null,
@@ -22,12 +22,9 @@
       "seed": null,
       "extra": {}
     },
-    "build_id": "dev-local",
-    "tool_schemas": [],
-    "framework": "chronicle.boundary",
-    "extra": {}
+    "tool_schemas": []
   },
-  "input_state": {
+  "input": {
     "messages": [],
     "system_prompt": null,
     "rag_chunks": [],
@@ -35,7 +32,7 @@
       "query": "token governance"
     }
   },
-  "action_result": {
+  "output": {
     "tool_calls": [],
     "completion": "{'query': 'token governance', 'results': ['result for token governance']}",
     "finish_reason": null,

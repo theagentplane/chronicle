@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from chronicle.boundary import boundary
-from chronicle.envelope.schema import InputState
+from chronicle.envelope.schema import Input
 from chronicle.replay.plan import ReplayPlan
 from chronicle.session import reset_session
 
@@ -27,8 +27,8 @@ def test_on_crossing_invoked_in_live_record():
     session.enable_live()
     crossings: list[tuple] = []
 
-    def hook(boundary_id, kind, input_state, result):
-        crossings.append((boundary_id, kind, input_state, result))
+    def hook(boundary_id, kind, input, result):
+        crossings.append((boundary_id, kind, input, result))
 
     session.on_crossing = hook
 
@@ -38,7 +38,7 @@ def test_on_crossing_invoked_in_live_record():
     bid, kind, inp, result = crossings[0]
     assert bid == "echo_tool"
     assert kind == "tool"
-    assert isinstance(inp, InputState)
+    assert isinstance(inp, Input)
     assert result == {"status": "ok", "value": "hello"}
 
 

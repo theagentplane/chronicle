@@ -21,7 +21,7 @@ from chronicle import (
     boundary,
     open_store,
 )
-from chronicle.envelope.schema import ActionResult, ContextMetadata, Envelope, InputState
+from chronicle.envelope.schema import Output, Metadata, Envelope, Input
 from examples.control_plane.server import make_server
 
 
@@ -35,9 +35,9 @@ def _env(trace_id: str, seq: int, node: str = "agent") -> Envelope:
         kind="tool",
         trace_id=trace_id,
         sequence=seq,
-        metadata=ContextMetadata(model_version="m", build_id="b"),
-        input_state=InputState(messages=[]),
-        action_result=ActionResult(completion=f"ok-{seq}"),
+        metadata=Metadata(model="m"),
+        input=Input(messages=[]),
+        output=Output(completion=f"ok-{seq}"),
     )
 
 
@@ -48,7 +48,7 @@ def test_sqlite_roundtrip(tmp_path):
         store.append(e)
     assert len(store.read_all()) == 3
     assert [e.sequence for e in store.find_by_trace_id(T1)] == [1, 2]
-    assert store.find_by_envelope_id(a.envelope_id).action_result.completion == "ok-1"
+    assert store.find_by_envelope_id(a.envelope_id).output.completion == "ok-1"
     assert store.find_by_envelope_id("missing") is None
     # Span ids are only unique within a trace, so lookups can be scoped by trace_id.
     assert store.find_by_envelope_id(a.envelope_id, trace_id=T1) is not None

@@ -12,7 +12,7 @@ import os
 from typing import Annotated, TypedDict
 
 from chronicle.envelope.capture import EnvelopeRecorder
-from chronicle.envelope.schema import ActionResult, RagChunk, SamplingParams, ToolSchema
+from chronicle.envelope.schema import Output, RagChunk, SamplingParams, ToolSchema
 from chronicle.envelope.store import EnvelopeStore
 from chronicle.instrumentation.langgraph import (
     langgraph_input_extractor,
@@ -90,8 +90,7 @@ def main() -> None:
 
     recorder = EnvelopeRecorder(
         store=store,
-        model_version="gpt-4o-2024-08-06",
-        build_id=os.environ.get("CHRONICLE_BUILD_ID", "demo-local"),
+        model="gpt-4o-2024-08-06",
         sampling_params=SamplingParams(temperature=0.0, seed=42),
         tool_schemas=[
             ToolSchema(
@@ -100,7 +99,6 @@ def main() -> None:
                 parameters={"type": "object", "properties": {"query": {"type": "string"}}},
             )
         ],
-        framework="langgraph",
     )
 
     app = build_graph(recorder)
@@ -119,7 +117,7 @@ def main() -> None:
     envelopes = store.read_all()
     print(f"Recorded {len(envelopes)} envelope(s) to {store_path}")
     for e in envelopes:
-        print(f"  node={e.name}  tools={[tc.name for tc in e.action_result.tool_calls]}")
+        print(f"  node={e.name}  tools={[tc.name for tc in e.output.tool_calls]}")
     print(f"Completion: {result['completion']}")
 
 

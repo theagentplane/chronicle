@@ -39,9 +39,9 @@ class JudgeRunner:
         self.rubric = rubric or EvaluationRubric()
 
     def evaluate(self, envelope: Envelope) -> EvaluationResult:
-        input_text = json.dumps(envelope.input_state.messages, indent=2)
-        completion = envelope.action_result.completion or ""
-        rag_chunks = [c.content for c in envelope.input_state.rag_chunks]
+        input_text = json.dumps(envelope.input.messages, indent=2)
+        completion = envelope.output.completion or ""
+        rag_chunks = [c.content for c in envelope.input.rag_chunks]
 
         prompt = self.rubric.judge_prompt(
             input_context=input_text,

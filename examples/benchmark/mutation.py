@@ -240,7 +240,7 @@ def _fullstub_passes(mod: ModuleType, trace_dir: Path) -> bool:
         result = mod.run_agent(user_message="stubbed")
     except Exception:
         return False
-    mocked = session.fixture_graph.envelope(mod.TOOL, 1).action_result.raw_response or {}
+    mocked = session.fixture_graph.envelope(mod.TOOL, 1).output.raw_response or {}
     return bool(mod.safe(result, mocked))
 
 
@@ -261,7 +261,6 @@ def _record(mod: ModuleType, workdir: Path) -> tuple[Path, int]:
     """Record the unguarded incident. Returns (trace_dir, model crossings)."""
     mod.set_mode("ungated")
     session = reset_session()
-    session.build_id = f"mutation-{mod.NAME}"
     session.begin_trace(mod.TRACE_NAME)
     mod.run_agent()
     trace_dir = workdir / mod.NAME

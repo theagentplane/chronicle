@@ -119,7 +119,6 @@ def _record(scenario: ModuleType) -> None:
     scenario.set_mode("ungated")
 
     session = reset_session()
-    session.build_id = f"financial-demo-{scenario.NAME}"
     session.store = EnvelopeStore(ROOT / ".chronicle" / "runs" / f"{scenario.NAME}.jsonl")
     session.begin_trace(scenario.TRACE_NAME)
 

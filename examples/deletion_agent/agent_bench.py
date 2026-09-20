@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from chronicle.boundary import boundary
-from chronicle.envelope.schema import InputState, ToolCall
+from chronicle.envelope.schema import Input, ToolCall
 
 # Injectable delete implementation (ungated for record, gated for cut-point test)
 _delete_impl: str = "ungated"
@@ -48,14 +48,14 @@ def _gated_delete(path: str, environment: str) -> dict[str, Any]:
     }
 
 
-def _tool_input(*args, **kwargs) -> InputState:
+def _tool_input(*args, **kwargs) -> Input:
     graph_state = dict(kwargs) if kwargs else {}
     if args:
         if len(args) >= 2:
             graph_state = {"path": args[0], "environment": args[1]}
         elif len(args) == 1 and isinstance(args[0], dict):
             graph_state = dict(args[0])
-    return InputState(messages=[], graph_state=graph_state)
+    return Input(messages=[], graph_state=graph_state)
 
 
 @boundary("delete_file", kind="tool", extract_input=_tool_input)
@@ -65,14 +65,14 @@ def delete_file(path: str, environment: str) -> dict[str, Any]:
     return impl(path, environment)
 
 
-def _agent_input(*args, **kwargs) -> InputState:
+def _agent_input(*args, **kwargs) -> Input:
     state = args[0] if args else kwargs.get("state", {})
     if not isinstance(state, dict):
         state = {}
     graph_state = dict(state)
     if len(args) > 1 and isinstance(args[1], dict):
         graph_state["tool_result"] = args[1]
-    return InputState(
+    return Input(
         messages=state.get("messages", []),
         system_prompt=state.get("system_prompt"),
         graph_state=graph_state,

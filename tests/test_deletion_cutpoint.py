@@ -57,7 +57,7 @@ def test_cutpoint_delete_file_blocks_prod(incident_graph):
     assert live_input is not None
     assert live_input.graph_state["path"] == "/prod/logs/app.log"
     assert live_input.graph_state["environment"] == "prod"
-    assert live_input.graph_state == prod_delete.input_state.graph_state
+    assert live_input.graph_state == prod_delete.input.graph_state
 
     # --- cut-point output: gated tool blocks prod (the fix) ---
     live_result = session.captured_result("delete_file", 1)

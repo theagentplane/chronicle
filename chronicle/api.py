@@ -24,8 +24,7 @@ def record(
     *,
     trace_id: str | None = None,
     store: Store | str | Path | None = None,
-    model_version: str | None = None,
-    build_id: str | None = None,
+    model: str | None = None,
     redactors: list[Callable[[str], str]] | None = None,
     export: str | Path | None = None,
     retain_envelopes: bool = True,
@@ -68,10 +67,8 @@ def record(
         # through open_store, so store="sqlite:///runs.db" or an http control-plane URL
         # both work as well as a plain ".jsonl" path.
         session.store = store if hasattr(store, "append") else open_store(store)
-    if model_version is not None:
-        session.model_version = model_version
-    if build_id is not None:
-        session.build_id = build_id
+    if model is not None:
+        session.model = model
     if redactors is not None:
         session.redactors = redactors
     session.retain_envelopes = retain_envelopes

@@ -60,10 +60,10 @@ def test_wrap_records_and_is_transparent():
     assert resp.choices[0].message.content == "hi from gpt-4o"
     env = session._recorded_envelopes[-1]
     assert env.kind == "llm"
-    assert env.action_result.completion == "hi from gpt-4o"
-    assert env.metadata.model_version == "gpt-4o"
+    assert env.output.completion == "hi from gpt-4o"
+    assert env.metadata.model == "gpt-4o"
     assert env.metadata.sampling_params.temperature == 0.2
-    assert env.action_result.token_usage == {"prompt_tokens": 3, "completion_tokens": 2}
+    assert env.output.token_usage == {"prompt_tokens": 3, "completion_tokens": 2}
 
 
 @pytest.mark.layer1
@@ -112,3 +112,21 @@ def test_instrument_langgraph_wraps_every_node():
 def test_wrap_rejects_unknown_client():
     with pytest.raises(TypeError):
         chronicle.wrap(object())
+
+
+@pytest.mark.layer1
+def test_wrap_records_the_tools_offered_to_the_model():
+    client = chronicle.wrap(FakeOpenAI())
+    session = reset_session()
+    session.begin_trace("t")
+    tool = {
+        "type": "function",
+        "function": {"name": "search_docs", "description": "d", "parameters": {"type": "object"}},
+    }
+
+    client.chat.completions.create(
+        model="gpt-4o", messages=[{"role": "user", "content": "hi"}], tools=[tool]
+    )
+
+    schemas = session._recorded_envelopes[-1].metadata.tool_schemas
+    assert [s.name for s in schemas] == ["search_docs"]

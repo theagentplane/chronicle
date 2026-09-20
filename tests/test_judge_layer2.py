@@ -35,8 +35,8 @@ def test_rubric_generates_judge_prompt(sample_envelope: Envelope):
     rubric = EvaluationRubric()
     prompt = rubric.judge_prompt(
         input_context="user question",
-        completion=sample_envelope.action_result.completion or "",
-        rag_chunks=[c.content for c in sample_envelope.input_state.rag_chunks],
+        completion=sample_envelope.output.completion or "",
+        rag_chunks=[c.content for c in sample_envelope.input.rag_chunks],
     )
     assert "grounding" in prompt
     assert "API keys can be reset" in prompt

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from chronicle import Envelope, InputState
+from chronicle import Envelope, Input, Metadata
 from chronicle.envelope.store import EnvelopeStore
 
 
@@ -16,17 +16,13 @@ def test_envelope_round_trip():
     envelope = Envelope.from_file(str(FIXTURES / "support-agent-001.json"))
     restored = Envelope.from_json(envelope.to_json())
     assert restored.envelope_id == envelope.envelope_id
-    assert restored.metadata.model_version == "stub-support-model-1"
-    assert len(restored.input_state.rag_chunks) == 1
+    assert restored.metadata.model == "stub-support-model-1"
+    assert len(restored.input.rag_chunks) == 1
 
 
-def test_input_state_content_hash_is_stable():
-    state = InputState(
-        messages=[{"role": "user", "content": "hello"}],
-        system_prompt="test",
-    )
-    assert state.content_hash == state.content_hash
-    assert len(state.content_hash) == 64
+def test_metadata_holds_only_model_sampling_and_tool_schemas():
+    assert list(Metadata.model_fields) == ["model", "sampling_params", "tool_schemas"]
+    assert not hasattr(Input(messages=[]), "content_hash")
 
 
 def test_json_schema_export():

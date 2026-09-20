@@ -30,10 +30,10 @@ def test_llm_boundary_captures_model_and_sampling():
     planner({"messages": [{"role": "user", "content": "hi"}]})
 
     env = session._recorded_envelopes[-1]
-    assert env.metadata.model_version == "gpt-4o-2024-08-06"
+    assert env.metadata.model == "gpt-4o-2024-08-06"
     assert env.metadata.sampling_params.temperature == 0.2
     assert env.metadata.sampling_params.max_tokens == 256
-    assert env.action_result.token_usage == {"input_tokens": 10, "output_tokens": 5}
+    assert env.output.token_usage == {"input_tokens": 10, "output_tokens": 5}
 
 
 @pytest.mark.layer1
@@ -61,23 +61,23 @@ def test_falls_back_to_session_default_when_unspecified():
         return {"completion": "ok", "finish_reason": "stop"}
 
     session = reset_session()
-    session.model_version = "claude-sonnet-4-6"  # user-pinned default
+    session.model = "claude-sonnet-4-6"  # user-pinned default
     session.begin_trace("t-default")
     planner({"messages": []})
 
-    assert session._recorded_envelopes[-1].metadata.model_version == "claude-sonnet-4-6"
+    assert session._recorded_envelopes[-1].metadata.model == "claude-sonnet-4-6"
 
 
 @pytest.mark.layer1
 def test_default_model_version_is_honest_placeholder():
     # Never silently claim a fake pinned version like the old "demo-model".
-    assert reset_session().model_version == "unknown"
+    assert reset_session().model == "unknown"
 
 
 @pytest.mark.layer1
 def test_tool_boundary_is_not_mislabeled_with_model():
     # A tool result that happens to carry a "model" key must not become the
-    # envelope's model_version — only llm boundaries carry model metadata.
+    # envelope's model — only llm boundaries carry model metadata.
     @boundary("lookup", kind="tool")
     def lookup(path: str) -> dict:
         return {"status": "ok", "model": "not-a-model-version"}
@@ -86,7 +86,7 @@ def test_tool_boundary_is_not_mislabeled_with_model():
     session.begin_trace("t-tool")
     lookup("/x")
 
-    assert session._recorded_envelopes[-1].metadata.model_version == "unknown"
+    assert session._recorded_envelopes[-1].metadata.model == "unknown"
 
 
 @pytest.mark.layer1
@@ -104,5 +104,5 @@ def test_extract_metadata_hook_overrides():
     planner({"messages": []})
 
     env = session._recorded_envelopes[-1]
-    assert env.metadata.model_version == "gpt-4o-mini"
+    assert env.metadata.model == "gpt-4o-mini"
     assert env.metadata.sampling_params.temperature == 0.7

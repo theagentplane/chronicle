@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import Any
 
 from chronicle.boundary import boundary
-from chronicle.envelope.schema import InputState, ToolCall
+from chronicle.envelope.schema import Input, ToolCall
 from examples.financial_incidents._helpers import agent_input, fmt_usd
 
 _mode = "ungated"
@@ -39,10 +39,10 @@ def safe(result: dict[str, Any], live: dict[str, Any]) -> bool:
     return bool(live.get("blocked")) and result.get("transferred") is False
 
 
-def _transfer_input(*args, **kwargs) -> InputState:
+def _transfer_input(*args, **kwargs) -> Input:
     account = args[0] if args else kwargs["account"]
     amount_cents = args[1] if len(args) > 1 else kwargs["amount_cents"]
-    return InputState(
+    return Input(
         messages=[],
         graph_state={
             "account": account,

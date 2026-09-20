@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import sys
 
-from chronicle.envelope.schema import Envelope, InputState
+from chronicle.envelope.schema import Envelope, Input
 
 # ANSI colors — disabled for pipes, CI, and NO_COLOR
 _USE_COLOR = (
@@ -43,14 +43,14 @@ def set_color_enabled(enabled: bool) -> None:
     _USE_COLOR = enabled
 
 
-def agent_input(*args, **kwargs) -> InputState:
+def agent_input(*args, **kwargs) -> Input:
     state = args[0] if args else kwargs.get("state", {})
     if not isinstance(state, dict):
         state = {}
     graph_state = dict(state)
     if len(args) > 1 and isinstance(args[1], dict):
         graph_state["tool_result"] = args[1]
-    return InputState(
+    return Input(
         messages=state.get("messages", []),
         system_prompt=state.get("system_prompt"),
         graph_state=graph_state,
@@ -76,13 +76,13 @@ def normalize(text: str) -> str:
     return " ".join(str(text).split())
 
 
-def summarize_llm_input(inp: InputState) -> str:
+def summarize_llm_input(inp: Input) -> str:
     if inp.messages:
         return truncate(inp.messages[-1].get("content", ""))
     return truncate(inp.graph_state.get("user_message", ""))
 
 
-def summarize_tool_input(inp: InputState) -> str:
+def summarize_tool_input(inp: Input) -> str:
     gs = inp.graph_state
     parts: list[str] = []
     for key, value in gs.items():
@@ -97,12 +97,12 @@ def summarize_tool_input(inp: InputState) -> str:
 
 def summarize_envelope_input(env: Envelope) -> str:
     if env.kind == "llm" and env.invocation_index > 1:
-        tool_result = env.input_state.graph_state.get("tool_result")
+        tool_result = env.input.graph_state.get("tool_result")
         if tool_result:
             return truncate(f"tool_result: {tool_result.get('status', tool_result)}")
     if env.kind == "llm":
-        return summarize_llm_input(env.input_state)
-    return summarize_tool_input(env.input_state)
+        return summarize_llm_input(env.input)
+    return summarize_tool_input(env.input)
 
 
 def _fmt_arg(key: str, value: object) -> str:
@@ -112,7 +112,7 @@ def _fmt_arg(key: str, value: object) -> str:
 
 
 def summarize_envelope_output(env: Envelope) -> str:
-    action = env.action_result
+    action = env.output
     if action.tool_calls:
         call = action.tool_calls[0]
         args = ", ".join(_fmt_arg(k, v) for k, v in call.arguments.items())

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from chronicle import ExecutionGraph, boundary, record, wrap_llm
-from chronicle.envelope.schema import InputState
+from chronicle.envelope.schema import Input
 
 
 def test_nested_boundaries_parent_to_active_span():
@@ -149,7 +149,7 @@ def test_wrap_llm_nests_under_graph_node():
     llm = wrap_llm(
         "llm",
         dispatch,
-        extract_input=lambda messages, **kw: InputState(messages=list(messages)),
+        extract_input=lambda messages, **kw: Input(messages=list(messages)),
         extract_result=lambda r: r,
     )
 
@@ -162,5 +162,5 @@ def test_wrap_llm_nests_under_graph_node():
 
     by_name = {e.name: e for e in session.envelopes}
     assert by_name["llm"].parent_envelope_id == by_name["researcher"].envelope_id
-    assert by_name["llm"].attributes.get("model_version") == "stub-model"
+    assert by_name["llm"].metadata.model == "stub-model"
     assert by_name["llm"].attributes["message_id"] == "m9"

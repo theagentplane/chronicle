@@ -5,11 +5,11 @@ from __future__ import annotations
 from typing import Any
 
 from chronicle.envelope.capture import EnvelopeRecorder
-from chronicle.envelope.schema import ActionResult, InputState, RagChunk, ToolCall
+from chronicle.envelope.schema import Output, Input, RagChunk, ToolCall
 
 
-def langgraph_input_extractor(state: dict[str, Any]) -> InputState:
-    """Extract canonical InputState from a LangGraph state dict."""
+def langgraph_input_extractor(state: dict[str, Any]) -> Input:
+    """Extract canonical Input from a LangGraph state dict."""
     messages = state.get("messages", [])
     serialized_messages: list[dict[str, Any]] = []
     for msg in messages:
@@ -31,7 +31,7 @@ def langgraph_input_extractor(state: dict[str, Any]) -> InputState:
         elif isinstance(chunk, str):
             rag_chunks.append(RagChunk(chunk_id=str(len(rag_chunks)), content=chunk))
 
-    return InputState(
+    return Input(
         messages=serialized_messages,
         system_prompt=state.get("system_prompt"),
         rag_chunks=rag_chunks,
@@ -39,8 +39,8 @@ def langgraph_input_extractor(state: dict[str, Any]) -> InputState:
     )
 
 
-def langgraph_result_extractor(state: dict[str, Any], result: Any) -> ActionResult:
-    """Extract ActionResult from LangGraph node return value."""
+def langgraph_result_extractor(state: dict[str, Any], result: Any) -> Output:
+    """Extract Output from LangGraph node return value."""
     if isinstance(result, dict):
         tool_calls = []
         for tc in result.get("tool_calls", []):
@@ -65,7 +65,7 @@ def langgraph_result_extractor(state: dict[str, Any], result: Any) -> ActionResu
                 elif isinstance(last, dict):
                     completion = last.get("content")
 
-        return ActionResult(
+        return Output(
             tool_calls=tool_calls,
             completion=str(completion) if completion is not None else None,
             finish_reason=result.get("finish_reason"),
@@ -73,9 +73,9 @@ def langgraph_result_extractor(state: dict[str, Any], result: Any) -> ActionResu
         )
 
     if isinstance(result, str):
-        return ActionResult(completion=result)
+        return Output(completion=result)
 
-    return ActionResult(completion=str(result))
+    return Output(completion=str(result))
 
 
 def instrument_graph_nodes(

@@ -86,6 +86,6 @@ def apply_redactors(envelope: Envelope, redactors: list[Redactor]) -> Envelope:
         return text
 
     data = envelope.model_dump()
-    for section in ("input_state", "action_result", "status"):
+    for section in ("input", "output", "status"):
         data[section] = _scrub(data[section], run)
     return Envelope.model_validate(data)

@@ -75,7 +75,7 @@ def replay(fixture: str) -> None:
 
     def _identity_agent(state: dict, inj: ReplayInjector) -> dict:
         completion = inj.stub_llm()
-        for tc in envelope.action_result.tool_calls:
+        for tc in envelope.output.tool_calls:
             inj.stub_tool(tc.name, tc.arguments)
         return {
             "completion": completion.completion,
