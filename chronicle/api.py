@@ -20,8 +20,9 @@ from chronicle.session import ChronicleSession, reset_session
 
 @contextmanager
 def record(
-    trace_id: str | None = None,
+    name: str | None = None,
     *,
+    trace_id: str | None = None,
     store: Store | str | Path | None = None,
     model_version: str | None = None,
     build_id: str | None = None,
@@ -30,14 +31,18 @@ def record(
     retain_envelopes: bool = True,
     dims: dict[str, str] | None = None,
 ) -> Iterator[ChronicleSession]:
-    """Record a run in one block.
+    """Record a trace in one block.
+
+    ``name`` is a human label for the trace (kept as the ``chronicle.trace.name`` dim
+    on every envelope). The trace id itself is an OpenTelemetry trace id (32
+    lowercase hex chars): minted for you, or passed as ``trace_id=``.
 
     Replaces the reset_session / attach store / begin_trace boilerplate. On a
     clean exit, if ``export`` is given, the trace graph is written there so the
     incident is ready to commit as a fixture.
 
         with chronicle.record(
-            "incident-001",
+            "incident-001",  # name, a label; the trace id is minted (OTel format)
             store=".chronicle/runs/incident.jsonl",
             export="fixtures/traces/incident-001/",
             dims={"session_id": "sess_abc", "user_id": "u1"},
@@ -70,7 +75,7 @@ def record(
     if redactors is not None:
         session.redactors = redactors
     session.retain_envelopes = retain_envelopes
-    session.begin_trace(trace_id, dims=dims)
+    session.begin_trace(name, trace_id=trace_id, dims=dims)
     try:
         yield session
     finally:

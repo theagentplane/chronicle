@@ -1,15 +1,16 @@
 {
   "schema_version": "1.0",
-  "envelope_id": "b99454ef-9ade-4d77-9ccd-21b258e744d5",
-  "trace_id": "trace-invoice-currency-001",
+  "envelope_id": "3730d4c084f8f069",
+  "trace_id": "262f35c137d76fd5b62ea6c714e6fe7c",
   "node_id": "agent",
   "boundary_kind": "llm",
   "parent_envelope_id": null,
   "sequence": 1,
   "invocation_index": 1,
-  "timestamp": "2026-06-19T07:15:06.859623Z",
+  "timestamp": "2026-09-20T13:26:23.467062Z",
+  "started_at": "2026-09-20T13:26:23.466964Z",
   "metadata": {
-    "model_version": "demo-model",
+    "model_version": "unknown",
     "sampling_params": {
       "temperature": null,
       "top_p": null,
@@ -20,8 +21,6 @@
     "build_id": "financial-demo-invoice-currency",
     "tool_schemas": [],
     "framework": "chronicle.boundary",
-    "node_id": "agent",
-    "trace_id": "trace-invoice-currency-001",
     "extra": {}
   },
   "input_state": {
@@ -65,6 +64,13 @@
     "completion": "I'll send the €2,000,000.00 invoice to Acme Corp.",
     "finish_reason": "tool_calls",
     "token_usage": {},
-    "raw_response": null
+    "raw_response": null,
+    "error": null,
+    "error_type": null
+  },
+  "dims": {
+    "chronicle.trace.name": "trace-invoice-currency-001",
+    "boundary_kind": "llm",
+    "node_id": "agent"
   }
 }

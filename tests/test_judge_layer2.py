@@ -12,7 +12,7 @@ FIXTURES = Path(__file__).parent.parent / "fixtures" / "envelopes"
 
 @pytest.fixture
 def sample_envelope() -> Envelope:
-    return Envelope.from_file(str(FIXTURES / "incident-2026-06-17-001.json"))
+    return Envelope.from_file(str(FIXTURES / "support-agent-001.json"))
 
 
 @pytest.mark.layer2

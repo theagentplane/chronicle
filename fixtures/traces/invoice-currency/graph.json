@@ -1,8 +1,11 @@
 {
-  "trace_id": "trace-invoice-currency-001",
-  "nodes": [
+  "trace_id": "262f35c137d76fd5b62ea6c714e6fe7c",
+  "dims": {
+    "chronicle.trace.name": "trace-invoice-currency-001"
+  },
+  "spans": [
     {
-      "envelope_id": "b99454ef-9ade-4d77-9ccd-21b258e744d5",
+      "envelope_id": "3730d4c084f8f069",
       "boundary_id": "agent",
       "boundary_kind": "llm",
       "invocation_index": 1,
@@ -10,7 +13,7 @@
       "fixture": "001-agent-1.json"
     },
     {
-      "envelope_id": "1a674dae-2e50-48a7-bb73-7c110dd451a8",
+      "envelope_id": "0944c6ad5831a3ec",
       "boundary_id": "create_invoice",
       "boundary_kind": "tool",
       "invocation_index": 1,
@@ -18,7 +21,7 @@
       "fixture": "002-create_invoice-1.json"
     },
     {
-      "envelope_id": "841d0492-3630-497f-a9e8-15254517fd2f",
+      "envelope_id": "df26ee948b8a2513",
       "boundary_id": "agent",
       "boundary_kind": "llm",
       "invocation_index": 2,
@@ -26,17 +29,36 @@
       "fixture": "003-agent-2.json"
     }
   ],
-  "edges": [
-    [
-      "b99454ef-9ade-4d77-9ccd-21b258e744d5",
-      "1a674dae-2e50-48a7-bb73-7c110dd451a8"
-    ],
-    [
-      "1a674dae-2e50-48a7-bb73-7c110dd451a8",
-      "841d0492-3630-497f-a9e8-15254517fd2f"
-    ]
+  "nodes": [
+    {
+      "envelope_id": "3730d4c084f8f069",
+      "boundary_id": "agent",
+      "boundary_kind": "llm",
+      "invocation_index": 1,
+      "sequence": 1,
+      "fixture": "001-agent-1.json"
+    },
+    {
+      "envelope_id": "0944c6ad5831a3ec",
+      "boundary_id": "create_invoice",
+      "boundary_kind": "tool",
+      "invocation_index": 1,
+      "sequence": 2,
+      "fixture": "002-create_invoice-1.json"
+    },
+    {
+      "envelope_id": "df26ee948b8a2513",
+      "boundary_id": "agent",
+      "boundary_kind": "llm",
+      "invocation_index": 2,
+      "sequence": 3,
+      "fixture": "003-agent-2.json"
+    }
   ],
+  "edges": [],
   "roots": [
-    "b99454ef-9ade-4d77-9ccd-21b258e744d5"
+    "3730d4c084f8f069",
+    "0944c6ad5831a3ec",
+    "df26ee948b8a2513"
   ]
 }

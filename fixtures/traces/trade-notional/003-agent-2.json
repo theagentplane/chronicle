@@ -1,15 +1,16 @@
 {
   "schema_version": "1.0",
-  "envelope_id": "38643504-639b-405a-ba7e-d85fcc96b787",
-  "trace_id": "trace-trade-notional-001",
+  "envelope_id": "f12b3352e5e991cc",
+  "trace_id": "342fd61fbdc4f7142f3ed70ceaa7742d",
   "node_id": "agent",
   "boundary_kind": "llm",
-  "parent_envelope_id": "184a402a-e7b9-45a6-a904-e74d999bf6cd",
+  "parent_envelope_id": null,
   "sequence": 3,
   "invocation_index": 2,
-  "timestamp": "2026-06-19T10:49:06.464441Z",
+  "timestamp": "2026-09-20T13:26:23.472931Z",
+  "started_at": "2026-09-20T13:26:23.472878Z",
   "metadata": {
-    "model_version": "demo-model",
+    "model_version": "unknown",
     "sampling_params": {
       "temperature": null,
       "top_p": null,
@@ -20,8 +21,6 @@
     "build_id": "financial-demo-trade-notional",
     "tool_schemas": [],
     "framework": "chronicle.boundary",
-    "node_id": "agent",
-    "trace_id": "trace-trade-notional-001",
     "extra": {}
   },
   "input_state": {
@@ -75,6 +74,13 @@
     "completion": "Done. Sold 1000 ACME at $190.00 ($190,000.00 total)",
     "finish_reason": "stop",
     "token_usage": {},
-    "raw_response": null
+    "raw_response": null,
+    "error": null,
+    "error_type": null
+  },
+  "dims": {
+    "chronicle.trace.name": "trace-trade-notional-001",
+    "boundary_kind": "llm",
+    "node_id": "agent"
   }
 }

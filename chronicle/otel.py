@@ -21,7 +21,10 @@ Envelope is written after the boundary body returns.
 
 from __future__ import annotations
 
+import functools
 import json
+import threading
+from datetime import datetime
 from typing import Any, Callable
 
 from chronicle.envelope.schema import Envelope
@@ -81,8 +84,6 @@ def envelope_span_attributes(envelope: Envelope) -> dict[str, Any]:
         S.OPENINFERENCE_SPAN_KIND: _span_kind(envelope.boundary_kind),
         S.INPUT_VALUE: _as_json(_input_value(envelope)),
         S.OUTPUT_VALUE: _as_json(_output_value(envelope)),
-        "chronicle.envelope_id": envelope.envelope_id,
-        "chronicle.trace_id": envelope.trace_id,
         "chronicle.invocation_index": envelope.invocation_index,
     }
     if envelope.metadata.build_id:
@@ -100,8 +101,61 @@ def envelope_span_attributes(envelope: Envelope) -> dict[str, Any]:
     if envelope.boundary_kind == "tool":
         attributes[S.TOOL_NAME] = envelope.node_id
     for key, value in (envelope.dims or {}).items():
-        attributes[f"chronicle.dims.{key}"] = value
+        # Chronicle-namespaced dims (e.g. chronicle.trace.name) are already attribute keys.
+        attributes[key if key.startswith("chronicle.") else f"chronicle.dims.{key}"] = value
     return attributes
+
+
+def _to_ns(moment: datetime | None) -> int | None:
+    return None if moment is None else int(moment.timestamp() * 1_000_000_000)
+
+
+@functools.lru_cache(maxsize=1)
+def _preset_ids_class() -> type:
+    """One-shot OTel IdGenerator handing back Chronicle's already-OTel-format ids."""
+    from opentelemetry.sdk.trace.id_generator import IdGenerator
+
+    class PresetIds(IdGenerator):
+        def __init__(self, trace_id: str, span_id: str) -> None:
+            self._trace_id = int(trace_id, 16)
+            self._span_id = int(span_id, 16)
+
+        def generate_trace_id(self) -> int:
+            return self._trace_id
+
+        def generate_span_id(self) -> int:
+            return self._span_id
+
+    return PresetIds
+
+
+_id_swap_lock = threading.Lock()
+
+
+def _start_with_ids(
+    tracer: Any,
+    name: str,
+    context: Any,
+    trace_id: str,
+    span_id: str,
+    started_at: datetime | None,
+) -> Any:
+    """Start an OTel span whose ids are the envelope's, not freshly generated ones.
+
+    The SDK only takes ids from the tracer's ``id_generator``, so that is swapped for a
+    one-shot generator around ``start_span``. A tracer without an ``id_generator``
+    (a non-SDK tracer) keeps its own ids; the span is still emitted and nested.
+    """
+    kwargs = {"context": context, "start_time": _to_ns(started_at)}
+    if not hasattr(tracer, "id_generator"):
+        return tracer.start_span(name, **kwargs)
+    with _id_swap_lock:
+        original = tracer.id_generator
+        tracer.id_generator = _preset_ids_class()(trace_id, span_id)
+        try:
+            return tracer.start_span(name, **kwargs)
+        finally:
+            tracer.id_generator = original
 
 
 def instrument_otel(
@@ -127,8 +181,12 @@ def instrument_otel(
         span_id, parent_id = original_start()
         parent = spans.get(parent_id) if parent_id else None
         context = trace.set_span_in_context(parent) if parent is not None else None
-        # Name is finalized in on_record once the boundary id is known.
-        spans[span_id] = tracer.start_span("chronicle.boundary", context=context)
+        # The OTel span reuses Chronicle's ids (trace_id / envelope_id are already in
+        # OTel byte format). Name is finalized in on_record once the boundary id is known.
+        spans[span_id] = _start_with_ids(
+            tracer, "chronicle.boundary", context, active.trace_id, span_id,
+            active._span_started_at.get(span_id),
+        )
         return span_id, parent_id
 
     def end_span() -> None:
@@ -140,15 +198,18 @@ def instrument_otel(
             # Caller recorded without start_span (legacy path): create + end now.
             parent = spans.get(envelope.parent_envelope_id) if envelope.parent_envelope_id else None
             context = trace.set_span_in_context(parent) if parent is not None else None
-            span = tracer.start_span(envelope.node_id, context=context)
+            span = _start_with_ids(
+                tracer, envelope.name, context, envelope.trace_id, envelope.span_id,
+                envelope.start_time,
+            )
             spans[envelope.envelope_id] = span
         else:
-            span.update_name(envelope.node_id)
+            span.update_name(envelope.name)
         for key, value in envelope_span_attributes(envelope).items():
             span.set_attribute(key, value)
         if envelope.action_result.error:
             span.set_status(trace.Status(trace.StatusCode.ERROR, envelope.action_result.error))
-        span.end()
+        span.end(end_time=_to_ns(envelope.end_time))
         if previous_on_record is not None:
             previous_on_record(envelope)
 

@@ -5,7 +5,6 @@ from __future__ import annotations
 import functools
 import inspect
 import os
-import uuid
 from collections.abc import Callable
 from typing import Any, ParamSpec, TypeVar
 
@@ -21,6 +20,7 @@ from chronicle.envelope.schema import (
     ToolSchema,
 )
 from chronicle.envelope.store import EnvelopeStore
+from chronicle.ids import new_trace_id
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -69,8 +69,6 @@ class EnvelopeRecorder:
             build_id=self.build_id,
             tool_schemas=self.tool_schemas,
             framework=self.framework,
-            node_id=node_id,
-            trace_id=self.trace_id,
         )
 
     def record(
@@ -82,7 +80,7 @@ class EnvelopeRecorder:
         trace_id: str | None = None,
     ) -> Envelope:
         envelope = Envelope(
-            trace_id=trace_id or self.trace_id or str(uuid.uuid4()),
+            trace_id=trace_id or self.trace_id or new_trace_id(),
             node_id=node_id,
             metadata=self._build_metadata(node_id),
             input_state=input_state,

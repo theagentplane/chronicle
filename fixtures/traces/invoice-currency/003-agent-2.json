@@ -1,15 +1,16 @@
 {
   "schema_version": "1.0",
-  "envelope_id": "841d0492-3630-497f-a9e8-15254517fd2f",
-  "trace_id": "trace-invoice-currency-001",
+  "envelope_id": "df26ee948b8a2513",
+  "trace_id": "262f35c137d76fd5b62ea6c714e6fe7c",
   "node_id": "agent",
   "boundary_kind": "llm",
-  "parent_envelope_id": "1a674dae-2e50-48a7-bb73-7c110dd451a8",
+  "parent_envelope_id": null,
   "sequence": 3,
   "invocation_index": 2,
-  "timestamp": "2026-06-19T07:15:06.860723Z",
+  "timestamp": "2026-09-20T13:26:23.468047Z",
+  "started_at": "2026-09-20T13:26:23.468008Z",
   "metadata": {
-    "model_version": "demo-model",
+    "model_version": "unknown",
     "sampling_params": {
       "temperature": null,
       "top_p": null,
@@ -20,8 +21,6 @@
     "build_id": "financial-demo-invoice-currency",
     "tool_schemas": [],
     "framework": "chronicle.boundary",
-    "node_id": "agent",
-    "trace_id": "trace-invoice-currency-001",
     "extra": {}
   },
   "input_state": {
@@ -74,6 +73,13 @@
     "completion": "Invoice sent to Acme Corp for $2,000,000.00 USD.",
     "finish_reason": "stop",
     "token_usage": {},
-    "raw_response": null
+    "raw_response": null,
+    "error": null,
+    "error_type": null
+  },
+  "dims": {
+    "chronicle.trace.name": "trace-invoice-currency-001",
+    "boundary_kind": "llm",
+    "node_id": "agent"
   }
 }

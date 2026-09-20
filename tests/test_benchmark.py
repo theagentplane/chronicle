@@ -17,7 +17,7 @@ SCENARIOS = list(harness.SCENARIOS.items())
 
 @pytest.mark.parametrize("name,mod", SCENARIOS, ids=[n for n, _ in SCENARIOS])
 def test_scenario_exposes_interface(name, mod):
-    for attr in ("NAME", "TRACE_ID", "TOOL"):
+    for attr in ("NAME", "TRACE_NAME", "TOOL"):
         assert isinstance(getattr(mod, attr), str)
     for fn in ("set_mode", "safe", "run_agent"):
         assert callable(getattr(mod, fn))

@@ -1,8 +1,11 @@
 {
-  "trace_id": "trace-deletion-incident-001",
-  "nodes": [
+  "trace_id": "f7adbf4adb0fed8f265e2fde94016ca3",
+  "dims": {
+    "chronicle.trace.name": "trace-deletion-incident-001"
+  },
+  "spans": [
     {
-      "envelope_id": "8909e1de-9a88-44ef-96cf-0e215ffdc25c",
+      "envelope_id": "d3c9fa6d3634f63b",
       "boundary_id": "agent",
       "boundary_kind": "llm",
       "invocation_index": 1,
@@ -10,7 +13,7 @@
       "fixture": "001-agent-1.json"
     },
     {
-      "envelope_id": "1e550c54-af8c-48d2-a8c7-3bcccb3ab5b6",
+      "envelope_id": "791525089e9b7c2a",
       "boundary_id": "delete_file",
       "boundary_kind": "tool",
       "invocation_index": 1,
@@ -18,7 +21,7 @@
       "fixture": "002-delete_file-1.json"
     },
     {
-      "envelope_id": "19b54657-568c-4087-9975-f05eb37f6cf2",
+      "envelope_id": "7e46512f29547e9b",
       "boundary_id": "agent",
       "boundary_kind": "llm",
       "invocation_index": 2,
@@ -26,17 +29,36 @@
       "fixture": "003-agent-2.json"
     }
   ],
-  "edges": [
-    [
-      "8909e1de-9a88-44ef-96cf-0e215ffdc25c",
-      "1e550c54-af8c-48d2-a8c7-3bcccb3ab5b6"
-    ],
-    [
-      "1e550c54-af8c-48d2-a8c7-3bcccb3ab5b6",
-      "19b54657-568c-4087-9975-f05eb37f6cf2"
-    ]
+  "nodes": [
+    {
+      "envelope_id": "d3c9fa6d3634f63b",
+      "boundary_id": "agent",
+      "boundary_kind": "llm",
+      "invocation_index": 1,
+      "sequence": 1,
+      "fixture": "001-agent-1.json"
+    },
+    {
+      "envelope_id": "791525089e9b7c2a",
+      "boundary_id": "delete_file",
+      "boundary_kind": "tool",
+      "invocation_index": 1,
+      "sequence": 2,
+      "fixture": "002-delete_file-1.json"
+    },
+    {
+      "envelope_id": "7e46512f29547e9b",
+      "boundary_id": "agent",
+      "boundary_kind": "llm",
+      "invocation_index": 2,
+      "sequence": 3,
+      "fixture": "003-agent-2.json"
+    }
   ],
+  "edges": [],
   "roots": [
-    "8909e1de-9a88-44ef-96cf-0e215ffdc25c"
+    "d3c9fa6d3634f63b",
+    "791525089e9b7c2a",
+    "7e46512f29547e9b"
   ]
 }

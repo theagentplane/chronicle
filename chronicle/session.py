@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import os
-import uuid
 from collections.abc import Callable, Mapping
 from contextvars import ContextVar
 from dataclasses import dataclass, field
@@ -22,6 +21,7 @@ from chronicle.envelope.schema import (
     ToolSchema,
 )
 from chronicle.envelope.store import EnvelopeStore
+from chronicle.ids import new_span_id, new_trace_id, validate_trace_id
 from chronicle.replay.plan import ReplayPlan
 
 if TYPE_CHECKING:
@@ -30,6 +30,8 @@ if TYPE_CHECKING:
 _envelope_stack: ContextVar[list[str]] = ContextVar("chronicle_envelope_stack", default=[])
 # Sentinel so record_envelope can accept parent_envelope_id=None for root spans.
 _PARENT_UNSET = object()
+# Dim carrying the human label of a trace (``record(name=...)``).
+TRACE_NAME_DIM = "chronicle.trace.name"
 
 
 class SessionMode(str, Enum):
@@ -48,7 +50,7 @@ class CallRecord:
 @dataclass
 class ChronicleSession:
     mode: SessionMode = SessionMode.LIVE
-    trace_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    trace_id: str = field(default_factory=new_trace_id)
     store: EnvelopeStore | None = None
     replay_plan: ReplayPlan = field(default_factory=ReplayPlan)
     fixture_graph: ExecutionGraph | None = None  # type: ignore[name-defined]
@@ -92,16 +94,24 @@ class ChronicleSession:
 
     def begin_trace(
         self,
-        trace_id: str | None = None,
+        name: str | None = None,
         *,
+        trace_id: str | None = None,
         dims: dict[str, str] | None = None,
     ) -> str:
-        if trace_id:
-            self.trace_id = trace_id
-        else:
-            self.trace_id = str(uuid.uuid4())
+        """Start a new trace and return its id.
+
+        ``name`` is a human label, stored as the ``chronicle.trace.name`` dim on every
+        envelope. ``trace_id`` must be an OTel trace id (32 lowercase hex); omit it to
+        mint one. The trace id itself is never free-form.
+        """
+        self.trace_id = validate_trace_id(trace_id) if trace_id else new_trace_id()
         if dims is not None:
             self.dims = {str(k): str(v) for k, v in dims.items()}
+        if name:
+            self.dims[TRACE_NAME_DIM] = name
+        else:
+            self.dims.pop(TRACE_NAME_DIM, None)
         self._sequence = 0
         self._invocation_counts.clear()
         self._replay_cursor.clear()
@@ -121,7 +131,7 @@ class ChronicleSession:
         this span is active parent to ``span_id``. Call ``end_span`` in a finally.
         """
         parent_id = self.current_parent_id()
-        span_id = str(uuid.uuid4())
+        span_id = new_span_id()
         self._span_started_at[span_id] = datetime.now(timezone.utc)
         self._push_envelope(span_id)
         return span_id, parent_id
@@ -192,7 +202,7 @@ class ChronicleSession:
         # Important: parent_envelope_id=None means root (no parent); only the
         # sentinel means "compute parent for me".
         if envelope_id is None:
-            envelope_id = str(uuid.uuid4())
+            envelope_id = new_span_id()
         if parent_envelope_id is _PARENT_UNSET:
             # If this id is already on the stack (start_span), parent is below it.
             stack = _envelope_stack.get()
@@ -238,8 +248,6 @@ class ChronicleSession:
                 ),
                 tool_schemas=tool_schemas or [],
                 framework="chronicle.boundary",
-                node_id=boundary_id,
-                trace_id=self.trace_id,
                 extra={},
             ),
             input_state=input_state,

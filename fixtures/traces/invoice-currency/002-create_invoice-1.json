@@ -1,15 +1,16 @@
 {
   "schema_version": "1.0",
-  "envelope_id": "1a674dae-2e50-48a7-bb73-7c110dd451a8",
-  "trace_id": "trace-invoice-currency-001",
+  "envelope_id": "0944c6ad5831a3ec",
+  "trace_id": "262f35c137d76fd5b62ea6c714e6fe7c",
   "node_id": "create_invoice",
   "boundary_kind": "tool",
-  "parent_envelope_id": "b99454ef-9ade-4d77-9ccd-21b258e744d5",
+  "parent_envelope_id": null,
   "sequence": 2,
   "invocation_index": 1,
-  "timestamp": "2026-06-19T07:15:06.860387Z",
+  "timestamp": "2026-09-20T13:26:23.467633Z",
+  "started_at": "2026-09-20T13:26:23.467598Z",
   "metadata": {
-    "model_version": "demo-model",
+    "model_version": "unknown",
     "sampling_params": {
       "temperature": null,
       "top_p": null,
@@ -20,8 +21,6 @@
     "build_id": "financial-demo-invoice-currency",
     "tool_schemas": [],
     "framework": "chronicle.boundary",
-    "node_id": "create_invoice",
-    "trace_id": "trace-invoice-currency-001",
     "extra": {}
   },
   "input_state": {
@@ -33,7 +32,8 @@
       "amount_cents": 200000000,
       "currency": "USD",
       "contract_currency": "EUR",
-      "contract_amount_cents": 200000000
+      "contract_amount_cents": 200000000,
+      "max_invoice_cents": 10000000
     }
   },
   "action_result": {
@@ -49,6 +49,13 @@
       "currency": "USD",
       "contract_currency": "EUR",
       "message": "Invoice sent to acme-corp for 2,000,000.00 USD"
-    }
+    },
+    "error": null,
+    "error_type": null
+  },
+  "dims": {
+    "chronicle.trace.name": "trace-invoice-currency-001",
+    "boundary_kind": "tool",
+    "node_id": "create_invoice"
   }
 }

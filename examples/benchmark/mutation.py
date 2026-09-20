@@ -262,7 +262,7 @@ def _record(mod: ModuleType, workdir: Path) -> tuple[Path, int]:
     mod.set_mode("ungated")
     session = reset_session()
     session.build_id = f"mutation-{mod.NAME}"
-    session.begin_trace(mod.TRACE_ID)
+    session.begin_trace(mod.TRACE_NAME)
     mod.run_agent()
     trace_dir = workdir / mod.NAME
     session.export_trace(trace_dir)

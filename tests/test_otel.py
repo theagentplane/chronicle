@@ -65,7 +65,7 @@ def _run_nested_agent():
 
 def test_one_span_per_crossing_with_openinference_attrs():
     tracer, exporter = _tracer_and_exporter()
-    with chronicle.record("t-otel"):
+    with chronicle.record("t-otel") as session:
         chronicle.instrument_otel(tracer=tracer)
         _run_agent()
 
@@ -76,7 +76,7 @@ def test_one_span_per_crossing_with_openinference_attrs():
     for span in spans:
         assert S.INPUT_VALUE in span.attributes
         assert S.OUTPUT_VALUE in span.attributes
-        assert span.attributes["chronicle.trace_id"] == "t-otel"
+        assert span.attributes["chronicle.trace.name"] == "t-otel"
     assert spans[1].attributes[S.TOOL_NAME] == "refund"
 
 
@@ -137,7 +137,6 @@ def test_attribute_mapping_includes_model_and_tokens():
     env = Envelope(
         node_id="llm",
         boundary_kind="llm",
-        trace_id="t",
         metadata=ContextMetadata(model_version="gpt-4o", build_id="b"),
         input_state=InputState(messages=[{"role": "user", "content": "hi"}]),
         action_result=ActionResult(
@@ -156,3 +155,32 @@ def test_import_chronicle_does_not_import_opentelemetry():
     proc = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
     assert proc.returncode == 0, proc.stderr
     assert proc.stdout.strip() == "ok"
+
+
+def test_exported_spans_carry_the_envelope_ids():
+    """Envelope ids are already OTel-format, so the span reuses them unchanged."""
+    tracer, exporter = _tracer_and_exporter()
+    with chronicle.record("t-ids") as session:
+        chronicle.instrument_otel(tracer=tracer)
+        _run_nested_agent()
+
+    by_name = {s.name: s for s in exporter.get_finished_spans()}
+    envelopes = {e.name: e for e in session.envelopes}
+    for name, span in by_name.items():
+        env = envelopes[name]
+        assert format(span.context.trace_id, "032x") == env.trace_id == session.trace_id
+        assert format(span.context.span_id, "016x") == env.span_id == env.envelope_id
+    child = envelopes["refund"]
+    assert format(by_name["refund"].parent.span_id, "016x") == child.parent_span_id
+
+
+def test_exported_span_times_match_the_envelope():
+    tracer, exporter = _tracer_and_exporter()
+    with chronicle.record("t-time") as session:
+        chronicle.instrument_otel(tracer=tracer)
+        _run_agent()
+
+    for span, env in zip(exporter.get_finished_spans(), session.envelopes):
+        assert span.end_time == int(env.end_time.timestamp() * 1_000_000_000)
+        assert span.start_time == int(env.start_time.timestamp() * 1_000_000_000)
+        assert span.start_time <= span.end_time

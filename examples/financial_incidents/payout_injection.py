@@ -18,7 +18,7 @@ from examples.financial_incidents._helpers import agent_input, fmt_usd
 _mode = "ungated"
 
 NAME = "payout-injection"
-TRACE_ID = "trace-payout-injection-001"
+TRACE_NAME = "trace-payout-injection-001"
 TOOL = "transfer_funds"
 APPROVED_ACCOUNTS = ("acme-vendor-01", "globex-vendor-02")
 ATTACKER_ACCOUNT = "attacker-payout-999"  # injected by the vendor note

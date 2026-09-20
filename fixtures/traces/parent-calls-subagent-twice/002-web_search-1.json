@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0",
-  "envelope_id": "694a02ce-574b-4435-acb6-d82ced786aa6",
-  "trace_id": "trace-parent-calls-subagent-twice",
+  "envelope_id": "ede03f6c735a29fe",
+  "trace_id": "d12e8f0420aeba1c7ebada8abfd01c84",
   "node_id": "web_search",
   "boundary_kind": "tool",
-  "parent_envelope_id": "5feec2ff-ddef-46c6-a4e1-5c5e9caf0ea1",
+  "parent_envelope_id": "089cef04cd9523e2",
   "sequence": 2,
   "invocation_index": 1,
-  "timestamp": "2026-08-10T15:22:50.926832Z",
-  "started_at": "2026-08-10T15:22:50.895131Z",
+  "timestamp": "2026-09-20T13:27:09.635302Z",
+  "started_at": "2026-09-20T13:27:09.624757Z",
   "metadata": {
     "model_version": "unknown",
     "sampling_params": {
@@ -21,8 +21,6 @@
     "build_id": "dev-local",
     "tool_schemas": [],
     "framework": "chronicle.boundary",
-    "node_id": "web_search",
-    "trace_id": "trace-parent-calls-subagent-twice",
     "extra": {}
   },
   "input_state": {
@@ -30,19 +28,19 @@
     "system_prompt": null,
     "rag_chunks": [],
     "graph_state": {
-      "q": "pricing"
+      "query": "token governance"
     }
   },
   "action_result": {
     "tool_calls": [],
-    "completion": "{'results': ['doc about pricing'], 'q': 'pricing'}",
+    "completion": "{'query': 'token governance', 'results': ['result for token governance']}",
     "finish_reason": null,
     "token_usage": {},
     "raw_response": {
+      "query": "token governance",
       "results": [
-        "doc about pricing"
-      ],
-      "q": "pricing"
+        "result for token governance"
+      ]
     },
     "error": null,
     "error_type": null
@@ -52,6 +50,7 @@
     "message_id": "msg_042",
     "user_id": "dev",
     "scenario": "parent_calls_subagent_twice",
+    "chronicle.trace.name": "parent-calls-subagent-twice",
     "boundary_kind": "tool",
     "node_id": "web_search"
   }

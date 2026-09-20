@@ -46,7 +46,9 @@ class Store(Protocol):
     def append(self, envelope: Envelope) -> None: ...
     def read_all(self) -> list[Envelope]: ...
     def find_by_trace_id(self, trace_id: str) -> list[Envelope]: ...
-    def find_by_envelope_id(self, envelope_id: str) -> Envelope | None: ...
+    def find_by_envelope_id(
+        self, envelope_id: str, trace_id: str | None = None
+    ) -> Envelope | None: ...
 
 
 class BufferedStore:
@@ -111,9 +113,11 @@ class BufferedStore:
         self.flush()
         return self.inner.find_by_trace_id(trace_id)
 
-    def find_by_envelope_id(self, envelope_id: str) -> Envelope | None:
+    def find_by_envelope_id(
+        self, envelope_id: str, trace_id: str | None = None
+    ) -> Envelope | None:
         self.flush()
-        return self.inner.find_by_envelope_id(envelope_id)
+        return self.inner.find_by_envelope_id(envelope_id, trace_id)
 
     def __enter__(self) -> BufferedStore:
         return self
@@ -144,7 +148,8 @@ class SqliteStore:
         self._conn = sqlite3.connect(self.path, check_same_thread=False)
         self._conn.execute(
             "CREATE TABLE IF NOT EXISTS envelopes ("
-            "envelope_id TEXT PRIMARY KEY, trace_id TEXT, sequence INTEGER, data TEXT)"
+            "envelope_id TEXT NOT NULL, trace_id TEXT NOT NULL, sequence INTEGER, data TEXT, "
+            "PRIMARY KEY (trace_id, envelope_id))"
         )
         self._conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_trace ON envelopes (trace_id, sequence)"
@@ -174,10 +179,18 @@ class SqliteStore:
         ).fetchall()
         return [Envelope.from_json(r[0]) for r in rows]
 
-    def find_by_envelope_id(self, envelope_id: str) -> Envelope | None:
-        row = self._conn.execute(
-            "SELECT data FROM envelopes WHERE envelope_id = ?", (envelope_id,)
-        ).fetchone()
+    def find_by_envelope_id(
+        self, envelope_id: str, trace_id: str | None = None
+    ) -> Envelope | None:
+        if trace_id is None:
+            row = self._conn.execute(
+                "SELECT data FROM envelopes WHERE envelope_id = ?", (envelope_id,)
+            ).fetchone()
+        else:
+            row = self._conn.execute(
+                "SELECT data FROM envelopes WHERE trace_id = ? AND envelope_id = ?",
+                (trace_id, envelope_id),
+            ).fetchone()
         return Envelope.from_json(row[0]) if row else None
 
     def close(self) -> None:
@@ -276,7 +289,9 @@ class RemoteStore:
                 continue
         return out
 
-    def find_by_envelope_id(self, envelope_id: str) -> Envelope | None:
+    def find_by_envelope_id(
+        self, envelope_id: str, trace_id: str | None = None
+    ) -> Envelope | None:
         return None
 
     def close(self) -> None:

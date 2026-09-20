@@ -17,7 +17,7 @@ from examples.financial_incidents._helpers import agent_input
 _mode = "ungated"
 
 NAME = "email-blast"
-TRACE_ID = "trace-email-blast-001"
+TRACE_NAME = "trace-email-blast-001"
 TOOL = "send_campaign"
 SEGMENT = "all-customers"
 INTENDED_RECIPIENTS = 3

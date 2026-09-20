@@ -15,7 +15,7 @@ from examples.financial_incidents._helpers import agent_input, fmt_usd
 _mode = "ungated"
 
 NAME = "trade-notional"
-TRACE_ID = "trace-trade-notional-001"
+TRACE_NAME = "trace-trade-notional-001"
 TOOL = "place_order"
 SYMBOL = "ACME"
 SHARE_PRICE_CENTS = 19_000  # $190.00

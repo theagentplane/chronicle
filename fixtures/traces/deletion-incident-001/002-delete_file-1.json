@@ -1,15 +1,16 @@
 {
   "schema_version": "1.0",
-  "envelope_id": "1e550c54-af8c-48d2-a8c7-3bcccb3ab5b6",
-  "trace_id": "trace-deletion-incident-001",
+  "envelope_id": "791525089e9b7c2a",
+  "trace_id": "f7adbf4adb0fed8f265e2fde94016ca3",
   "node_id": "delete_file",
   "boundary_kind": "tool",
-  "parent_envelope_id": "8909e1de-9a88-44ef-96cf-0e215ffdc25c",
+  "parent_envelope_id": null,
   "sequence": 2,
   "invocation_index": 1,
-  "timestamp": "2026-06-18T17:48:23.364734Z",
+  "timestamp": "2026-09-20T13:26:15.717675Z",
+  "started_at": "2026-09-20T13:26:15.717639Z",
   "metadata": {
-    "model_version": "demo-model",
+    "model_version": "unknown",
     "sampling_params": {
       "temperature": null,
       "top_p": null,
@@ -20,8 +21,6 @@
     "build_id": "deletion-demo-record",
     "tool_schemas": [],
     "framework": "chronicle.boundary",
-    "node_id": "delete_file",
-    "trace_id": "trace-deletion-incident-001",
     "extra": {}
   },
   "input_state": {
@@ -44,6 +43,13 @@
       "path": "/prod/logs/app.log",
       "environment": "prod",
       "message": "Deleted /prod/logs/app.log in prod"
-    }
+    },
+    "error": null,
+    "error_type": null
+  },
+  "dims": {
+    "chronicle.trace.name": "trace-deletion-incident-001",
+    "boundary_kind": "tool",
+    "node_id": "delete_file"
   }
 }

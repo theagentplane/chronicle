@@ -25,6 +25,10 @@ from chronicle.envelope.schema import ActionResult, ContextMetadata, Envelope, I
 from examples.control_plane.server import make_server
 
 
+T1 = "a" * 32
+T2 = "b" * 32
+
+
 def _env(trace_id: str, seq: int, node: str = "agent") -> Envelope:
     return Envelope(
         node_id=node,
@@ -39,13 +43,16 @@ def _env(trace_id: str, seq: int, node: str = "agent") -> Envelope:
 
 def test_sqlite_roundtrip(tmp_path):
     store = SqliteStore(tmp_path / "runs.db")
-    a, b, c = _env("t1", 1), _env("t1", 2), _env("t2", 1)
+    a, b, c = _env(T1, 1), _env(T1, 2), _env(T2, 1)
     for e in (a, b, c):
         store.append(e)
     assert len(store.read_all()) == 3
-    assert [e.sequence for e in store.find_by_trace_id("t1")] == [1, 2]
+    assert [e.sequence for e in store.find_by_trace_id(T1)] == [1, 2]
     assert store.find_by_envelope_id(a.envelope_id).action_result.completion == "ok-1"
     assert store.find_by_envelope_id("missing") is None
+    # Span ids are only unique within a trace, so lookups can be scoped by trace_id.
+    assert store.find_by_envelope_id(a.envelope_id, trace_id=T1) is not None
+    assert store.find_by_envelope_id(a.envelope_id, trace_id=T2) is None
     store.close()
 
 
@@ -69,12 +76,12 @@ def test_open_store_dispatch(tmp_path):
 def test_buffered_store_batches_jsonl_flush(tmp_path):
     path = tmp_path / "runs.jsonl"
     store = BufferedStore(JsonlStore(path), batch_size=3)
-    store.append(_env("t", 1))
-    store.append(_env("t", 2))
+    store.append(_env(T1, 1))
+    store.append(_env(T1, 2))
     assert path.read_text(encoding="utf-8").strip() == ""  # still buffered
-    store.append(_env("t", 3))  # hits batch_size -> flush
+    store.append(_env(T1, 3))  # hits batch_size -> flush
     assert len(JsonlStore(path).read_all()) == 3
-    store.append(_env("t", 4))
+    store.append(_env(T1, 4))
     store.flush()
     assert len(store.read_all()) == 4
 
@@ -113,9 +120,9 @@ def test_buffered_store_restores_batch_when_append_many_fails(tmp_path):
             return None
 
     store = BufferedStore(BoomStore(), batch_size=2)
-    store.append(_env("t", 1))
+    store.append(_env(T1, 1))
     with pytest.raises(OSError, match="disk full"):
-        store.append(_env("t", 2))  # triggers flush
+        store.append(_env(T1, 2))  # triggers flush
     # Failed batch is back in the buffer, not silently dropped.
     assert len(store._buf) == 2
 
@@ -123,7 +130,7 @@ def test_buffered_store_restores_batch_when_append_many_fails(tmp_path):
 def test_record_into_sqlite(tmp_path):
     store = SqliteStore(tmp_path / "runs.db")
 
-    with chronicle.record("t-rec", store=store):
+    with chronicle.record("t-rec", store=store) as session:
 
         @boundary("agent", kind="tool")
         def do(x):
@@ -131,13 +138,13 @@ def test_record_into_sqlite(tmp_path):
 
         do(1)
 
-    assert len(store.find_by_trace_id("t-rec")) == 1
+    assert len(store.find_by_trace_id(session.trace_id)) == 1
     store.close()
 
 
 def test_record_with_sqlite_url_string(tmp_path):
     url = "sqlite:///" + str(tmp_path / "u.db")
-    with chronicle.record("t-url", store=url):
+    with chronicle.record("t-url", store=url) as session:
 
         @boundary("agent", kind="tool")
         def do(x):
@@ -145,7 +152,7 @@ def test_record_with_sqlite_url_string(tmp_path):
 
         do(1)
 
-    assert len(open_store(url).find_by_trace_id("t-url")) == 1
+    assert len(open_store(url).find_by_trace_id(session.trace_id)) == 1
 
 
 def test_remote_store_end_to_end():
@@ -155,11 +162,11 @@ def test_remote_store_end_to_end():
     thread.start()
     try:
         store = RemoteStore(f"http://127.0.0.1:{port}")
-        a, b = _env("rt", 1), _env("rt", 2)
+        a, b = _env(T2, 1), _env(T2, 2)
         store.append(a)
         store.append(b)
         store.flush()
-        assert [e.sequence for e in store.find_by_trace_id("rt")] == [1, 2]
+        assert [e.sequence for e in store.find_by_trace_id(T2)] == [1, 2]
     finally:
         server.shutdown()
 
@@ -168,5 +175,5 @@ def test_remote_store_append_never_raises_the_agent():
     store = RemoteStore("http://127.0.0.1:1", timeout=0.2)  # nothing listening
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        store.append(_env("x", 1))  # must not raise
+        store.append(_env(T1, 1))  # must not raise
     assert store.read_all() == []  # read failure returns empty, not an error

@@ -40,8 +40,8 @@ walks you from install to a committed regression test.
 | Term | What it means |
 |---|---|
 | **Boundary** | A decision **node** you mark: an LLM call, a tool call, or a routing choice — not the whole agent process. Orchestration stays plain code. |
-| **Envelope** | The immutable record of one boundary crossing: its input, its output, and metadata. It records I/O, not the side effects inside the function. OTel: one **span**. |
-| **Trace** | One whole run (typically one message turn), as an ordered set of Envelopes sharing a `trace_id`. |
+| **Envelope** | The immutable record of one boundary crossing: its input, its output, and metadata. It records I/O, not the side effects inside the function. OTel: one **span**; `envelope_id` is the span id (16 lowercase hex chars), also readable as `span_id`. |
+| **Trace** | One whole run (typically one message turn), as an ordered set of Envelopes sharing a `trace_id`. The id is an OpenTelemetry trace id (32 lowercase hex chars); give a trace a human label with `record("name")`. |
 | **Dims** | Flat `dict[str, str]` attributes on each envelope (e.g. `session_id`, `message_id`). Trace-level dims are passed into `record(...)` and copied onto every span. |
 | **Fixture** | A trace committed to git under `fixtures/traces/`. Your permanent, replayable incident. |
 | **Stub** | On replay, hand back a boundary's recorded output *without running its code*. |
@@ -96,7 +96,7 @@ deterministic.
 | Contextual metadata | Model version, sampling parameters, runtime build ID |
 | Input state | Assembled prompt, graph state, retrieved context chunks |
 | Action / result | Structured tool calls and model completion |
-| Graph linkage | `parent_envelope_id`, `sequence`, `invocation_index` for retries |
+| Graph linkage | `trace_id` (OTel, 32 hex), `envelope_id` (OTel span id, 16 hex), `parent_envelope_id`, `sequence`, `invocation_index` for retries |
 | Dims | Flat `dict[str, str]` (trace-level via `record(..., dims=...)`, plus span attrs like `model_version`) |
 
 ## Install
@@ -333,7 +333,7 @@ Wraps each node as a `@boundary` in one call (async nodes supported). Use
 from chronicle.replay import ReplayInjector
 from chronicle import Envelope
 
-envelope = Envelope.from_file("fixtures/envelopes/incident-2026-06-17-001.json")
+envelope = Envelope.from_file("fixtures/envelopes/support-agent-001.json")
 injector = ReplayInjector(envelope)
 
 def agent(state, inj):

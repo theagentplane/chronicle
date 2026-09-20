@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0",
-  "envelope_id": "ec8ab837-8412-45fd-b4e9-992e82135beb",
-  "trace_id": "trace-parent-calls-subagent-twice",
+  "envelope_id": "70f362a69148836b",
+  "trace_id": "d12e8f0420aeba1c7ebada8abfd01c84",
   "node_id": "llm",
   "boundary_kind": "llm",
-  "parent_envelope_id": "26db5a61-3535-4790-887b-c621297b45ab",
+  "parent_envelope_id": "85b4de7a79c705ec",
   "sequence": 4,
   "invocation_index": 2,
-  "timestamp": "2026-08-10T15:22:50.983491Z",
-  "started_at": "2026-08-10T15:22:50.943009Z",
+  "timestamp": "2026-09-20T13:27:09.646031Z",
+  "started_at": "2026-09-20T13:27:09.635520Z",
   "metadata": {
     "model_version": "stub-researcher",
     "sampling_params": {
@@ -21,15 +21,13 @@
     "build_id": "dev-local",
     "tool_schemas": [],
     "framework": "chronicle.boundary",
-    "node_id": "llm",
-    "trace_id": "trace-parent-calls-subagent-twice",
     "extra": {}
   },
   "input_state": {
     "messages": [
       {
         "role": "user",
-        "content": "risks"
+        "content": "agent cost controls"
       }
     ],
     "system_prompt": null,
@@ -38,24 +36,15 @@
       "messages": [
         {
           "role": "user",
-          "content": "risks"
+          "content": "agent cost controls"
         }
-      ],
-      "model": "stub-researcher"
+      ]
     }
   },
   "action_result": {
-    "tool_calls": [
-      {
-        "id": "call_1",
-        "name": "web_search",
-        "arguments": {
-          "q": "risks"
-        }
-      }
-    ],
-    "completion": null,
-    "finish_reason": "tool_calls",
+    "tool_calls": [],
+    "completion": "Plan: search for 'agent cost controls'",
+    "finish_reason": "stop",
     "token_usage": {},
     "raw_response": null,
     "error": null,
@@ -66,6 +55,7 @@
     "message_id": "msg_042",
     "user_id": "dev",
     "scenario": "parent_calls_subagent_twice",
+    "chronicle.trace.name": "parent-calls-subagent-twice",
     "model_version": "stub-researcher",
     "boundary_kind": "llm",
     "node_id": "llm"

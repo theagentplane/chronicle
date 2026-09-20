@@ -17,7 +17,7 @@ from examples.financial_incidents._helpers import agent_input
 _mode = "ungated"
 
 NAME = "prod-delete"
-TRACE_ID = "trace-prod-delete-001"
+TRACE_NAME = "trace-prod-delete-001"
 TOOL = "delete_dataset"
 DATASET = "events_2024"
 ENVIRONMENT = "prod"

@@ -16,7 +16,7 @@ from examples.financial_incidents._helpers import agent_input, fmt_usd
 _mode = "ungated"
 
 NAME = "refund-order-id"
-TRACE_ID = "trace-refund-order-id-001"
+TRACE_NAME = "trace-refund-order-id-001"
 TOOL = "issue_refund"
 ORDER_ID = "9847261"
 ORDER_TOTAL_CENTS = 4_700  # $47.00

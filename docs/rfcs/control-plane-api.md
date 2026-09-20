@@ -119,8 +119,11 @@ plane must enforce it; today’s example server does not.
 
 **Idempotency:**
 
-- Clients may send `Idempotency-Key: <uuid>` (or use `envelope_id` as the natural key).
-- Re-POST of the same `envelope_id` within a tenant is a no-op success (`200` with
+- Clients may send `Idempotency-Key: <uuid>` (or use `(trace_id, envelope_id)` as the natural key).
+- `trace_id` is an OTel trace id (32 lowercase hex chars) and `envelope_id` an OTel span id
+  (16 lowercase hex chars). A span id is only 8 bytes, so it is unique **within a trace**,
+  never across a tenant: always key on the pair.
+- Re-POST of the same `(trace_id, envelope_id)` within a tenant is a no-op success (`200` with
   `deduped: true`), not a duplicate row.
 - Enables safe retries after timeouts.
 
@@ -213,7 +216,7 @@ GET /v1/traces/{trace_id}
 GET /v1/traces/{trace_id}/envelopes
 → 200 { "envelopes": [ ... ] }   # ordered by sequence
 
-GET /v1/envelopes/{envelope_id}
+GET /v1/traces/{trace_id}/envelopes/{envelope_id}
 → 200 { "envelope": { ... } }
 
 GET /v1/traces?session_id=...&message_id=...&user_id=...&limit=50&cursor=...
@@ -252,7 +255,7 @@ Logical tables (illustrative):
 
 - `tenants(id, …)`
 - `traces(tenant_id, trace_id, dims jsonb, started_at, ended_at, …)` unique `(tenant_id, trace_id)`
-- `envelopes(tenant_id, envelope_id, trace_id, sequence, parent_envelope_id, dims jsonb, body jsonb, started_at, ended_at, …)` unique `(tenant_id, envelope_id)`
+- `envelopes(tenant_id, envelope_id, trace_id, sequence, parent_envelope_id, dims jsonb, body jsonb, started_at, ended_at, …)` unique `(tenant_id, trace_id, envelope_id)`
 - Indexes: `(tenant_id, trace_id, sequence)`, `(tenant_id, (dims->>'session_id'))`, `(tenant_id, (dims->>'message_id'))`
 
 `body` holds the full envelope JSON for fidelity; projected columns support query and
@@ -281,7 +284,7 @@ waterfall assembly.
 - [ ] Spec frozen for `/v1` ingest (single + batch) and query (trace, envelopes, dims filter)
 - [ ] Auth enforced (Bearer scopes + tenant binding); reference server updated or replaced
 - [ ] Durability modes documented and tested (`sync` commit, `queued` durable produce)
-- [ ] Idempotent ingest on `envelope_id`
+- [ ] Idempotent ingest on `(trace_id, envelope_id)`
 - [ ] Load smoke: batch ingest under concurrency without duplicate rows
 - [ ] Chronicle `RemoteStore` (and ideally `append_many`) documented against `/v1`
 - [ ] Dashboard can resolve `session_id` + `message_id` → `trace_id` via query API

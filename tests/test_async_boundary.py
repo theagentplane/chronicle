@@ -56,8 +56,11 @@ def test_concurrent_async_traces_are_isolated():
     assert len(sa._recorded_envelopes) == 2
     assert len(sb._recorded_envelopes) == 2
     # No cross-talk: each session only holds its own trace.
-    assert all(e.trace_id == "trace-a" for e in sa._recorded_envelopes)
-    assert all(e.trace_id == "trace-b" for e in sb._recorded_envelopes)
+    assert sa.trace_id != sb.trace_id
+    assert all(e.trace_id == sa.trace_id for e in sa._recorded_envelopes)
+    assert all(e.trace_id == sb.trace_id for e in sb._recorded_envelopes)
+    assert {e.dims["chronicle.trace.name"] for e in sa._recorded_envelopes} == {"trace-a"}
+    assert {e.dims["chronicle.trace.name"] for e in sb._recorded_envelopes} == {"trace-b"}
 
 
 @pytest.mark.layer1

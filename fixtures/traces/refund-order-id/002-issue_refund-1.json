@@ -1,15 +1,16 @@
 {
   "schema_version": "1.0",
-  "envelope_id": "94eccfed-f0cf-4bd3-ad97-0767dc78c7ec",
-  "trace_id": "trace-refund-order-id-001",
+  "envelope_id": "eacf398487eb2e30",
+  "trace_id": "ba016c80f2b58c7b920489d457f7ff52",
   "node_id": "issue_refund",
   "boundary_kind": "tool",
-  "parent_envelope_id": "06a8d21f-2f7e-4797-a8aa-4d3d114f7d54",
+  "parent_envelope_id": null,
   "sequence": 2,
   "invocation_index": 1,
-  "timestamp": "2026-06-19T07:36:07.962600Z",
+  "timestamp": "2026-09-20T13:26:23.459628Z",
+  "started_at": "2026-09-20T13:26:23.459576Z",
   "metadata": {
-    "model_version": "demo-model",
+    "model_version": "unknown",
     "sampling_params": {
       "temperature": null,
       "top_p": null,
@@ -20,8 +21,6 @@
     "build_id": "financial-demo-refund-order-id",
     "tool_schemas": [],
     "framework": "chronicle.boundary",
-    "node_id": "issue_refund",
-    "trace_id": "trace-refund-order-id-001",
     "extra": {}
   },
   "input_state": {
@@ -31,7 +30,8 @@
     "graph_state": {
       "order_id": "9847261",
       "amount_cents": 984726100,
-      "order_total_cents": 4700
+      "order_total_cents": 4700,
+      "max_refund_cents": 1000000
     }
   },
   "action_result": {
@@ -46,6 +46,13 @@
       "amount_cents": 984726100,
       "order_total_cents": 4700,
       "message": "Refunded $9,847,261.00 to order #9847261"
-    }
+    },
+    "error": null,
+    "error_type": null
+  },
+  "dims": {
+    "chronicle.trace.name": "trace-refund-order-id-001",
+    "boundary_kind": "tool",
+    "node_id": "issue_refund"
   }
 }

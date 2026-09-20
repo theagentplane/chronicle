@@ -1,15 +1,16 @@
 {
   "schema_version": "1.0",
-  "envelope_id": "8909e1de-9a88-44ef-96cf-0e215ffdc25c",
-  "trace_id": "trace-deletion-incident-001",
+  "envelope_id": "d3c9fa6d3634f63b",
+  "trace_id": "f7adbf4adb0fed8f265e2fde94016ca3",
   "node_id": "agent",
   "boundary_kind": "llm",
   "parent_envelope_id": null,
   "sequence": 1,
   "invocation_index": 1,
-  "timestamp": "2026-06-18T17:48:23.362992Z",
+  "timestamp": "2026-09-20T13:26:15.717020Z",
+  "started_at": "2026-09-20T13:26:15.716742Z",
   "metadata": {
-    "model_version": "demo-model",
+    "model_version": "unknown",
     "sampling_params": {
       "temperature": null,
       "top_p": null,
@@ -20,8 +21,6 @@
     "build_id": "deletion-demo-record",
     "tool_schemas": [],
     "framework": "chronicle.boundary",
-    "node_id": "agent",
-    "trace_id": "trace-deletion-incident-001",
     "extra": {}
   },
   "input_state": {
@@ -64,6 +63,13 @@
     "completion": "I'll delete the old production log file now.",
     "finish_reason": "tool_calls",
     "token_usage": {},
-    "raw_response": null
+    "raw_response": null,
+    "error": null,
+    "error_type": null
+  },
+  "dims": {
+    "chronicle.trace.name": "trace-deletion-incident-001",
+    "boundary_kind": "llm",
+    "node_id": "agent"
   }
 }

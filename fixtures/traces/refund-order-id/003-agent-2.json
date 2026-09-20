@@ -1,15 +1,16 @@
 {
   "schema_version": "1.0",
-  "envelope_id": "2b8082a5-8f21-4bde-aa96-63be29ce539b",
-  "trace_id": "trace-refund-order-id-001",
+  "envelope_id": "2b0476af98f160ec",
+  "trace_id": "ba016c80f2b58c7b920489d457f7ff52",
   "node_id": "agent",
   "boundary_kind": "llm",
-  "parent_envelope_id": "94eccfed-f0cf-4bd3-ad97-0767dc78c7ec",
+  "parent_envelope_id": null,
   "sequence": 3,
   "invocation_index": 2,
-  "timestamp": "2026-06-19T07:36:07.962891Z",
+  "timestamp": "2026-09-20T13:26:23.460093Z",
+  "started_at": "2026-09-20T13:26:23.460054Z",
   "metadata": {
-    "model_version": "demo-model",
+    "model_version": "unknown",
     "sampling_params": {
       "temperature": null,
       "top_p": null,
@@ -20,8 +21,6 @@
     "build_id": "financial-demo-refund-order-id",
     "tool_schemas": [],
     "framework": "chronicle.boundary",
-    "node_id": "agent",
-    "trace_id": "trace-refund-order-id-001",
     "extra": {}
   },
   "input_state": {
@@ -71,6 +70,13 @@
     "completion": "Done. Refunded $9,847,261.00 to order #9847261",
     "finish_reason": "stop",
     "token_usage": {},
-    "raw_response": null
+    "raw_response": null,
+    "error": null,
+    "error_type": null
+  },
+  "dims": {
+    "chronicle.trace.name": "trace-refund-order-id-001",
+    "boundary_kind": "llm",
+    "node_id": "agent"
   }
 }

@@ -15,7 +15,7 @@ from examples.financial_incidents._helpers import agent_input, fmt_eur, fmt_usd
 _mode = "ungated"
 
 NAME = "invoice-currency"
-TRACE_ID = "trace-invoice-currency-001"
+TRACE_NAME = "trace-invoice-currency-001"
 TOOL = "create_invoice"
 CUSTOMER_ID = "acme-corp"
 AMOUNT_CENTS = 200_000_000  # €2,000,000

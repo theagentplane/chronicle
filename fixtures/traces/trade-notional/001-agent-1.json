@@ -1,15 +1,16 @@
 {
   "schema_version": "1.0",
-  "envelope_id": "0867c134-9f86-479e-a350-34b27679a93a",
-  "trace_id": "trace-trade-notional-001",
+  "envelope_id": "bdb508c59d06275d",
+  "trace_id": "342fd61fbdc4f7142f3ed70ceaa7742d",
   "node_id": "agent",
   "boundary_kind": "llm",
   "parent_envelope_id": null,
   "sequence": 1,
   "invocation_index": 1,
-  "timestamp": "2026-06-19T10:49:06.460667Z",
+  "timestamp": "2026-09-20T13:26:23.471650Z",
+  "started_at": "2026-09-20T13:26:23.471586Z",
   "metadata": {
-    "model_version": "demo-model",
+    "model_version": "unknown",
     "sampling_params": {
       "temperature": null,
       "top_p": null,
@@ -20,8 +21,6 @@
     "build_id": "financial-demo-trade-notional",
     "tool_schemas": [],
     "framework": "chronicle.boundary",
-    "node_id": "agent",
-    "trace_id": "trace-trade-notional-001",
     "extra": {}
   },
   "input_state": {
@@ -65,6 +64,13 @@
     "completion": "I'll sell $1,000.00 worth of ACME.",
     "finish_reason": "tool_calls",
     "token_usage": {},
-    "raw_response": null
+    "raw_response": null,
+    "error": null,
+    "error_type": null
+  },
+  "dims": {
+    "chronicle.trace.name": "trace-trade-notional-001",
+    "boundary_kind": "llm",
+    "node_id": "agent"
   }
 }

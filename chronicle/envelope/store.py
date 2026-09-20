@@ -57,9 +57,15 @@ class EnvelopeStore:
     def find_by_trace_id(self, trace_id: str) -> list[Envelope]:
         return [e for e in self.read_all() if e.trace_id == trace_id]
 
-    def find_by_envelope_id(self, envelope_id: str) -> Envelope | None:
+    def find_by_envelope_id(
+        self, envelope_id: str, trace_id: str | None = None
+    ) -> Envelope | None:
+        """Look up one envelope. Span ids are 8 bytes, so they are only unique within
+        a trace: pass ``trace_id`` to scope the lookup (required on a shared store)."""
         for envelope in self.read_all():
-            if envelope.envelope_id == envelope_id:
+            if envelope.envelope_id == envelope_id and (
+                trace_id is None or envelope.trace_id == trace_id
+            ):
                 return envelope
         return None
 
@@ -103,7 +109,7 @@ class EnvelopeStore:
         dest.mkdir(parents=True, exist_ok=True)
         paths: list[Path] = []
         for i, envelope in enumerate(self.find_by_trace_id(trace_id)):
-            filename = f"{trace_id}-{envelope.node_id}-{i:03d}.json"
+            filename = f"{i + 1:03d}-{envelope.node_id}-{envelope.invocation_index}.json"
             path = dest / filename
             envelope.write_file(str(path))
             paths.append(path)

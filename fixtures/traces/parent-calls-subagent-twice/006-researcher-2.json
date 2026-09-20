@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0",
-  "envelope_id": "26db5a61-3535-4790-887b-c621297b45ab",
-  "trace_id": "trace-parent-calls-subagent-twice",
+  "envelope_id": "85b4de7a79c705ec",
+  "trace_id": "d12e8f0420aeba1c7ebada8abfd01c84",
   "node_id": "researcher",
   "boundary_kind": "custom",
-  "parent_envelope_id": "0c707775-33af-4885-9d6d-ce23018b7036",
+  "parent_envelope_id": "6467c8c4a9a14aca",
   "sequence": 6,
   "invocation_index": 2,
-  "timestamp": "2026-08-10T15:22:51.015155Z",
-  "started_at": "2026-08-10T15:22:50.942852Z",
+  "timestamp": "2026-09-20T13:27:09.656559Z",
+  "started_at": "2026-09-20T13:27:09.635486Z",
   "metadata": {
     "model_version": "unknown",
     "sampling_params": {
@@ -21,8 +21,6 @@
     "build_id": "dev-local",
     "tool_schemas": [],
     "framework": "chronicle.boundary",
-    "node_id": "researcher",
-    "trace_id": "trace-parent-calls-subagent-twice",
     "extra": {}
   },
   "input_state": {
@@ -30,15 +28,21 @@
     "system_prompt": null,
     "rag_chunks": [],
     "graph_state": {
-      "query": "risks"
+      "topic": "agent cost controls"
     }
   },
   "action_result": {
     "tool_calls": [],
-    "completion": "findings:doc about risks",
+    "completion": "{'topic': 'agent cost controls', 'plan': \"Plan: search for 'agent cost controls'\", 'results': ['result for agent cost controls']}",
     "finish_reason": null,
     "token_usage": {},
-    "raw_response": null,
+    "raw_response": {
+      "topic": "agent cost controls",
+      "plan": "Plan: search for 'agent cost controls'",
+      "results": [
+        "result for agent cost controls"
+      ]
+    },
     "error": null,
     "error_type": null
   },
@@ -47,6 +51,7 @@
     "message_id": "msg_042",
     "user_id": "dev",
     "scenario": "parent_calls_subagent_twice",
+    "chronicle.trace.name": "parent-calls-subagent-twice",
     "boundary_kind": "custom",
     "node_id": "researcher"
   }

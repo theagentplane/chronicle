@@ -7,7 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (breaking)
+- **OpenTelemetry-format ids.** `trace_id` is now an OTel trace id (32 lowercase hex
+  chars, 16 bytes) and `envelope_id` / `parent_envelope_id` are OTel span ids (16
+  lowercase hex chars, 8 bytes). They are validated on `Envelope`, generated from random
+  bytes, and no longer free-form strings. Envelopes with UUID or free-form ids (fixtures
+  recorded before this release) no longer load: re-record them.
+- **`record(name=...)` / `begin_trace(name=...)`.** The first argument is now a human
+  label, stored as the `chronicle.trace.name` dim on every envelope. `trace_id=` is
+  keyword-only and accepts only an OTel trace id. Calls like `record("incident-001")`
+  keep working, but the label is no longer the trace id.
+- **Exported OTel spans reuse the envelope's ids** (trace id, span id, parent) and its
+  start/end times, so a platform sees the same ids Chronicle recorded. The
+  `chronicle.envelope_id` / `chronicle.trace_id` span attributes are gone (redundant).
+- **Span ids are unique per trace, not globally.** `find_by_envelope_id(envelope_id,
+  trace_id=None)` takes an optional `trace_id`; `SqliteStore` keys rows on
+  `(trace_id, envelope_id)` (new databases only); the control-plane RFC keys on the pair.
+- `EnvelopeStore.export_trace` writes `NNN-<boundary>-<invocation>.json` (same as
+  `ExecutionGraph.save`) instead of prefixing the trace id.
+- Removed the duplicated `node_id` / `trace_id` from `ContextMetadata`; they live on the
+  `Envelope`.
+- Fixtures are re-recorded from real runs (`fixtures/`). The deletion, refund, invoice
+  and trade traces come from `examples/`; `examples/nested_subagents/record.py` and
+  `examples/sample_envelope/record_sample.py` replace the hand-written nested-trace and
+  single-envelope samples (now `fixtures/envelopes/support-agent-001.json`). Sequential
+  top-level boundaries are sibling roots (nest-stack parenting), not a linear chain.
+
 ### Added
+- **OTel-named getters on `Envelope`**: `span_id`, `parent_span_id` (already present),
+  plus `name`, `start_time`, `end_time`, `attributes`. Stored field names are unchanged.
+- `chronicle.ids`: `new_trace_id`, `new_span_id`, `is_trace_id`, `is_span_id`.
 - **`chronicle.instrument(graph)`**: one call auto-instruments every node *and*
   every `add_conditional_edges` routing function on a LangGraph `StateGraph`,
   before or after `.compile()`. Routing decisions are now recorded as

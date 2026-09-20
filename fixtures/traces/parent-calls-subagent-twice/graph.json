@@ -1,14 +1,15 @@
 {
-  "trace_id": "trace-parent-calls-subagent-twice",
+  "trace_id": "d12e8f0420aeba1c7ebada8abfd01c84",
   "dims": {
     "session_id": "sess_subagent_x2",
     "message_id": "msg_042",
     "user_id": "dev",
-    "scenario": "parent_calls_subagent_twice"
+    "scenario": "parent_calls_subagent_twice",
+    "chronicle.trace.name": "parent-calls-subagent-twice"
   },
   "spans": [
     {
-      "envelope_id": "fc9038f7-b52e-4c47-8aaf-afdf4761e3fb",
+      "envelope_id": "04b45ad38dac642f",
       "boundary_id": "llm",
       "boundary_kind": "llm",
       "invocation_index": 1,
@@ -16,7 +17,7 @@
       "fixture": "001-llm-1.json"
     },
     {
-      "envelope_id": "694a02ce-574b-4435-acb6-d82ced786aa6",
+      "envelope_id": "ede03f6c735a29fe",
       "boundary_id": "web_search",
       "boundary_kind": "tool",
       "invocation_index": 1,
@@ -24,7 +25,7 @@
       "fixture": "002-web_search-1.json"
     },
     {
-      "envelope_id": "5feec2ff-ddef-46c6-a4e1-5c5e9caf0ea1",
+      "envelope_id": "089cef04cd9523e2",
       "boundary_id": "researcher",
       "boundary_kind": "custom",
       "invocation_index": 1,
@@ -32,7 +33,7 @@
       "fixture": "003-researcher-1.json"
     },
     {
-      "envelope_id": "ec8ab837-8412-45fd-b4e9-992e82135beb",
+      "envelope_id": "70f362a69148836b",
       "boundary_id": "llm",
       "boundary_kind": "llm",
       "invocation_index": 2,
@@ -40,7 +41,7 @@
       "fixture": "004-llm-2.json"
     },
     {
-      "envelope_id": "745360a0-be78-488b-bd60-40c2698cbe06",
+      "envelope_id": "7000fae92c4bd9cb",
       "boundary_id": "web_search",
       "boundary_kind": "tool",
       "invocation_index": 2,
@@ -48,7 +49,7 @@
       "fixture": "005-web_search-2.json"
     },
     {
-      "envelope_id": "26db5a61-3535-4790-887b-c621297b45ab",
+      "envelope_id": "85b4de7a79c705ec",
       "boundary_id": "researcher",
       "boundary_kind": "custom",
       "invocation_index": 2,
@@ -56,7 +57,7 @@
       "fixture": "006-researcher-2.json"
     },
     {
-      "envelope_id": "0c707775-33af-4885-9d6d-ce23018b7036",
+      "envelope_id": "6467c8c4a9a14aca",
       "boundary_id": "orchestrator",
       "boundary_kind": "custom",
       "invocation_index": 1,
@@ -66,7 +67,7 @@
   ],
   "nodes": [
     {
-      "envelope_id": "fc9038f7-b52e-4c47-8aaf-afdf4761e3fb",
+      "envelope_id": "04b45ad38dac642f",
       "boundary_id": "llm",
       "boundary_kind": "llm",
       "invocation_index": 1,
@@ -74,7 +75,7 @@
       "fixture": "001-llm-1.json"
     },
     {
-      "envelope_id": "694a02ce-574b-4435-acb6-d82ced786aa6",
+      "envelope_id": "ede03f6c735a29fe",
       "boundary_id": "web_search",
       "boundary_kind": "tool",
       "invocation_index": 1,
@@ -82,7 +83,7 @@
       "fixture": "002-web_search-1.json"
     },
     {
-      "envelope_id": "5feec2ff-ddef-46c6-a4e1-5c5e9caf0ea1",
+      "envelope_id": "089cef04cd9523e2",
       "boundary_id": "researcher",
       "boundary_kind": "custom",
       "invocation_index": 1,
@@ -90,7 +91,7 @@
       "fixture": "003-researcher-1.json"
     },
     {
-      "envelope_id": "ec8ab837-8412-45fd-b4e9-992e82135beb",
+      "envelope_id": "70f362a69148836b",
       "boundary_id": "llm",
       "boundary_kind": "llm",
       "invocation_index": 2,
@@ -98,7 +99,7 @@
       "fixture": "004-llm-2.json"
     },
     {
-      "envelope_id": "745360a0-be78-488b-bd60-40c2698cbe06",
+      "envelope_id": "7000fae92c4bd9cb",
       "boundary_id": "web_search",
       "boundary_kind": "tool",
       "invocation_index": 2,
@@ -106,7 +107,7 @@
       "fixture": "005-web_search-2.json"
     },
     {
-      "envelope_id": "26db5a61-3535-4790-887b-c621297b45ab",
+      "envelope_id": "85b4de7a79c705ec",
       "boundary_id": "researcher",
       "boundary_kind": "custom",
       "invocation_index": 2,
@@ -114,7 +115,7 @@
       "fixture": "006-researcher-2.json"
     },
     {
-      "envelope_id": "0c707775-33af-4885-9d6d-ce23018b7036",
+      "envelope_id": "6467c8c4a9a14aca",
       "boundary_id": "orchestrator",
       "boundary_kind": "custom",
       "invocation_index": 1,
@@ -124,31 +125,31 @@
   ],
   "edges": [
     [
-      "5feec2ff-ddef-46c6-a4e1-5c5e9caf0ea1",
-      "fc9038f7-b52e-4c47-8aaf-afdf4761e3fb"
+      "089cef04cd9523e2",
+      "04b45ad38dac642f"
     ],
     [
-      "5feec2ff-ddef-46c6-a4e1-5c5e9caf0ea1",
-      "694a02ce-574b-4435-acb6-d82ced786aa6"
+      "089cef04cd9523e2",
+      "ede03f6c735a29fe"
     ],
     [
-      "0c707775-33af-4885-9d6d-ce23018b7036",
-      "5feec2ff-ddef-46c6-a4e1-5c5e9caf0ea1"
+      "6467c8c4a9a14aca",
+      "089cef04cd9523e2"
     ],
     [
-      "26db5a61-3535-4790-887b-c621297b45ab",
-      "ec8ab837-8412-45fd-b4e9-992e82135beb"
+      "85b4de7a79c705ec",
+      "70f362a69148836b"
     ],
     [
-      "26db5a61-3535-4790-887b-c621297b45ab",
-      "745360a0-be78-488b-bd60-40c2698cbe06"
+      "85b4de7a79c705ec",
+      "7000fae92c4bd9cb"
     ],
     [
-      "0c707775-33af-4885-9d6d-ce23018b7036",
-      "26db5a61-3535-4790-887b-c621297b45ab"
+      "6467c8c4a9a14aca",
+      "85b4de7a79c705ec"
     ]
   ],
   "roots": [
-    "0c707775-33af-4885-9d6d-ce23018b7036"
+    "6467c8c4a9a14aca"
   ]
 }
