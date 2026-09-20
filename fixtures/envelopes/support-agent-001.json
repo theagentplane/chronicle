@@ -1,63 +1,20 @@
 {
   "schema_version": "2.0",
-  "envelope_id": "28b70fa7f76efa97",
-  "trace_id": "84213a1e6758e8f6882eac1da5523cbc",
+  "envelope_id": "5ef546d81a01258e",
+  "trace_id": "5561e21097e164e1362e3dfe416191ea",
   "name": "agent",
   "kind": "llm",
   "parent_envelope_id": null,
   "sequence": 1,
   "invocation_index": 1,
-  "start_time": "2026-09-20T14:25:58.349375Z",
-  "end_time": "2026-09-20T14:25:58.349493Z",
+  "start_time": "2026-09-20T14:47:54.849633Z",
+  "end_time": "2026-09-20T14:47:54.850008Z",
   "status": {
     "code": "UNSET",
     "message": null
   },
-  "metadata": {
-    "model": "stub-support-model-1",
-    "sampling_params": {
-      "temperature": 0.0,
-      "top_p": 1.0,
-      "max_tokens": 1024,
-      "seed": 42,
-      "extra": {}
-    },
-    "tool_schemas": [
-      {
-        "name": "search_docs",
-        "description": "Search internal documentation",
-        "parameters": {
-          "type": "object",
-          "properties": {
-            "query": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "query"
-          ]
-        }
-      }
-    ]
-  },
   "input": {
-    "messages": [
-      {
-        "role": "user",
-        "content": "How do I reset my API key?"
-      }
-    ],
-    "system_prompt": "You are a helpful support agent. Use search_docs for factual answers.",
-    "rag_chunks": [
-      {
-        "chunk_id": "doc-42",
-        "content": "API keys can be reset from Settings > API Keys > Regenerate.",
-        "source": "docs/api-keys.md",
-        "score": 0.92,
-        "index_version": "v3.2.1"
-      }
-    ],
-    "graph_state": {
+    "arguments": {
       "messages": [
         {
           "role": "user",
@@ -94,27 +51,41 @@
           }
         }
       ]
-    }
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": "How do I reset my API key?"
+      }
+    ]
   },
   "output": {
-    "tool_calls": [
-      {
-        "id": "call_1",
-        "name": "search_docs",
-        "arguments": {
-          "query": "reset API key"
+    "value": null,
+    "llm": {
+      "text": "API keys can be reset from Settings > API Keys > Regenerate.",
+      "tool_calls": [
+        {
+          "id": "call_1",
+          "name": "search_docs",
+          "arguments": {
+            "query": "reset API key"
+          }
         }
+      ],
+      "finish_reason": "tool_calls",
+      "usage": {
+        "input_tokens": 256,
+        "output_tokens": 24
       }
-    ],
-    "completion": "API keys can be reset from Settings > API Keys > Regenerate.",
-    "finish_reason": "tool_calls",
-    "token_usage": {
-      "prompt_tokens": 256,
-      "completion_tokens": 24
-    },
-    "raw_response": null
+    }
   },
   "attributes": {
-    "chronicle.trace.name": "support-agent-001"
+    "chronicle.trace.name": "support-agent-001",
+    "gen_ai.request.model": "stub-support-model-1",
+    "gen_ai.request.temperature": 0.0,
+    "gen_ai.request.top_p": 1.0,
+    "gen_ai.request.max_tokens": 1024,
+    "gen_ai.request.seed": 42,
+    "gen_ai.tool.definitions": "[{\"description\": \"Search internal documentation\", \"name\": \"search_docs\", \"parameters\": {\"properties\": {\"query\": {\"type\": \"string\"}}, \"required\": [\"query\"], \"type\": \"object\"}}]"
   }
 }

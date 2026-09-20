@@ -45,11 +45,11 @@ def test_wrap_llm_records_envelope_kind_llm():
     env = session._recorded_envelopes[0]
     assert env.kind == "llm"
     assert env.name == "agent.chat"
-    assert env.metadata.model == "gpt-4o-mini"
-    assert env.metadata.sampling_params.temperature == 0.2
-    assert env.input.messages == [{"role": "user", "content": "hi"}]
-    assert env.input.graph_state["provider"] == "openai"
-    assert env.input.graph_state["model"] == "gpt-4o-mini"
+    assert env.model == "gpt-4o-mini"
+    assert env.attributes["gen_ai.request.temperature"] == 0.2
+    assert [m.model_dump() for m in env.input.messages] == [{"role": "user", "content": "hi"}]
+    assert env.input.arguments["provider"] == "openai"
+    assert env.input.arguments["model"] == "gpt-4o-mini"
 
 
 @pytest.mark.layer1
@@ -71,7 +71,7 @@ def test_wrap_llm_invokes_on_crossing_with_kind_llm():
     assert bid == "planner.chat"
     assert kind == "llm"
     assert isinstance(inp, Input)
-    assert inp.messages[0]["content"] == "plan"
+    assert inp.messages[0].content == "plan"
     assert result == out
 
 
@@ -92,7 +92,7 @@ def test_wrap_llm_messages_only_signature():
     assert len(session._recorded_envelopes) == 1
     assert session._recorded_envelopes[0].kind == "llm"
     assert crossings[0][1] == "llm"
-    assert crossings[0][2].messages[0]["content"] == "hello"
+    assert crossings[0][2].messages[0].content == "hello"
 
 
 @pytest.mark.layer1
@@ -151,7 +151,7 @@ def test_wrap_llm_live_cutpoint_fires_on_crossing(tmp_path):
     bid, kind, inp, result = crossings[0]
     assert bid == "agent.chat"
     assert kind == "llm"
-    assert inp.messages[0]["content"] == "cutpoint"
+    assert inp.messages[0].content == "cutpoint"
     assert session.captured_result("agent.chat", 1) == result
 
 
@@ -163,7 +163,7 @@ def test_wrap_llm_custom_extract_input():
     def extract_input(prompt: str) -> Input:
         return Input(
             messages=[{"role": "user", "content": prompt}],
-            graph_state={"prompt": prompt},
+            arguments={"prompt": prompt},
         )
 
     def complete(prompt: str) -> dict:
@@ -175,4 +175,4 @@ def test_wrap_llm_custom_extract_input():
     assert out["completion"] == "HI"
     env = session._recorded_envelopes[0]
     assert env.kind == "llm"
-    assert env.input.graph_state["prompt"] == "hi"
+    assert env.input.arguments["prompt"] == "hi"

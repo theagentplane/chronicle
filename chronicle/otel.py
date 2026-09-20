@@ -51,19 +51,21 @@ def _span_kind(kind: str) -> str:
 
 def _input_value(envelope: Envelope) -> Any:
     state = envelope.input
-    return state.messages or state.graph_state or {}
+    return [m.model_dump() for m in state.messages] or state.arguments or {}
 
 
 def _output_value(envelope: Envelope) -> Any:
-    action = envelope.output
+    output = envelope.output
     if envelope.status.code == "ERROR":
         return {"error": envelope.status.message, "error_type": envelope.attributes.get("error.type")}
-    if action.tool_calls:
-        return [tc.model_dump() if hasattr(tc, "model_dump") else tc for tc in action.tool_calls]
-    if action.completion is not None:
-        return action.completion
-    if action.raw_response is not None:
-        return action.raw_response
+    llm = output.llm
+    if llm is not None:
+        if llm.tool_calls:
+            return [tc.model_dump() for tc in llm.tool_calls]
+        if llm.text is not None:
+            return llm.text
+    if output.value is not None:
+        return output.value
     return {}
 
 
@@ -87,15 +89,13 @@ def envelope_span_attributes(envelope: Envelope) -> dict[str, Any]:
         "chronicle.invocation_index": envelope.invocation_index,
     }
     if envelope.kind == "llm":
-        if envelope.metadata.model:
-            attributes[S.LLM_MODEL_NAME] = envelope.metadata.model
-        usage = envelope.output.token_usage or {}
-        prompt = usage.get("prompt_tokens", usage.get("input_tokens"))
-        completion = usage.get("completion_tokens", usage.get("output_tokens"))
-        if prompt is not None:
-            attributes[S.LLM_TOKEN_COUNT_PROMPT] = int(prompt)
-        if completion is not None:
-            attributes[S.LLM_TOKEN_COUNT_COMPLETION] = int(completion)
+        if envelope.model:
+            attributes[S.LLM_MODEL_NAME] = envelope.model
+        usage = envelope.output.llm.usage if envelope.output.llm else None
+        if usage is not None and usage.input_tokens is not None:
+            attributes[S.LLM_TOKEN_COUNT_PROMPT] = usage.input_tokens
+        if usage is not None and usage.output_tokens is not None:
+            attributes[S.LLM_TOKEN_COUNT_COMPLETION] = usage.output_tokens
     if envelope.kind == "tool":
         attributes[S.TOOL_NAME] = envelope.name
     for key, value in (envelope.attributes or {}).items():

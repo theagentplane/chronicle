@@ -1,10 +1,14 @@
-Trace: bfeaff4a2fb24cd89d588213ed3d9227
+Trace: e5507c84e697747b24f548e948379603
   resource/attributes: chronicle.trace.name=parent-calls-subagent-twice message_id=msg_042 scenario=parent_calls_subagent_twice session_id=sess_subagent_x2 user_id=dev
 
-└─ orchestrator#1 (custom)  span=da436f47 parent=—
-   ├─ researcher#1 (custom)  span=9761afd9 parent=da436f47
-   │  ├─ llm#1 (llm)  span=6516e8bd parent=9761afd9
-   │  └─ web_search#1 (tool)  span=bf75fe2e parent=9761afd9
-   └─ researcher#2 (custom)  span=c9230f61 parent=da436f47
-      ├─ llm#2 (llm)  span=279fb6af parent=c9230f61
-      └─ web_search#2 (tool)  span=ce98b1cf parent=c9230f61
+└─ orchestrator#1 (custom)  span=4d63fcf9 parent=—
+   ├─ researcher#1 (custom)  span=0d97e0cc parent=4d63fcf9
+   │  ├─ llm#1 (llm)  span=95fcee4b parent=0d97e0cc
+   │  │  attrs: gen_ai.request.model=stub-researcher
+   │  └─ web_search#1 (tool)  span=684a8963 parent=0d97e0cc
+   │     attrs: gen_ai.tool.name=web_search
+   └─ researcher#2 (custom)  span=afc34e28 parent=4d63fcf9
+      ├─ llm#2 (llm)  span=002f2d79 parent=afc34e28
+      │  attrs: gen_ai.request.model=stub-researcher
+      └─ web_search#2 (tool)  span=53b20b30 parent=afc34e28
+         attrs: gen_ai.tool.name=web_search

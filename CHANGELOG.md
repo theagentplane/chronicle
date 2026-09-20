@@ -25,8 +25,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `(trace_id, envelope_id)` (new databases only); the control-plane RFC keys on the pair.
 - `EnvelopeStore.export_trace` writes `NNN-<boundary>-<invocation>.json` (same as
   `ExecutionGraph.save`) instead of prefixing the trace id.
-- Removed the duplicated `node_id` / `trace_id` from `ContextMetadata`; they live on the
-  `Envelope`.
 - Fixtures are re-recorded from real runs (`fixtures/`). The deletion, refund, invoice
   and trade traces come from `examples/`; `examples/nested_subagents/record.py` and
   `examples/sample_envelope/record_sample.py` replace the hand-written nested-trace and
@@ -51,20 +49,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   its top-level `dims` is now `attributes`. The failure status message is redacted like
   the rest of the envelope. The `@boundary(kind=...)` argument is unchanged.
 
-- **Renames:** `ContextMetadata` → `Metadata`, `InputState` → `Input` (`Envelope.input_state`
-  → `Envelope.input`), `ActionResult` → `Output` (`Envelope.action_result` →
-  `Envelope.output`), `Metadata.model_version` → `model` (also `record(model=...)`,
-  `session.model`).
-- **Removed:** `Metadata.build_id`, `framework` and `extra` (and `record(build_id=)`,
-  `session.build_id`, the `CHRONICLE_BUILD_ID` variable, the `chronicle.build_id` span
-  attribute); `Input.content_hash`. The model is no longer copied into
-  `attributes["model_version"]`; `metadata.model` is the only home (the exporter already
-  reads it for `llm.model_name`).
+- **`Envelope.metadata` is gone.** The model, sampling parameters and tool definitions are
+  span attributes under the OTel GenAI keys (`gen_ai.request.model`,
+  `gen_ai.request.temperature` / `top_p` / `max_tokens` / `seed`, `gen_ai.tool.definitions`),
+  so a backend sees them natively. `Envelope.model` and `Envelope.tool_schemas` read them
+  back. `attributes` values are now OTel-typed (`str`, `bool`, `int`, `float` or lists of
+  them), not only strings. `build_id`, `framework`, `extra` and `SamplingParams.extra` are
+  removed (with `record(build_id=)`, `session.build_id`, `CHRONICLE_BUILD_ID`, and the
+  `chronicle.build_id` span attribute). `record(model_version=)` is now `record(model=)`.
+- **`InputState` → `Input`** (`Envelope.input_state` → `Envelope.input`) with a minimal shape:
+  `arguments` (the call's arguments by name; replaces `graph_state`) and `messages` (typed
+  `Message`s, LLM boundaries only). `system_prompt`, `rag_chunks` and `content_hash` are no
+  longer fields; read chunks with `chronicle.envelope.schema.rag_chunks_from(input.arguments)`.
+- **`ActionResult` → `Output`** (`Envelope.action_result` → `Envelope.output`):
+  `value` (the JSON-safe return value; replaces `raw_response`) and `llm`, one `LLMOutput`
+  bundle (`text`, `tool_calls`, `finish_reason`, `usage`) for LLM boundaries. `usage` is a
+  normalized `Usage(input_tokens, output_tokens)` instead of a provider-keyed dict.
 
 ### Added
-- `@boundary(kind="llm")` and `wrap()` now fill `Metadata.tool_schemas` from the tools the
-  model was given (a `tools` / `tool_schemas` argument, OpenAI / Anthropic / plain shapes),
-  or from `extract_metadata`.
+- **Tool schemas are inferred from the wrapped method.** A `@boundary(kind="tool")` records
+  its own name, description (docstring) and JSON-schema parameters (type hints) as
+  `gen_ai.tool.name` / `.description` / `.definitions`. An LLM boundary (`@boundary(kind="llm")`,
+  `wrap()`) records the tools it was given (a `tools` / `tool_schemas` argument in OpenAI,
+  Anthropic or plain shape), or those returned by `extract_metadata`.
+- `chronicle.LLMRequest`, a validated capture-side view (model, sampling, tools) that
+  flattens into attributes with `to_attributes()`; `Envelope.model` / `Envelope.tool_schemas`.
 - `chronicle.Status` and `Envelope.status`; `boundary_id`, `span_id` and
   `parent_span_id` remain as getters.
 - `chronicle.ids`: `new_trace_id`, `new_span_id`, `is_trace_id`, `is_span_id`.

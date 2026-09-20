@@ -1,48 +1,31 @@
 {
   "schema_version": "2.0",
-  "envelope_id": "9039f01daaed9cb5",
-  "trace_id": "971fa51cb43438b6206676496b840132",
+  "envelope_id": "ffb99eaba493fe5c",
+  "trace_id": "12e17996e9230ab1e06158ca7437e910",
   "name": "create_invoice",
   "kind": "tool",
   "parent_envelope_id": null,
   "sequence": 2,
   "invocation_index": 1,
-  "start_time": "2026-09-20T14:25:23.057064Z",
-  "end_time": "2026-09-20T14:25:23.057094Z",
+  "start_time": "2026-09-20T14:47:51.887202Z",
+  "end_time": "2026-09-20T14:47:51.887233Z",
   "status": {
     "code": "UNSET",
     "message": null
   },
-  "metadata": {
-    "model": "unknown",
-    "sampling_params": {
-      "temperature": null,
-      "top_p": null,
-      "max_tokens": null,
-      "seed": null,
-      "extra": {}
-    },
-    "tool_schemas": []
-  },
   "input": {
-    "messages": [],
-    "system_prompt": null,
-    "rag_chunks": [],
-    "graph_state": {
+    "arguments": {
       "customer_id": "acme-corp",
       "amount_cents": 200000000,
       "currency": "USD",
       "contract_currency": "EUR",
       "contract_amount_cents": 200000000,
       "max_invoice_cents": 10000000
-    }
+    },
+    "messages": []
   },
   "output": {
-    "tool_calls": [],
-    "completion": "sent",
-    "finish_reason": null,
-    "token_usage": {},
-    "raw_response": {
+    "value": {
       "status": "sent",
       "blocked": false,
       "customer_id": "acme-corp",
@@ -50,9 +33,13 @@
       "currency": "USD",
       "contract_currency": "EUR",
       "message": "Invoice sent to acme-corp for 2,000,000.00 USD"
-    }
+    },
+    "llm": null
   },
   "attributes": {
-    "chronicle.trace.name": "trace-invoice-currency-001"
+    "chronicle.trace.name": "trace-invoice-currency-001",
+    "gen_ai.tool.name": "create_invoice",
+    "gen_ai.tool.definitions": "[{\"description\": \"Invoice tool \\u2014 gated version enforces a max invoice amount.\", \"name\": \"create_invoice\", \"parameters\": {\"properties\": {\"amount_cents\": {\"type\": \"integer\"}, \"currency\": {\"type\": \"string\"}, \"customer_id\": {\"type\": \"string\"}}, \"required\": [\"customer_id\", \"amount_cents\", \"currency\"], \"type\": \"object\"}}]",
+    "gen_ai.tool.description": "Invoice tool — gated version enforces a max invoice amount."
   }
 }

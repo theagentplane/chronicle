@@ -44,7 +44,7 @@ def _wrap_stub(client: StubClient):
 
         return Input(
             messages=[{"role": m.role, "content": m.content} for m in messages],
-            graph_state={"model": model},
+            arguments={"model": model},
         )
 
     def extract_result(resp: ModelResponse):

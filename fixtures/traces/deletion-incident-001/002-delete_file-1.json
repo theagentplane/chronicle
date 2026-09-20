@@ -1,52 +1,39 @@
 {
   "schema_version": "2.0",
-  "envelope_id": "757a75357c7d91f0",
-  "trace_id": "ed02ac6aedb5fb2bc16f8121178e5369",
+  "envelope_id": "1e6d29276d2b4d9b",
+  "trace_id": "9a10add1391e2b49a6199ee2c8878349",
   "name": "delete_file",
   "kind": "tool",
   "parent_envelope_id": null,
   "sequence": 2,
   "invocation_index": 1,
-  "start_time": "2026-09-20T14:25:23.560961Z",
-  "end_time": "2026-09-20T14:25:23.560998Z",
+  "start_time": "2026-09-20T14:47:52.794543Z",
+  "end_time": "2026-09-20T14:47:52.794583Z",
   "status": {
     "code": "UNSET",
     "message": null
   },
-  "metadata": {
-    "model": "unknown",
-    "sampling_params": {
-      "temperature": null,
-      "top_p": null,
-      "max_tokens": null,
-      "seed": null,
-      "extra": {}
-    },
-    "tool_schemas": []
-  },
   "input": {
-    "messages": [],
-    "system_prompt": null,
-    "rag_chunks": [],
-    "graph_state": {
+    "arguments": {
       "path": "/prod/logs/app.log",
       "environment": "prod"
-    }
+    },
+    "messages": []
   },
   "output": {
-    "tool_calls": [],
-    "completion": "deleted",
-    "finish_reason": null,
-    "token_usage": {},
-    "raw_response": {
+    "value": {
       "status": "deleted",
       "blocked": false,
       "path": "/prod/logs/app.log",
       "environment": "prod",
       "message": "Deleted /prod/logs/app.log in prod"
-    }
+    },
+    "llm": null
   },
   "attributes": {
-    "chronicle.trace.name": "trace-deletion-incident-001"
+    "chronicle.trace.name": "trace-deletion-incident-001",
+    "gen_ai.tool.name": "delete_file",
+    "gen_ai.tool.definitions": "[{\"description\": \"Annotated tool boundary \\u2014 same ID for record and cut-point replay.\", \"name\": \"delete_file\", \"parameters\": {\"properties\": {\"environment\": {\"type\": \"string\"}, \"path\": {\"type\": \"string\"}}, \"required\": [\"path\", \"environment\"], \"type\": \"object\"}}]",
+    "gen_ai.tool.description": "Annotated tool boundary — same ID for record and cut-point replay."
   }
 }

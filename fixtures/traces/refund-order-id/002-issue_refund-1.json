@@ -1,55 +1,42 @@
 {
   "schema_version": "2.0",
-  "envelope_id": "37cf081bb93386c6",
-  "trace_id": "397626bbc4c7502de9cfde91e6a5d6b7",
+  "envelope_id": "2505ce9076acfdde",
+  "trace_id": "32a95dc4b27821ef90c5e61cbd4eaff5",
   "name": "issue_refund",
   "kind": "tool",
   "parent_envelope_id": null,
   "sequence": 2,
   "invocation_index": 1,
-  "start_time": "2026-09-20T14:25:23.051092Z",
-  "end_time": "2026-09-20T14:25:23.051128Z",
+  "start_time": "2026-09-20T14:47:51.879993Z",
+  "end_time": "2026-09-20T14:47:51.880035Z",
   "status": {
     "code": "UNSET",
     "message": null
   },
-  "metadata": {
-    "model": "unknown",
-    "sampling_params": {
-      "temperature": null,
-      "top_p": null,
-      "max_tokens": null,
-      "seed": null,
-      "extra": {}
-    },
-    "tool_schemas": []
-  },
   "input": {
-    "messages": [],
-    "system_prompt": null,
-    "rag_chunks": [],
-    "graph_state": {
+    "arguments": {
       "order_id": "9847261",
       "amount_cents": 984726100,
       "order_total_cents": 4700,
       "max_refund_cents": 1000000
-    }
+    },
+    "messages": []
   },
   "output": {
-    "tool_calls": [],
-    "completion": "refunded",
-    "finish_reason": null,
-    "token_usage": {},
-    "raw_response": {
+    "value": {
       "status": "refunded",
       "blocked": false,
       "order_id": "9847261",
       "amount_cents": 984726100,
       "order_total_cents": 4700,
       "message": "Refunded $9,847,261.00 to order #9847261"
-    }
+    },
+    "llm": null
   },
   "attributes": {
-    "chronicle.trace.name": "trace-refund-order-id-001"
+    "chronicle.trace.name": "trace-refund-order-id-001",
+    "gen_ai.tool.name": "issue_refund",
+    "gen_ai.tool.definitions": "[{\"description\": \"Refund tool \\u2014 gated version enforces a max refund amount.\", \"name\": \"issue_refund\", \"parameters\": {\"properties\": {\"amount_cents\": {\"type\": \"integer\"}, \"order_id\": {\"type\": \"string\"}}, \"required\": [\"order_id\", \"amount_cents\"], \"type\": \"object\"}}]",
+    "gen_ai.tool.description": "Refund tool — gated version enforces a max refund amount."
   }
 }

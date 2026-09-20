@@ -5,7 +5,8 @@ from __future__ import annotations
 from typing import Any
 
 from chronicle.envelope.capture import EnvelopeRecorder
-from chronicle.envelope.schema import Output, Input, RagChunk, ToolCall
+from chronicle.envelope.schema import Input, LLMOutput, Message, Output, ToolCall
+from chronicle.session import usage_from
 
 
 def langgraph_input_extractor(state: dict[str, Any]) -> Input:
@@ -22,20 +23,12 @@ def langgraph_input_extractor(state: dict[str, Any]) -> Input:
         else:
             serialized_messages.append({"role": "unknown", "content": str(msg)})
 
-    rag_chunks = []
-    for chunk in state.get("rag_chunks", state.get("context", [])):
-        if isinstance(chunk, RagChunk):
-            rag_chunks.append(chunk)
-        elif isinstance(chunk, dict):
-            rag_chunks.append(RagChunk(**chunk))
-        elif isinstance(chunk, str):
-            rag_chunks.append(RagChunk(chunk_id=str(len(rag_chunks)), content=chunk))
-
     return Input(
-        messages=serialized_messages,
-        system_prompt=state.get("system_prompt"),
-        rag_chunks=rag_chunks,
-        graph_state={k: v for k, v in state.items() if k != "messages"},
+        arguments={k: v for k, v in state.items() if k != "messages"},
+        messages=[
+            Message(**m) if "role" in m else Message(role="unknown", content=m)
+            for m in serialized_messages
+        ],
     )
 
 
@@ -66,16 +59,18 @@ def langgraph_result_extractor(state: dict[str, Any], result: Any) -> Output:
                     completion = last.get("content")
 
         return Output(
-            tool_calls=tool_calls,
-            completion=str(completion) if completion is not None else None,
-            finish_reason=result.get("finish_reason"),
-            token_usage=result.get("token_usage", {}),
+            llm=LLMOutput(
+                text=str(completion) if completion is not None else None,
+                tool_calls=tool_calls,
+                finish_reason=result.get("finish_reason"),
+                usage=usage_from(result.get("token_usage") or result.get("usage")),
+            )
         )
 
     if isinstance(result, str):
-        return Output(completion=result)
+        return Output(llm=LLMOutput(text=result))
 
-    return Output(completion=str(result))
+    return Output(value=str(result))
 
 
 def instrument_graph_nodes(

@@ -1,59 +1,49 @@
 {
   "schema_version": "2.0",
-  "envelope_id": "279fb6afa284067f",
-  "trace_id": "bfeaff4a2fb24cd89d588213ed3d9227",
+  "envelope_id": "002f2d7932d81a18",
+  "trace_id": "e5507c84e697747b24f548e948379603",
   "name": "llm",
   "kind": "llm",
-  "parent_envelope_id": "c9230f61389882c6",
+  "parent_envelope_id": "afc34e2811806c8c",
   "sequence": 4,
   "invocation_index": 2,
-  "start_time": "2026-09-20T14:25:24.076731Z",
-  "end_time": "2026-09-20T14:25:24.087584Z",
+  "start_time": "2026-09-20T14:47:53.775128Z",
+  "end_time": "2026-09-20T14:47:53.785770Z",
   "status": {
     "code": "UNSET",
     "message": null
   },
-  "metadata": {
-    "model": "stub-researcher",
-    "sampling_params": {
-      "temperature": null,
-      "top_p": null,
-      "max_tokens": null,
-      "seed": null,
-      "extra": {}
-    },
-    "tool_schemas": []
-  },
   "input": {
-    "messages": [
-      {
-        "role": "user",
-        "content": "agent cost controls"
-      }
-    ],
-    "system_prompt": null,
-    "rag_chunks": [],
-    "graph_state": {
+    "arguments": {
       "messages": [
         {
           "role": "user",
           "content": "agent cost controls"
         }
       ]
-    }
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": "agent cost controls"
+      }
+    ]
   },
   "output": {
-    "tool_calls": [],
-    "completion": "Plan: search for 'agent cost controls'",
-    "finish_reason": "stop",
-    "token_usage": {},
-    "raw_response": null
+    "value": null,
+    "llm": {
+      "text": "Plan: search for 'agent cost controls'",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "usage": null
+    }
   },
   "attributes": {
     "session_id": "sess_subagent_x2",
     "message_id": "msg_042",
     "user_id": "dev",
     "scenario": "parent_calls_subagent_twice",
-    "chronicle.trace.name": "parent-calls-subagent-twice"
+    "chronicle.trace.name": "parent-calls-subagent-twice",
+    "gen_ai.request.model": "stub-researcher"
   }
 }

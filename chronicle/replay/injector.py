@@ -7,7 +7,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
-from chronicle.envelope.schema import Output, Envelope, Input
+from chronicle.envelope.schema import Envelope, Input, LLMOutput, Output
 from chronicle.replay.assertions import AssertionResult, StructuralAssertions
 
 _REPLAY_GUARD = "CHRONICLE_LAYER1_REPLAY"
@@ -61,18 +61,14 @@ class ReplayInjector:
         self.context = ReplayContext(
             envelope=envelope,
             input=envelope.input,
-            stubbed_completion=envelope.output.completion,
+            stubbed_completion=(envelope.output.llm or LLMOutput()).text,
         )
 
     def inject_state(self, state: dict[str, Any]) -> dict[str, Any]:
         """Merge recorded input state into a graph state dict."""
-        injected = {**state, **self.envelope.input.graph_state}
-        injected["messages"] = self.envelope.input.messages
-        if self.envelope.input.system_prompt:
-            injected["system_prompt"] = self.envelope.input.system_prompt
-        injected["rag_chunks"] = [
-            c.model_dump() for c in self.envelope.input.rag_chunks
-        ]
+        injected = {**state, **self.envelope.input.arguments}
+        if self.envelope.input.messages:
+            injected["messages"] = [m.model_dump() for m in self.envelope.input.messages]
         return injected
 
     def stub_llm(self, prompt: str | None = None) -> Output:
@@ -87,7 +83,7 @@ class ReplayInjector:
         )
         if name in self.context.stubbed_tool_results:
             return self.context.stubbed_tool_results[name]
-        for tc in self.envelope.output.tool_calls:
+        for tc in (self.envelope.output.llm or LLMOutput()).tool_calls:
             if tc.name == name:
                 return {"status": "recorded", "tool": name, "arguments": tc.arguments}
         return {"status": "stubbed", "tool": name}

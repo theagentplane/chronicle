@@ -1,54 +1,40 @@
 {
   "schema_version": "2.0",
-  "envelope_id": "bf75fe2eac4721b1",
-  "trace_id": "bfeaff4a2fb24cd89d588213ed3d9227",
+  "envelope_id": "684a8963252e9e4f",
+  "trace_id": "e5507c84e697747b24f548e948379603",
   "name": "web_search",
   "kind": "tool",
-  "parent_envelope_id": "9761afd96006c3ee",
+  "parent_envelope_id": "0d97e0cce4e18621",
   "sequence": 2,
   "invocation_index": 1,
-  "start_time": "2026-09-20T14:25:24.066402Z",
-  "end_time": "2026-09-20T14:25:24.076532Z",
+  "start_time": "2026-09-20T14:47:53.764617Z",
+  "end_time": "2026-09-20T14:47:53.774892Z",
   "status": {
     "code": "UNSET",
     "message": null
   },
-  "metadata": {
-    "model": "unknown",
-    "sampling_params": {
-      "temperature": null,
-      "top_p": null,
-      "max_tokens": null,
-      "seed": null,
-      "extra": {}
-    },
-    "tool_schemas": []
-  },
   "input": {
-    "messages": [],
-    "system_prompt": null,
-    "rag_chunks": [],
-    "graph_state": {
+    "arguments": {
       "query": "token governance"
-    }
+    },
+    "messages": []
   },
   "output": {
-    "tool_calls": [],
-    "completion": "{'query': 'token governance', 'results': ['result for token governance']}",
-    "finish_reason": null,
-    "token_usage": {},
-    "raw_response": {
+    "value": {
       "query": "token governance",
       "results": [
         "result for token governance"
       ]
-    }
+    },
+    "llm": null
   },
   "attributes": {
     "session_id": "sess_subagent_x2",
     "message_id": "msg_042",
     "user_id": "dev",
     "scenario": "parent_calls_subagent_twice",
-    "chronicle.trace.name": "parent-calls-subagent-twice"
+    "chronicle.trace.name": "parent-calls-subagent-twice",
+    "gen_ai.tool.name": "web_search",
+    "gen_ai.tool.definitions": "[{\"name\": \"web_search\", \"parameters\": {\"properties\": {\"query\": {\"type\": \"string\"}}, \"required\": [\"query\"], \"type\": \"object\"}}]"
   }
 }

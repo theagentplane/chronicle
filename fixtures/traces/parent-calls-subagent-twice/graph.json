@@ -1,5 +1,5 @@
 {
-  "trace_id": "bfeaff4a2fb24cd89d588213ed3d9227",
+  "trace_id": "e5507c84e697747b24f548e948379603",
   "attributes": {
     "session_id": "sess_subagent_x2",
     "message_id": "msg_042",
@@ -9,7 +9,7 @@
   },
   "spans": [
     {
-      "envelope_id": "6516e8bdaa480406",
+      "envelope_id": "95fcee4b6dc32ba9",
       "name": "llm",
       "kind": "llm",
       "invocation_index": 1,
@@ -17,7 +17,7 @@
       "fixture": "001-llm-1.json"
     },
     {
-      "envelope_id": "bf75fe2eac4721b1",
+      "envelope_id": "684a8963252e9e4f",
       "name": "web_search",
       "kind": "tool",
       "invocation_index": 1,
@@ -25,7 +25,7 @@
       "fixture": "002-web_search-1.json"
     },
     {
-      "envelope_id": "9761afd96006c3ee",
+      "envelope_id": "0d97e0cce4e18621",
       "name": "researcher",
       "kind": "custom",
       "invocation_index": 1,
@@ -33,7 +33,7 @@
       "fixture": "003-researcher-1.json"
     },
     {
-      "envelope_id": "279fb6afa284067f",
+      "envelope_id": "002f2d7932d81a18",
       "name": "llm",
       "kind": "llm",
       "invocation_index": 2,
@@ -41,7 +41,7 @@
       "fixture": "004-llm-2.json"
     },
     {
-      "envelope_id": "ce98b1cf58988f5f",
+      "envelope_id": "53b20b3079100ba3",
       "name": "web_search",
       "kind": "tool",
       "invocation_index": 2,
@@ -49,7 +49,7 @@
       "fixture": "005-web_search-2.json"
     },
     {
-      "envelope_id": "c9230f61389882c6",
+      "envelope_id": "afc34e2811806c8c",
       "name": "researcher",
       "kind": "custom",
       "invocation_index": 2,
@@ -57,7 +57,7 @@
       "fixture": "006-researcher-2.json"
     },
     {
-      "envelope_id": "da436f47f0ecf1a4",
+      "envelope_id": "4d63fcf94f6c1e96",
       "name": "orchestrator",
       "kind": "custom",
       "invocation_index": 1,
@@ -67,7 +67,7 @@
   ],
   "nodes": [
     {
-      "envelope_id": "6516e8bdaa480406",
+      "envelope_id": "95fcee4b6dc32ba9",
       "name": "llm",
       "kind": "llm",
       "invocation_index": 1,
@@ -75,7 +75,7 @@
       "fixture": "001-llm-1.json"
     },
     {
-      "envelope_id": "bf75fe2eac4721b1",
+      "envelope_id": "684a8963252e9e4f",
       "name": "web_search",
       "kind": "tool",
       "invocation_index": 1,
@@ -83,7 +83,7 @@
       "fixture": "002-web_search-1.json"
     },
     {
-      "envelope_id": "9761afd96006c3ee",
+      "envelope_id": "0d97e0cce4e18621",
       "name": "researcher",
       "kind": "custom",
       "invocation_index": 1,
@@ -91,7 +91,7 @@
       "fixture": "003-researcher-1.json"
     },
     {
-      "envelope_id": "279fb6afa284067f",
+      "envelope_id": "002f2d7932d81a18",
       "name": "llm",
       "kind": "llm",
       "invocation_index": 2,
@@ -99,7 +99,7 @@
       "fixture": "004-llm-2.json"
     },
     {
-      "envelope_id": "ce98b1cf58988f5f",
+      "envelope_id": "53b20b3079100ba3",
       "name": "web_search",
       "kind": "tool",
       "invocation_index": 2,
@@ -107,7 +107,7 @@
       "fixture": "005-web_search-2.json"
     },
     {
-      "envelope_id": "c9230f61389882c6",
+      "envelope_id": "afc34e2811806c8c",
       "name": "researcher",
       "kind": "custom",
       "invocation_index": 2,
@@ -115,7 +115,7 @@
       "fixture": "006-researcher-2.json"
     },
     {
-      "envelope_id": "da436f47f0ecf1a4",
+      "envelope_id": "4d63fcf94f6c1e96",
       "name": "orchestrator",
       "kind": "custom",
       "invocation_index": 1,
@@ -125,31 +125,31 @@
   ],
   "edges": [
     [
-      "9761afd96006c3ee",
-      "6516e8bdaa480406"
+      "0d97e0cce4e18621",
+      "95fcee4b6dc32ba9"
     ],
     [
-      "9761afd96006c3ee",
-      "bf75fe2eac4721b1"
+      "0d97e0cce4e18621",
+      "684a8963252e9e4f"
     ],
     [
-      "da436f47f0ecf1a4",
-      "9761afd96006c3ee"
+      "4d63fcf94f6c1e96",
+      "0d97e0cce4e18621"
     ],
     [
-      "c9230f61389882c6",
-      "279fb6afa284067f"
+      "afc34e2811806c8c",
+      "002f2d7932d81a18"
     ],
     [
-      "c9230f61389882c6",
-      "ce98b1cf58988f5f"
+      "afc34e2811806c8c",
+      "53b20b3079100ba3"
     ],
     [
-      "da436f47f0ecf1a4",
-      "c9230f61389882c6"
+      "4d63fcf94f6c1e96",
+      "afc34e2811806c8c"
     ]
   ],
   "roots": [
-    "da436f47f0ecf1a4"
+    "4d63fcf94f6c1e96"
   ]
 }

@@ -52,8 +52,7 @@ def agent_input(*args, **kwargs) -> Input:
         graph_state["tool_result"] = args[1]
     return Input(
         messages=state.get("messages", []),
-        system_prompt=state.get("system_prompt"),
-        graph_state=graph_state,
+        arguments=graph_state,
     )
 
 
@@ -78,12 +77,12 @@ def normalize(text: str) -> str:
 
 def summarize_llm_input(inp: Input) -> str:
     if inp.messages:
-        return truncate(inp.messages[-1].get("content", ""))
-    return truncate(inp.graph_state.get("user_message", ""))
+        return truncate(str(inp.messages[-1].content or ""))
+    return truncate(inp.arguments.get("user_message", ""))
 
 
 def summarize_tool_input(inp: Input) -> str:
-    gs = inp.graph_state
+    gs = inp.arguments
     parts: list[str] = []
     for key, value in gs.items():
         if key in ("args", "kwargs", "implied_notional_cents"):
@@ -97,7 +96,7 @@ def summarize_tool_input(inp: Input) -> str:
 
 def summarize_envelope_input(env: Envelope) -> str:
     if env.kind == "llm" and env.invocation_index > 1:
-        tool_result = env.input.graph_state.get("tool_result")
+        tool_result = env.input.arguments.get("tool_result")
         if tool_result:
             return truncate(f"tool_result: {tool_result.get('status', tool_result)}")
     if env.kind == "llm":
@@ -112,20 +111,20 @@ def _fmt_arg(key: str, value: object) -> str:
 
 
 def summarize_envelope_output(env: Envelope) -> str:
-    action = env.output
-    if action.tool_calls:
-        call = action.tool_calls[0]
+    llm = env.output.llm
+    if llm and llm.tool_calls:
+        call = llm.tool_calls[0]
         args = ", ".join(_fmt_arg(k, v) for k, v in call.arguments.items())
         return normalize(f"→ {call.name}({args})")
-    if action.raw_response:
-        raw = action.raw_response
-        status = raw.get("status", "")
-        message = raw.get("message", "")
+    value = env.output.value
+    if isinstance(value, dict) and value:
+        status = value.get("status", "")
+        message = value.get("message", "")
         if message:
             return normalize(f"{status}: {message}")
-        return normalize(str(raw))
-    if action.completion:
-        return normalize(action.completion)
+        return normalize(str(value))
+    if llm and llm.text:
+        return normalize(llm.text)
     return "—"
 
 

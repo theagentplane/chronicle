@@ -41,8 +41,7 @@ def _delete_input(*args, **kwargs) -> Input:
     dataset = args[0] if args else kwargs["dataset"]
     environment = args[1] if len(args) > 1 else kwargs["environment"]
     return Input(
-        messages=[],
-        graph_state={"dataset": dataset, "environment": environment},
+        arguments={"dataset": dataset, "environment": environment},
     )
 
 

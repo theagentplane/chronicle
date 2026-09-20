@@ -1,11 +1,11 @@
 {
-  "trace_id": "cecf472220ade00c84d1c1e0db57b793",
+  "trace_id": "e124eb6883794e10cea994c8fba34440",
   "attributes": {
     "chronicle.trace.name": "trace-trade-notional-001"
   },
   "spans": [
     {
-      "envelope_id": "1b439deb9aea7aa4",
+      "envelope_id": "dd9233d6b7a6dde5",
       "name": "agent",
       "kind": "llm",
       "invocation_index": 1,
@@ -13,7 +13,7 @@
       "fixture": "001-agent-1.json"
     },
     {
-      "envelope_id": "b089f66b872e84f2",
+      "envelope_id": "d8c4dd8d2c729c99",
       "name": "place_order",
       "kind": "tool",
       "invocation_index": 1,
@@ -21,7 +21,7 @@
       "fixture": "002-place_order-1.json"
     },
     {
-      "envelope_id": "658c46323e503319",
+      "envelope_id": "c32537686fd73392",
       "name": "agent",
       "kind": "llm",
       "invocation_index": 2,
@@ -31,7 +31,7 @@
   ],
   "nodes": [
     {
-      "envelope_id": "1b439deb9aea7aa4",
+      "envelope_id": "dd9233d6b7a6dde5",
       "name": "agent",
       "kind": "llm",
       "invocation_index": 1,
@@ -39,7 +39,7 @@
       "fixture": "001-agent-1.json"
     },
     {
-      "envelope_id": "b089f66b872e84f2",
+      "envelope_id": "d8c4dd8d2c729c99",
       "name": "place_order",
       "kind": "tool",
       "invocation_index": 1,
@@ -47,7 +47,7 @@
       "fixture": "002-place_order-1.json"
     },
     {
-      "envelope_id": "658c46323e503319",
+      "envelope_id": "c32537686fd73392",
       "name": "agent",
       "kind": "llm",
       "invocation_index": 2,
@@ -57,8 +57,8 @@
   ],
   "edges": [],
   "roots": [
-    "1b439deb9aea7aa4",
-    "b089f66b872e84f2",
-    "658c46323e503319"
+    "dd9233d6b7a6dde5",
+    "d8c4dd8d2c729c99",
+    "c32537686fd73392"
   ]
 }

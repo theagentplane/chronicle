@@ -1,59 +1,49 @@
 {
   "schema_version": "2.0",
-  "envelope_id": "6516e8bdaa480406",
-  "trace_id": "bfeaff4a2fb24cd89d588213ed3d9227",
+  "envelope_id": "95fcee4b6dc32ba9",
+  "trace_id": "e5507c84e697747b24f548e948379603",
   "name": "llm",
   "kind": "llm",
-  "parent_envelope_id": "9761afd96006c3ee",
+  "parent_envelope_id": "0d97e0cce4e18621",
   "sequence": 1,
   "invocation_index": 1,
-  "start_time": "2026-09-20T14:25:24.055457Z",
-  "end_time": "2026-09-20T14:25:24.066244Z",
+  "start_time": "2026-09-20T14:47:53.753516Z",
+  "end_time": "2026-09-20T14:47:53.764502Z",
   "status": {
     "code": "UNSET",
     "message": null
   },
-  "metadata": {
-    "model": "stub-researcher",
-    "sampling_params": {
-      "temperature": null,
-      "top_p": null,
-      "max_tokens": null,
-      "seed": null,
-      "extra": {}
-    },
-    "tool_schemas": []
-  },
   "input": {
-    "messages": [
-      {
-        "role": "user",
-        "content": "token governance"
-      }
-    ],
-    "system_prompt": null,
-    "rag_chunks": [],
-    "graph_state": {
+    "arguments": {
       "messages": [
         {
           "role": "user",
           "content": "token governance"
         }
       ]
-    }
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": "token governance"
+      }
+    ]
   },
   "output": {
-    "tool_calls": [],
-    "completion": "Plan: search for 'token governance'",
-    "finish_reason": "stop",
-    "token_usage": {},
-    "raw_response": null
+    "value": null,
+    "llm": {
+      "text": "Plan: search for 'token governance'",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "usage": null
+    }
   },
   "attributes": {
     "session_id": "sess_subagent_x2",
     "message_id": "msg_042",
     "user_id": "dev",
     "scenario": "parent_calls_subagent_twice",
-    "chronicle.trace.name": "parent-calls-subagent-twice"
+    "chronicle.trace.name": "parent-calls-subagent-twice",
+    "gen_ai.request.model": "stub-researcher"
   }
 }

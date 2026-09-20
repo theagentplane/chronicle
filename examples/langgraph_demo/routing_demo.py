@@ -69,7 +69,7 @@ def main() -> None:
     print(f"Completion: {result['completion']}")
     print(f"Recorded {len(session._recorded_envelopes)} envelope(s) to {trace_dir}/")
     for e in session._recorded_envelopes:
-        print(f"  node={e.name}  kind={e.kind}  completion={e.output.completion!r}")
+        print(f"  node={e.name}  kind={e.kind}  router={e.output.value!r}")
 
     # Replay: no node function and no routing function runs — every crossing,
     # including which branch was taken, comes back from the fixture.

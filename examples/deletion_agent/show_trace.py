@@ -77,14 +77,15 @@ def main() -> None:
         print(f"  envelope_id: {env.envelope_id}")
         if env.parent_envelope_id:
             print(f"  parent:      {env.parent_envelope_id}")
-        print(f"  input:       {env.input.graph_state.get('environment', env.input.messages)}")
-        if env.output.tool_calls:
-            for tc in env.output.tool_calls:
+        print(f"  input:       {env.input.arguments.get('environment', [m.content for m in env.input.messages])}")
+        llm = env.output.llm
+        if llm:
+            for tc in llm.tool_calls:
                 print(f"  tool_call:   {tc.name}({tc.arguments})")
-        if env.output.raw_response:
-            print(f"  result:      {env.output.raw_response}")
-        elif env.output.completion:
-            print(f"  completion:  {env.output.completion}")
+        if env.output.value:
+            print(f"  result:      {env.output.value}")
+        elif llm and llm.text:
+            print(f"  completion:  {llm.text}")
 
 
 if __name__ == "__main__":

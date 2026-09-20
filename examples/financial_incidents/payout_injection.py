@@ -43,8 +43,7 @@ def _transfer_input(*args, **kwargs) -> Input:
     account = args[0] if args else kwargs["account"]
     amount_cents = args[1] if len(args) > 1 else kwargs["amount_cents"]
     return Input(
-        messages=[],
-        graph_state={
+        arguments={
             "account": account,
             "amount_cents": amount_cents,
             "approved_accounts": list(APPROVED_ACCOUNTS),

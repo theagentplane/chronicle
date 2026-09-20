@@ -240,7 +240,7 @@ def _fullstub_passes(mod: ModuleType, trace_dir: Path) -> bool:
         result = mod.run_agent(user_message="stubbed")
     except Exception:
         return False
-    mocked = session.fixture_graph.envelope(mod.TOOL, 1).output.raw_response or {}
+    mocked = session.fixture_graph.envelope(mod.TOOL, 1).output.value or {}
     return bool(mod.safe(result, mocked))
 
 

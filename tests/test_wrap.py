@@ -60,10 +60,11 @@ def test_wrap_records_and_is_transparent():
     assert resp.choices[0].message.content == "hi from gpt-4o"
     env = session._recorded_envelopes[-1]
     assert env.kind == "llm"
-    assert env.output.completion == "hi from gpt-4o"
-    assert env.metadata.model == "gpt-4o"
-    assert env.metadata.sampling_params.temperature == 0.2
-    assert env.output.token_usage == {"prompt_tokens": 3, "completion_tokens": 2}
+    assert env.output.llm.text == "hi from gpt-4o"
+    assert env.model == "gpt-4o"
+    assert env.attributes["gen_ai.request.temperature"] == 0.2
+    usage = env.output.llm.usage
+    assert (usage.input_tokens, usage.output_tokens) == (3, 2)
 
 
 @pytest.mark.layer1
@@ -128,5 +129,5 @@ def test_wrap_records_the_tools_offered_to_the_model():
         model="gpt-4o", messages=[{"role": "user", "content": "hi"}], tools=[tool]
     )
 
-    schemas = session._recorded_envelopes[-1].metadata.tool_schemas
+    schemas = session._recorded_envelopes[-1].tool_schemas
     assert [s.name for s in schemas] == ["search_docs"]

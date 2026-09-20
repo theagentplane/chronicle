@@ -55,7 +55,7 @@ def _tool_input(*args, **kwargs) -> Input:
             graph_state = {"path": args[0], "environment": args[1]}
         elif len(args) == 1 and isinstance(args[0], dict):
             graph_state = dict(args[0])
-    return Input(messages=[], graph_state=graph_state)
+    return Input(arguments=graph_state)
 
 
 @boundary("delete_file", kind="tool", extract_input=_tool_input)
@@ -74,8 +74,7 @@ def _agent_input(*args, **kwargs) -> Input:
         graph_state["tool_result"] = args[1]
     return Input(
         messages=state.get("messages", []),
-        system_prompt=state.get("system_prompt"),
-        graph_state=graph_state,
+        arguments=graph_state,
     )
 
 

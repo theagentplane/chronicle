@@ -1,8 +1,8 @@
-"""Model metadata capture on the @boundary record path.
+"""Model and sampling capture on the @boundary record path.
 
 These pin the fidelity promise from the README's Envelope table: the recorded
-envelope should reflect the model version and sampling parameters the call
-actually used, not a session placeholder.
+envelope should reflect the model and sampling parameters the call actually used
+(as GenAI span attributes), not a session placeholder.
 """
 
 from __future__ import annotations
@@ -30,10 +30,11 @@ def test_llm_boundary_captures_model_and_sampling():
     planner({"messages": [{"role": "user", "content": "hi"}]})
 
     env = session._recorded_envelopes[-1]
-    assert env.metadata.model == "gpt-4o-2024-08-06"
-    assert env.metadata.sampling_params.temperature == 0.2
-    assert env.metadata.sampling_params.max_tokens == 256
-    assert env.output.token_usage == {"input_tokens": 10, "output_tokens": 5}
+    assert env.model == "gpt-4o-2024-08-06"
+    assert env.attributes["gen_ai.request.temperature"] == 0.2
+    assert env.attributes["gen_ai.request.max_tokens"] == 256
+    usage = env.output.llm.usage
+    assert (usage.input_tokens, usage.output_tokens) == (10, 5)
 
 
 @pytest.mark.layer1
@@ -50,8 +51,9 @@ def test_nested_sampling_params_are_captured():
     session.begin_trace("t-nested")
     planner({"messages": []})
 
-    sp = session._recorded_envelopes[-1].metadata.sampling_params
-    assert (sp.temperature, sp.top_p, sp.seed) == (0.0, 0.9, 7)
+    attrs = session._recorded_envelopes[-1].attributes
+    assert (attrs["gen_ai.request.temperature"], attrs["gen_ai.request.top_p"]) == (0.0, 0.9)
+    assert attrs["gen_ai.request.seed"] == 7
 
 
 @pytest.mark.layer1
@@ -65,13 +67,24 @@ def test_falls_back_to_session_default_when_unspecified():
     session.begin_trace("t-default")
     planner({"messages": []})
 
-    assert session._recorded_envelopes[-1].metadata.model == "claude-sonnet-4-6"
+    assert session._recorded_envelopes[-1].model == "claude-sonnet-4-6"
 
 
 @pytest.mark.layer1
-def test_default_model_version_is_honest_placeholder():
+def test_no_model_is_recorded_unless_known():
     # Never silently claim a fake pinned version like the old "demo-model".
-    assert reset_session().model == "unknown"
+    assert reset_session().model is None
+
+    @boundary("planner", kind="llm")
+    def planner(state: dict) -> dict:
+        return {"completion": "ok"}
+
+    session = reset_session()
+    session.begin_trace("t-none")
+    planner({"messages": []})
+    env = session._recorded_envelopes[-1]
+    assert env.model is None
+    assert "gen_ai.request.model" not in env.attributes
 
 
 @pytest.mark.layer1
@@ -86,7 +99,7 @@ def test_tool_boundary_is_not_mislabeled_with_model():
     session.begin_trace("t-tool")
     lookup("/x")
 
-    assert session._recorded_envelopes[-1].metadata.model == "unknown"
+    assert session._recorded_envelopes[-1].model is None
 
 
 @pytest.mark.layer1
@@ -104,5 +117,5 @@ def test_extract_metadata_hook_overrides():
     planner({"messages": []})
 
     env = session._recorded_envelopes[-1]
-    assert env.metadata.model == "gpt-4o-mini"
-    assert env.metadata.sampling_params.temperature == 0.7
+    assert env.model == "gpt-4o-mini"
+    assert env.attributes["gen_ai.request.temperature"] == 0.7

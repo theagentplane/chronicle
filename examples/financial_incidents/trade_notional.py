@@ -44,8 +44,7 @@ def _order_input(*args, **kwargs) -> Input:
     side = kwargs.get("side", "sell")
     implied = quantity * SHARE_PRICE_CENTS
     return Input(
-        messages=[],
-        graph_state={
+        arguments={
             "symbol": symbol,
             "quantity": quantity,
             "side": side,

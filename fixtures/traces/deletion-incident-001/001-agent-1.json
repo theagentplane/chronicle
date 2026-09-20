@@ -1,39 +1,20 @@
 {
   "schema_version": "2.0",
-  "envelope_id": "b37b77cd3a8b71c8",
-  "trace_id": "ed02ac6aedb5fb2bc16f8121178e5369",
+  "envelope_id": "70829c00657cfa7e",
+  "trace_id": "9a10add1391e2b49a6199ee2c8878349",
   "name": "agent",
   "kind": "llm",
   "parent_envelope_id": null,
   "sequence": 1,
   "invocation_index": 1,
-  "start_time": "2026-09-20T14:25:23.560258Z",
-  "end_time": "2026-09-20T14:25:23.560420Z",
+  "start_time": "2026-09-20T14:47:52.793512Z",
+  "end_time": "2026-09-20T14:47:52.793727Z",
   "status": {
     "code": "UNSET",
     "message": null
   },
-  "metadata": {
-    "model": "unknown",
-    "sampling_params": {
-      "temperature": null,
-      "top_p": null,
-      "max_tokens": null,
-      "seed": null,
-      "extra": {}
-    },
-    "tool_schemas": []
-  },
   "input": {
-    "messages": [
-      {
-        "role": "user",
-        "content": "Clean up old application logs in production"
-      }
-    ],
-    "system_prompt": "You are an ops assistant that manages log files.",
-    "rag_chunks": [],
-    "graph_state": {
+    "arguments": {
       "messages": [
         {
           "role": "user",
@@ -48,23 +29,31 @@
       "finish_reason": "",
       "deleted": false,
       "blocked": false
-    }
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": "Clean up old application logs in production"
+      }
+    ]
   },
   "output": {
-    "tool_calls": [
-      {
-        "id": "call_delete_1",
-        "name": "delete_file",
-        "arguments": {
-          "path": "/prod/logs/app.log",
-          "environment": "prod"
+    "value": null,
+    "llm": {
+      "text": "I'll delete the old production log file now.",
+      "tool_calls": [
+        {
+          "id": "call_delete_1",
+          "name": "delete_file",
+          "arguments": {
+            "path": "/prod/logs/app.log",
+            "environment": "prod"
+          }
         }
-      }
-    ],
-    "completion": "I'll delete the old production log file now.",
-    "finish_reason": "tool_calls",
-    "token_usage": {},
-    "raw_response": null
+      ],
+      "finish_reason": "tool_calls",
+      "usage": null
+    }
   },
   "attributes": {
     "chronicle.trace.name": "trace-deletion-incident-001"

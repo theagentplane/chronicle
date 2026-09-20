@@ -6,7 +6,7 @@ import json
 from dataclasses import dataclass
 from typing import Any, Protocol
 
-from chronicle.envelope.schema import Envelope
+from chronicle.envelope.schema import Envelope, rag_chunks_from
 from chronicle.judge.rubric import Criterion, EvaluationRubric, RubricScore
 
 
@@ -39,9 +39,10 @@ class JudgeRunner:
         self.rubric = rubric or EvaluationRubric()
 
     def evaluate(self, envelope: Envelope) -> EvaluationResult:
-        input_text = json.dumps(envelope.input.messages, indent=2)
-        completion = envelope.output.completion or ""
-        rag_chunks = [c.content for c in envelope.input.rag_chunks]
+        messages = [m.model_dump() for m in envelope.input.messages]
+        input_text = json.dumps(messages or envelope.input.arguments, indent=2, default=str)
+        completion = (envelope.output.llm.text if envelope.output.llm else None) or ""
+        rag_chunks = [c.content for c in rag_chunks_from(envelope.input.arguments)]
 
         prompt = self.rubric.judge_prompt(
             input_context=input_text,

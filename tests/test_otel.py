@@ -132,16 +132,16 @@ def test_uninstrument_stops_spans():
 
 
 def test_attribute_mapping_includes_model_and_tokens():
-    from chronicle.envelope.schema import Output, Metadata, Envelope, Input
+    from chronicle.envelope.schema import Envelope, Input, LLMOutput, Output, Usage
 
     env = Envelope(
         name="llm",
         kind="llm",
-        metadata=Metadata(model="gpt-4o"),
         input=Input(messages=[{"role": "user", "content": "hi"}]),
         output=Output(
-            completion="hey", token_usage={"prompt_tokens": 3, "completion_tokens": 2}
+            llm=LLMOutput(text="hey", usage=Usage(input_tokens=3, output_tokens=2))
         ),
+        attributes={"gen_ai.request.model": "gpt-4o"},
     )
     attrs = chronicle.envelope_span_attributes(env)
     assert attrs[S.OPENINFERENCE_SPAN_KIND] == Kind.LLM.value

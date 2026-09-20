@@ -8,7 +8,7 @@ import sys
 import click
 
 from chronicle import __version__
-from chronicle.envelope.schema import Envelope
+from chronicle.envelope.schema import Envelope, LLMOutput
 from chronicle.envelope.store import EnvelopeStore
 from chronicle.judge.runner import JudgeRunner, MockJudgeClient, OpenAIJudgeClient
 from chronicle.replay.injector import ReplayInjector
@@ -75,12 +75,12 @@ def replay(fixture: str) -> None:
 
     def _identity_agent(state: dict, inj: ReplayInjector) -> dict:
         completion = inj.stub_llm()
-        for tc in envelope.output.tool_calls:
+        for tc in (envelope.output.llm or LLMOutput()).tool_calls:
             inj.stub_tool(tc.name, tc.arguments)
         return {
-            "completion": completion.completion,
-            "finish_reason": completion.finish_reason,
-            "tool_calls": [tc.model_dump() for tc in completion.tool_calls],
+            "completion": (completion.llm or LLMOutput()).text,
+            "finish_reason": (completion.llm or LLMOutput()).finish_reason,
+            "tool_calls": [tc.model_dump() for tc in (completion.llm or LLMOutput()).tool_calls],
         }
 
     result, ctx, assertions = injector.replay(_identity_agent)

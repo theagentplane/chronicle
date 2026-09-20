@@ -21,14 +21,15 @@ from typing import Any
 
 from chronicle.boundary import boundary
 from chronicle.config import is_enabled
-from chronicle.envelope.schema import Output, Input
-from chronicle.session import (
-    SessionMode,
-    get_session,
-    peek_session,
+from chronicle.envelope.genai import (
+    LLMRequest,
+    SamplingParams,
+    model_from,
     sampling_params_from,
     tool_schemas_from,
 )
+from chronicle.envelope.schema import Input, LLMOutput, Output
+from chronicle.session import SessionMode, get_session, peek_session, usage_from
 
 
 def instrument_langgraph(nodes: Mapping[str, Callable], *, kind: str = "custom") -> dict[str, Callable]:
@@ -244,16 +245,19 @@ def _observe(
         session.next_invocation(boundary_id)
         session._replay_cursor[boundary_id] = idx
     else:
-        action = Output(
-            completion=completion,
-            token_usage=_int_usage(usage),
-            raw_response=_raw(response),
+        output = Output(
+            value=_raw(response),
+            llm=LLMOutput(text=completion, usage=usage_from(usage)),
+        )
+        request = LLMRequest(
+            model=model or model_from(request_kwargs),
+            sampling=sampling_params_from(request_kwargs) or SamplingParams(),
+            tools=tool_schemas_from(request_kwargs) or [],
         )
         session.record_envelope(
-            boundary_id, "llm", input, action,
-            model=model, sampling_params=sampling_params_from(request_kwargs),
-            tool_schemas=tool_schemas_from(request_kwargs),
+            boundary_id, "llm", input, output,
             envelope_id=envelope_id, parent_envelope_id=parent_envelope_id,
+            attributes=request.to_attributes(),
         )
     if session.on_crossing is not None:
         session.on_crossing(boundary_id, "llm", input, response)
@@ -261,17 +265,16 @@ def _observe(
 
 def _stub(session, boundary_id: str) -> Any:
     envelope = session._fixture_for(boundary_id)
-    raw = envelope.output.raw_response
-    return _Recorded(raw) if raw is not None else envelope.output.completion
+    raw = envelope.output.value
+    return _Recorded(raw) if raw is not None else (envelope.output.llm or LLMOutput()).text
 
 
 def _input(kwargs: Mapping[str, Any]) -> Input:
-    from chronicle.boundary import _json_safe
+    from chronicle.boundary import _json_safe, _message
 
     return Input(
-        messages=_json_safe(list(kwargs.get("messages", []))),
-        system_prompt=kwargs.get("system") or kwargs.get("system_prompt"),
-        graph_state=_json_safe(dict(kwargs)),
+        arguments=_json_safe(dict(kwargs)),
+        messages=[_message(m) for m in _json_safe(list(kwargs.get("messages", [])))],
     )
 
 
@@ -297,19 +300,6 @@ def _raw(response: Any) -> dict[str, Any] | None:
     if isinstance(response, Mapping):
         return dict(response)
     return None
-
-
-def _int_usage(usage: Any) -> dict[str, int]:
-    if usage is None:
-        return {}
-    if hasattr(usage, "model_dump"):
-        try:
-            usage = usage.model_dump()
-        except Exception:
-            return {}
-    if isinstance(usage, Mapping):
-        return {str(k): int(v) for k, v in usage.items() if isinstance(v, int) and not isinstance(v, bool)}
-    return {}
 
 
 def _first(*fns):

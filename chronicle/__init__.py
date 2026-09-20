@@ -6,14 +6,15 @@ from chronicle.config import is_enabled
 from chronicle.envelope.schema import (
     Envelope,
     Input,
-    Metadata,
+    LLMOutput,
+    Message,
     Output,
     RagChunk,
-    SamplingParams,
     Status,
     ToolCall,
-    ToolSchema,
+    Usage,
 )
+from chronicle.envelope.genai import LLMRequest, SamplingParams, ToolSchema
 from chronicle.envelope.backends import (
     BufferedStore,
     JsonlStore,
@@ -51,7 +52,9 @@ __all__ = [
     "ExecutionGraph",
     "Input",
     "JsonlStore",
-    "Metadata",
+    "LLMOutput",
+    "LLMRequest",
+    "Message",
     "Output",
     "RagChunk",
     "RemoteStore",
@@ -63,6 +66,7 @@ __all__ = [
     "Store",
     "ToolCall",
     "ToolSchema",
+    "Usage",
     "apply_redactors",
     "boundary",
     "default_redactors",

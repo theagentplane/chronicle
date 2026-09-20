@@ -1,39 +1,20 @@
 {
   "schema_version": "2.0",
-  "envelope_id": "ac6c31179694e091",
-  "trace_id": "971fa51cb43438b6206676496b840132",
+  "envelope_id": "fa2641b88841b068",
+  "trace_id": "12e17996e9230ab1e06158ca7437e910",
   "name": "agent",
   "kind": "llm",
   "parent_envelope_id": null,
   "sequence": 1,
   "invocation_index": 1,
-  "start_time": "2026-09-20T14:25:23.056644Z",
-  "end_time": "2026-09-20T14:25:23.056703Z",
+  "start_time": "2026-09-20T14:47:51.886688Z",
+  "end_time": "2026-09-20T14:47:51.886784Z",
   "status": {
     "code": "UNSET",
     "message": null
   },
-  "metadata": {
-    "model": "unknown",
-    "sampling_params": {
-      "temperature": null,
-      "top_p": null,
-      "max_tokens": null,
-      "seed": null,
-      "extra": {}
-    },
-    "tool_schemas": []
-  },
   "input": {
-    "messages": [
-      {
-        "role": "user",
-        "content": "Send Acme Corp the annual platform invoice — €2,000,000 per the signed SOW."
-      }
-    ],
-    "system_prompt": "You are an enterprise billing agent.",
-    "rag_chunks": [],
-    "graph_state": {
+    "arguments": {
       "messages": [
         {
           "role": "user",
@@ -48,24 +29,32 @@
       "finish_reason": "",
       "invoice_sent": false,
       "blocked": false
-    }
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": "Send Acme Corp the annual platform invoice — €2,000,000 per the signed SOW."
+      }
+    ]
   },
   "output": {
-    "tool_calls": [
-      {
-        "id": "call_invoice_1",
-        "name": "create_invoice",
-        "arguments": {
-          "customer_id": "acme-corp",
-          "amount_cents": 200000000,
-          "currency": "USD"
+    "value": null,
+    "llm": {
+      "text": "I'll send the €2,000,000.00 invoice to Acme Corp.",
+      "tool_calls": [
+        {
+          "id": "call_invoice_1",
+          "name": "create_invoice",
+          "arguments": {
+            "customer_id": "acme-corp",
+            "amount_cents": 200000000,
+            "currency": "USD"
+          }
         }
-      }
-    ],
-    "completion": "I'll send the €2,000,000.00 invoice to Acme Corp.",
-    "finish_reason": "tool_calls",
-    "token_usage": {},
-    "raw_response": null
+      ],
+      "finish_reason": "tool_calls",
+      "usage": null
+    }
   },
   "attributes": {
     "chronicle.trace.name": "trace-invoice-currency-001"

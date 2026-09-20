@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
+from chronicle.envelope.genai import GEN_AI_TOOL_DEFINITIONS
 from chronicle.envelope.schema import Envelope
 
 
@@ -146,12 +147,15 @@ class ExecutionGraph:
                 f"{node.name}@{node.invocation_index}"
                 f"<br/>{node.kind}"
             )
-            if node.output.tool_calls:
-                tools = ",".join(tc.name for tc in node.output.tool_calls)
+            llm = node.output.llm
+            if llm and llm.tool_calls:
+                tools = ",".join(tc.name for tc in llm.tool_calls)
                 label += f"<br/>tools: {tools}"
-            elif node.output.completion:
-                short = node.output.completion[:40]
+            elif llm and llm.text:
+                short = llm.text[:40]
                 label += f"<br/>{short}"
+            elif isinstance(node.output.value, dict) and node.output.value.get("status"):
+                label += f"<br/>{node.output.value['status']}"
             lines.append(f'    {eid}["{label}"]')
             if node.parent_envelope_id:
                 pid = node.parent_envelope_id[:8]
@@ -190,7 +194,7 @@ class ExecutionGraph:
                 span_attrs = {
                     k: v
                     for k, v in env.attributes.items()
-                    if k not in trace_attrs
+                    if k not in trace_attrs and k != GEN_AI_TOOL_DEFINITIONS
                 }
                 if span_attrs:
                     dim_str = " ".join(f"{k}={v}" for k, v in sorted(span_attrs.items()))
@@ -308,4 +312,4 @@ class ExecutionGraph:
         if not self.timeline():
             return {}
         first = self.timeline()[0]
-        return dict(first.input.graph_state)
+        return dict(first.input.arguments)

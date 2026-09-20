@@ -7,14 +7,13 @@ from pydantic import ValidationError
 
 import chronicle
 from chronicle import boundary
-from chronicle.envelope.schema import Output, Metadata, Envelope, Input
+from chronicle.envelope.schema import Envelope, Input, Output
 from chronicle.ids import is_span_id, is_trace_id, new_span_id, new_trace_id
 
 
 def _env(**overrides) -> Envelope:
     return Envelope(
         name="agent",
-        metadata=Metadata(model="m"),
         input=Input(messages=[]),
         output=Output(),
         **overrides,

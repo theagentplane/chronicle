@@ -20,7 +20,7 @@ def test_extract_result_does_not_change_the_return():
 
     # Caller gets the real value; the extractor only shaped the envelope.
     assert out == {"completion": "real", "finish_reason": "stop"}
-    assert session._recorded_envelopes[-1].output.completion == "RECORDED-ONLY"
+    assert session._recorded_envelopes[-1].output.llm.text == "RECORDED-ONLY"
 
 
 @pytest.mark.layer1
@@ -54,7 +54,6 @@ def test_failure_records_an_error_envelope_and_reraises():
     assert env.status.code == "ERROR"
     assert env.status.message == "kaboom"
     assert env.attributes["error.type"] == "RuntimeError"
-    assert env.output.finish_reason == "error"
 
 
 @pytest.mark.layer1
@@ -67,11 +66,12 @@ def test_zero_config_records_args_by_name():
     session.begin_trace("t")
     complete("openai", "gpt-4o", [{"role": "user", "content": "hi"}], temperature=0.3)
 
-    gs = session._recorded_envelopes[-1].input.graph_state
+    gs = session._recorded_envelopes[-1].input.arguments
     assert gs["provider"] == "openai"
     assert gs["model"] == "gpt-4o"
     assert gs["temperature"] == 0.3
-    assert session._recorded_envelopes[-1].input.messages == [{"role": "user", "content": "hi"}]
+    messages = session._recorded_envelopes[-1].input.messages
+    assert [m.model_dump() for m in messages] == [{"role": "user", "content": "hi"}]
 
 
 @pytest.mark.layer1
@@ -89,6 +89,6 @@ def test_opaque_argument_does_not_break_recording():
     out = call(Client(), "/x")
 
     assert out == {"status": "ok"}  # capture never breaks the call
-    gs = session._recorded_envelopes[-1].input.graph_state
+    gs = session._recorded_envelopes[-1].input.arguments
     assert gs["client"] == "<Client>"  # opaque object -> repr
     assert gs["path"] == "/x"

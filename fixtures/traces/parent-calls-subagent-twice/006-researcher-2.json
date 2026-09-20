@@ -1,49 +1,33 @@
 {
   "schema_version": "2.0",
-  "envelope_id": "c9230f61389882c6",
-  "trace_id": "bfeaff4a2fb24cd89d588213ed3d9227",
+  "envelope_id": "afc34e2811806c8c",
+  "trace_id": "e5507c84e697747b24f548e948379603",
   "name": "researcher",
   "kind": "custom",
-  "parent_envelope_id": "da436f47f0ecf1a4",
+  "parent_envelope_id": "4d63fcf94f6c1e96",
   "sequence": 6,
   "invocation_index": 2,
-  "start_time": "2026-09-20T14:25:24.076702Z",
-  "end_time": "2026-09-20T14:25:24.098347Z",
+  "start_time": "2026-09-20T14:47:53.775065Z",
+  "end_time": "2026-09-20T14:47:53.796562Z",
   "status": {
     "code": "UNSET",
     "message": null
   },
-  "metadata": {
-    "model": "unknown",
-    "sampling_params": {
-      "temperature": null,
-      "top_p": null,
-      "max_tokens": null,
-      "seed": null,
-      "extra": {}
-    },
-    "tool_schemas": []
-  },
   "input": {
-    "messages": [],
-    "system_prompt": null,
-    "rag_chunks": [],
-    "graph_state": {
+    "arguments": {
       "topic": "agent cost controls"
-    }
+    },
+    "messages": []
   },
   "output": {
-    "tool_calls": [],
-    "completion": "{'topic': 'agent cost controls', 'plan': \"Plan: search for 'agent cost controls'\", 'results': ['result for agent cost controls']}",
-    "finish_reason": null,
-    "token_usage": {},
-    "raw_response": {
+    "value": {
       "topic": "agent cost controls",
       "plan": "Plan: search for 'agent cost controls'",
       "results": [
         "result for agent cost controls"
       ]
-    }
+    },
+    "llm": null
   },
   "attributes": {
     "session_id": "sess_subagent_x2",

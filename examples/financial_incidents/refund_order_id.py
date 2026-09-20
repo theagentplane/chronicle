@@ -42,8 +42,7 @@ def _refund_input(*args, **kwargs) -> Input:
     order_id = args[0] if args else kwargs["order_id"]
     amount_cents = args[1] if len(args) > 1 else kwargs["amount_cents"]
     return Input(
-        messages=[],
-        graph_state={
+        arguments={
             "order_id": order_id,
             "amount_cents": amount_cents,
             "order_total_cents": ORDER_TOTAL_CENTS,

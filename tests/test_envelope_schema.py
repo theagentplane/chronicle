@@ -5,7 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from chronicle import Envelope, Input, Metadata
+from chronicle import Envelope, Input, Output
+from chronicle.envelope.schema import rag_chunks_from
 from chronicle.envelope.store import EnvelopeStore
 
 
@@ -16,19 +17,29 @@ def test_envelope_round_trip():
     envelope = Envelope.from_file(str(FIXTURES / "support-agent-001.json"))
     restored = Envelope.from_json(envelope.to_json())
     assert restored.envelope_id == envelope.envelope_id
-    assert restored.metadata.model == "stub-support-model-1"
-    assert len(restored.input.rag_chunks) == 1
+    assert restored.model == "stub-support-model-1"
+    assert [t.name for t in restored.tool_schemas] == ["search_docs"]
+    assert len(rag_chunks_from(restored.input.arguments)) == 1
 
 
-def test_metadata_holds_only_model_sampling_and_tool_schemas():
-    assert list(Metadata.model_fields) == ["model", "sampling_params", "tool_schemas"]
-    assert not hasattr(Input(messages=[]), "content_hash")
+def test_envelope_has_no_metadata_object():
+    """Model, sampling and tool definitions are span attributes, not a nested object."""
+    assert "metadata" not in Envelope.model_fields
+    envelope = Envelope.from_file(str(FIXTURES / "support-agent-001.json"))
+    assert envelope.attributes["gen_ai.request.model"] == envelope.model
+    assert envelope.attributes["gen_ai.request.temperature"] == 0.0
+    assert envelope.attributes["gen_ai.request.seed"] == 42
+
+
+def test_input_and_output_shapes():
+    assert list(Input.model_fields) == ["arguments", "messages"]
+    assert list(Output.model_fields) == ["value", "llm"]
 
 
 def test_json_schema_export():
     schema = Envelope.json_schema()
     assert schema["title"] == "Envelope"
-    assert "metadata" in schema["properties"]
+    assert {"input", "output", "attributes", "status"} <= set(schema["properties"])
 
 
 def test_envelope_store_append_and_query(tmp_path):

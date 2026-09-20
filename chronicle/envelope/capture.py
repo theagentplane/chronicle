@@ -8,19 +8,20 @@ from collections.abc import Callable
 from typing import Any, ParamSpec, TypeVar
 
 from chronicle.config import is_enabled
+from chronicle.envelope.genai import AttributeValue, LLMRequest, SamplingParams, ToolSchema
 from chronicle.envelope.schema import (
-    Output,
-    Metadata,
     Envelope,
     Input,
-    RagChunk,
-    SamplingParams,
+    LLMOutput,
+    Message,
+    Output,
     Status,
     ToolCall,
-    ToolSchema,
+    Usage,
 )
 from chronicle.envelope.store import EnvelopeStore
 from chronicle.ids import new_trace_id
+from chronicle.session import usage_from
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -54,12 +55,10 @@ class EnvelopeRecorder:
         # Applied before an envelope is stored, so secrets never reach a fixture.
         self.redactors = redactors or []
 
-    def _build_metadata(self, node_id: str) -> Metadata:
-        return Metadata(
-            model=self.model,
-            sampling_params=self.sampling_params,
-            tool_schemas=self.tool_schemas,
-        )
+    def _request_attributes(self) -> dict[str, AttributeValue]:
+        return LLMRequest(
+            model=self.model, sampling=self.sampling_params, tools=self.tool_schemas
+        ).to_attributes()
 
     def record(
         self,
@@ -69,16 +68,15 @@ class EnvelopeRecorder:
         *,
         trace_id: str | None = None,
         status: Status | None = None,
-        attributes: dict[str, str] | None = None,
+        attributes: dict[str, AttributeValue] | None = None,
     ) -> Envelope:
         envelope = Envelope(
             trace_id=trace_id or self.trace_id or new_trace_id(),
             name=node_id,
-            metadata=self._build_metadata(node_id),
             input=input,
             output=output,
             status=status or Status(),
-            attributes=attributes or {},
+            attributes={**self._request_attributes(), **(attributes or {})},
         )
         if self.redactors:
             from chronicle.redaction import apply_redactors
@@ -110,13 +108,8 @@ class EnvelopeRecorder:
                 if extract_input:
                     return state, extract_input(state)
                 return state, Input(
-                    messages=state.get("messages", []),
-                    system_prompt=state.get("system_prompt"),
-                    rag_chunks=[
-                        RagChunk(**c) if isinstance(c, dict) else c
-                        for c in state.get("rag_chunks", [])
-                    ],
-                    graph_state=state,
+                    arguments=state,
+                    messages=[Message(**m) for m in state.get("messages", []) if isinstance(m, dict)],
                 )
 
             def _on_success(state, input, result):
@@ -128,7 +121,7 @@ class EnvelopeRecorder:
 
             def _on_error(input, exc):
                 self.record(
-                    node_id, input, Output(finish_reason="error"),
+                    node_id, input, Output(),
                     status=Status(code="ERROR", message=str(exc)),
                     attributes={"error.type": type(exc).__name__},
                 )
@@ -178,41 +171,41 @@ def _default_extract_result(result: Any) -> Output:
             for tc in result.get("tool_calls", [])
         ]
         return Output(
-            tool_calls=tool_calls,
-            completion=result.get("completion") or result.get("output"),
-            finish_reason=result.get("finish_reason"),
-            token_usage=result.get("token_usage", {}),
+            llm=LLMOutput(
+                text=result.get("completion") or result.get("output"),
+                tool_calls=tool_calls,
+                finish_reason=result.get("finish_reason"),
+                usage=usage_from(result.get("token_usage") or result.get("usage")),
+            )
         )
     if isinstance(result, str):
-        return Output(completion=result)
-    return Output(completion=str(result))
+        return Output(llm=LLMOutput(text=result))
+    return Output(value=str(result))
 
 
 def messages_to_input(
     messages: list[dict[str, Any]],
     *,
-    rag_chunks: list[RagChunk] | None = None,
-    system_prompt: str | None = None,
-    graph_state: dict[str, Any] | None = None,
+    arguments: dict[str, Any] | None = None,
 ) -> Input:
     return Input(
-        messages=messages,
-        system_prompt=system_prompt,
-        rag_chunks=rag_chunks or [],
-        graph_state=graph_state or {},
+        arguments=arguments or {},
+        messages=[Message(**m) for m in messages],
     )
 
 
 def completion_to_output(
-    completion: str,
+    text: str,
     *,
     tool_calls: list[ToolCall] | None = None,
     finish_reason: str | None = None,
-    token_usage: dict[str, int] | None = None,
+    usage: Usage | None = None,
 ) -> Output:
     return Output(
-        tool_calls=tool_calls or [],
-        completion=completion,
-        finish_reason=finish_reason,
-        token_usage=token_usage or {},
+        llm=LLMOutput(
+            text=text,
+            tool_calls=tool_calls or [],
+            finish_reason=finish_reason,
+            usage=usage,
+        )
     )

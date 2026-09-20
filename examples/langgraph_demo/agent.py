@@ -12,7 +12,8 @@ import os
 from typing import Annotated, TypedDict
 
 from chronicle.envelope.capture import EnvelopeRecorder
-from chronicle.envelope.schema import Output, RagChunk, SamplingParams, ToolSchema
+from chronicle.envelope.genai import SamplingParams, ToolSchema
+from chronicle.envelope.schema import RagChunk
 from chronicle.envelope.store import EnvelopeStore
 from chronicle.instrumentation.langgraph import (
     langgraph_input_extractor,
@@ -117,7 +118,7 @@ def main() -> None:
     envelopes = store.read_all()
     print(f"Recorded {len(envelopes)} envelope(s) to {store_path}")
     for e in envelopes:
-        print(f"  node={e.name}  tools={[tc.name for tc in e.output.tool_calls]}")
+        print(f"  node={e.name}  tools={[tc.name for tc in (e.output.llm.tool_calls if e.output.llm else [])]}")
     print(f"Completion: {result['completion']}")
 
 

@@ -1,11 +1,11 @@
 {
-  "trace_id": "ed02ac6aedb5fb2bc16f8121178e5369",
+  "trace_id": "9a10add1391e2b49a6199ee2c8878349",
   "attributes": {
     "chronicle.trace.name": "trace-deletion-incident-001"
   },
   "spans": [
     {
-      "envelope_id": "b37b77cd3a8b71c8",
+      "envelope_id": "70829c00657cfa7e",
       "name": "agent",
       "kind": "llm",
       "invocation_index": 1,
@@ -13,7 +13,7 @@
       "fixture": "001-agent-1.json"
     },
     {
-      "envelope_id": "757a75357c7d91f0",
+      "envelope_id": "1e6d29276d2b4d9b",
       "name": "delete_file",
       "kind": "tool",
       "invocation_index": 1,
@@ -21,7 +21,7 @@
       "fixture": "002-delete_file-1.json"
     },
     {
-      "envelope_id": "d02fe84cb00ba939",
+      "envelope_id": "6f899df6f0b7d416",
       "name": "agent",
       "kind": "llm",
       "invocation_index": 2,
@@ -31,7 +31,7 @@
   ],
   "nodes": [
     {
-      "envelope_id": "b37b77cd3a8b71c8",
+      "envelope_id": "70829c00657cfa7e",
       "name": "agent",
       "kind": "llm",
       "invocation_index": 1,
@@ -39,7 +39,7 @@
       "fixture": "001-agent-1.json"
     },
     {
-      "envelope_id": "757a75357c7d91f0",
+      "envelope_id": "1e6d29276d2b4d9b",
       "name": "delete_file",
       "kind": "tool",
       "invocation_index": 1,
@@ -47,7 +47,7 @@
       "fixture": "002-delete_file-1.json"
     },
     {
-      "envelope_id": "d02fe84cb00ba939",
+      "envelope_id": "6f899df6f0b7d416",
       "name": "agent",
       "kind": "llm",
       "invocation_index": 2,
@@ -57,8 +57,8 @@
   ],
   "edges": [],
   "roots": [
-    "b37b77cd3a8b71c8",
-    "757a75357c7d91f0",
-    "d02fe84cb00ba939"
+    "70829c00657cfa7e",
+    "1e6d29276d2b4d9b",
+    "6f899df6f0b7d416"
   ]
 }

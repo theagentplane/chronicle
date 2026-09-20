@@ -1,11 +1,11 @@
 {
-  "trace_id": "397626bbc4c7502de9cfde91e6a5d6b7",
+  "trace_id": "32a95dc4b27821ef90c5e61cbd4eaff5",
   "attributes": {
     "chronicle.trace.name": "trace-refund-order-id-001"
   },
   "spans": [
     {
-      "envelope_id": "11841894155022a7",
+      "envelope_id": "fba088f9f0abea7c",
       "name": "agent",
       "kind": "llm",
       "invocation_index": 1,
@@ -13,7 +13,7 @@
       "fixture": "001-agent-1.json"
     },
     {
-      "envelope_id": "37cf081bb93386c6",
+      "envelope_id": "2505ce9076acfdde",
       "name": "issue_refund",
       "kind": "tool",
       "invocation_index": 1,
@@ -21,7 +21,7 @@
       "fixture": "002-issue_refund-1.json"
     },
     {
-      "envelope_id": "59dd477367afb38d",
+      "envelope_id": "3b180fb172a0221f",
       "name": "agent",
       "kind": "llm",
       "invocation_index": 2,
@@ -31,7 +31,7 @@
   ],
   "nodes": [
     {
-      "envelope_id": "11841894155022a7",
+      "envelope_id": "fba088f9f0abea7c",
       "name": "agent",
       "kind": "llm",
       "invocation_index": 1,
@@ -39,7 +39,7 @@
       "fixture": "001-agent-1.json"
     },
     {
-      "envelope_id": "37cf081bb93386c6",
+      "envelope_id": "2505ce9076acfdde",
       "name": "issue_refund",
       "kind": "tool",
       "invocation_index": 1,
@@ -47,7 +47,7 @@
       "fixture": "002-issue_refund-1.json"
     },
     {
-      "envelope_id": "59dd477367afb38d",
+      "envelope_id": "3b180fb172a0221f",
       "name": "agent",
       "kind": "llm",
       "invocation_index": 2,
@@ -57,8 +57,8 @@
   ],
   "edges": [],
   "roots": [
-    "11841894155022a7",
-    "37cf081bb93386c6",
-    "59dd477367afb38d"
+    "fba088f9f0abea7c",
+    "2505ce9076acfdde",
+    "3b180fb172a0221f"
   ]
 }

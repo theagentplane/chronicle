@@ -1,11 +1,11 @@
 {
-  "trace_id": "971fa51cb43438b6206676496b840132",
+  "trace_id": "12e17996e9230ab1e06158ca7437e910",
   "attributes": {
     "chronicle.trace.name": "trace-invoice-currency-001"
   },
   "spans": [
     {
-      "envelope_id": "ac6c31179694e091",
+      "envelope_id": "fa2641b88841b068",
       "name": "agent",
       "kind": "llm",
       "invocation_index": 1,
@@ -13,7 +13,7 @@
       "fixture": "001-agent-1.json"
     },
     {
-      "envelope_id": "9039f01daaed9cb5",
+      "envelope_id": "ffb99eaba493fe5c",
       "name": "create_invoice",
       "kind": "tool",
       "invocation_index": 1,
@@ -21,7 +21,7 @@
       "fixture": "002-create_invoice-1.json"
     },
     {
-      "envelope_id": "08b5e002d7565f5a",
+      "envelope_id": "d94f668ad3b8c0fe",
       "name": "agent",
       "kind": "llm",
       "invocation_index": 2,
@@ -31,7 +31,7 @@
   ],
   "nodes": [
     {
-      "envelope_id": "ac6c31179694e091",
+      "envelope_id": "fa2641b88841b068",
       "name": "agent",
       "kind": "llm",
       "invocation_index": 1,
@@ -39,7 +39,7 @@
       "fixture": "001-agent-1.json"
     },
     {
-      "envelope_id": "9039f01daaed9cb5",
+      "envelope_id": "ffb99eaba493fe5c",
       "name": "create_invoice",
       "kind": "tool",
       "invocation_index": 1,
@@ -47,7 +47,7 @@
       "fixture": "002-create_invoice-1.json"
     },
     {
-      "envelope_id": "08b5e002d7565f5a",
+      "envelope_id": "d94f668ad3b8c0fe",
       "name": "agent",
       "kind": "llm",
       "invocation_index": 2,
@@ -57,8 +57,8 @@
   ],
   "edges": [],
   "roots": [
-    "ac6c31179694e091",
-    "9039f01daaed9cb5",
-    "08b5e002d7565f5a"
+    "fa2641b88841b068",
+    "ffb99eaba493fe5c",
+    "d94f668ad3b8c0fe"
   ]
 }

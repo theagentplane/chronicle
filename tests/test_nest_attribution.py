@@ -162,5 +162,5 @@ def test_wrap_llm_nests_under_graph_node():
 
     by_name = {e.name: e for e in session.envelopes}
     assert by_name["llm"].parent_envelope_id == by_name["researcher"].envelope_id
-    assert by_name["llm"].metadata.model == "stub-model"
+    assert by_name["llm"].model == "stub-model"
     assert by_name["llm"].attributes["message_id"] == "m9"

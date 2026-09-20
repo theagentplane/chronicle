@@ -1,34 +1,20 @@
 {
   "schema_version": "2.0",
-  "envelope_id": "b089f66b872e84f2",
-  "trace_id": "cecf472220ade00c84d1c1e0db57b793",
+  "envelope_id": "d8c4dd8d2c729c99",
+  "trace_id": "e124eb6883794e10cea994c8fba34440",
   "name": "place_order",
   "kind": "tool",
   "parent_envelope_id": null,
   "sequence": 2,
   "invocation_index": 1,
-  "start_time": "2026-09-20T14:25:23.061588Z",
-  "end_time": "2026-09-20T14:25:23.061646Z",
+  "start_time": "2026-09-20T14:47:51.895654Z",
+  "end_time": "2026-09-20T14:47:51.895694Z",
   "status": {
     "code": "UNSET",
     "message": null
   },
-  "metadata": {
-    "model": "unknown",
-    "sampling_params": {
-      "temperature": null,
-      "top_p": null,
-      "max_tokens": null,
-      "seed": null,
-      "extra": {}
-    },
-    "tool_schemas": []
-  },
   "input": {
-    "messages": [],
-    "system_prompt": null,
-    "rag_chunks": [],
-    "graph_state": {
+    "arguments": {
       "symbol": "ACME",
       "quantity": 1000,
       "side": "sell",
@@ -36,14 +22,11 @@
       "intended_notional_cents": 100000,
       "implied_notional_cents": 19000000,
       "max_order_notional_cents": 500000
-    }
+    },
+    "messages": []
   },
   "output": {
-    "tool_calls": [],
-    "completion": "filled",
-    "finish_reason": null,
-    "token_usage": {},
-    "raw_response": {
+    "value": {
       "status": "filled",
       "blocked": false,
       "symbol": "ACME",
@@ -52,9 +35,13 @@
       "fill_price_cents": 19000,
       "notional_cents": 19000000,
       "message": "Sold 1000 ACME at $190.00 ($190,000.00 total)"
-    }
+    },
+    "llm": null
   },
   "attributes": {
-    "chronicle.trace.name": "trace-trade-notional-001"
+    "chronicle.trace.name": "trace-trade-notional-001",
+    "gen_ai.tool.name": "place_order",
+    "gen_ai.tool.definitions": "[{\"description\": \"Order tool \\u2014 gated version enforces a max order notional.\", \"name\": \"place_order\", \"parameters\": {\"properties\": {\"quantity\": {\"type\": \"integer\"}, \"side\": {\"default\": \"sell\", \"type\": \"string\"}, \"symbol\": {\"type\": \"string\"}}, \"required\": [\"symbol\", \"quantity\"], \"type\": \"object\"}}]",
+    "gen_ai.tool.description": "Order tool — gated version enforces a max order notional."
   }
 }

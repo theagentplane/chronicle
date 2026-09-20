@@ -49,7 +49,7 @@ def _invoice_input(*args, **kwargs) -> Input:
     graph_state.setdefault("contract_currency", CONTRACT_CURRENCY)
     graph_state.setdefault("contract_amount_cents", AMOUNT_CENTS)
     graph_state.setdefault("max_invoice_cents", MAX_INVOICE_CENTS)
-    return Input(messages=[], graph_state=graph_state)
+    return Input(arguments=graph_state)
 
 
 @boundary(TOOL, kind="tool", extract_input=_invoice_input)

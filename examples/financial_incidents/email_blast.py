@@ -43,8 +43,7 @@ def _campaign_input(*args, **kwargs) -> Input:
     segment = args[0] if args else kwargs["segment"]
     recipient_count = args[1] if len(args) > 1 else kwargs["recipient_count"]
     return Input(
-        messages=[],
-        graph_state={
+        arguments={
             "segment": segment,
             "recipient_count": recipient_count,
             "intended_recipients": INTENDED_RECIPIENTS,

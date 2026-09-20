@@ -1,39 +1,20 @@
 {
   "schema_version": "2.0",
-  "envelope_id": "658c46323e503319",
-  "trace_id": "cecf472220ade00c84d1c1e0db57b793",
+  "envelope_id": "c32537686fd73392",
+  "trace_id": "e124eb6883794e10cea994c8fba34440",
   "name": "agent",
   "kind": "llm",
   "parent_envelope_id": null,
   "sequence": 3,
   "invocation_index": 2,
-  "start_time": "2026-09-20T14:25:23.062144Z",
-  "end_time": "2026-09-20T14:25:23.062178Z",
+  "start_time": "2026-09-20T14:47:51.896186Z",
+  "end_time": "2026-09-20T14:47:51.896231Z",
   "status": {
     "code": "UNSET",
     "message": null
   },
-  "metadata": {
-    "model": "unknown",
-    "sampling_params": {
-      "temperature": null,
-      "top_p": null,
-      "max_tokens": null,
-      "seed": null,
-      "extra": {}
-    },
-    "tool_schemas": []
-  },
   "input": {
-    "messages": [
-      {
-        "role": "user",
-        "content": "Sell about $1,000 of ACME from my portfolio to rebalance."
-      }
-    ],
-    "system_prompt": "You are a portfolio management agent.",
-    "rag_chunks": [],
-    "graph_state": {
+    "arguments": {
       "messages": [
         {
           "role": "user",
@@ -68,14 +49,22 @@
         "notional_cents": 19000000,
         "message": "Sold 1000 ACME at $190.00 ($190,000.00 total)"
       }
-    }
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": "Sell about $1,000 of ACME from my portfolio to rebalance."
+      }
+    ]
   },
   "output": {
-    "tool_calls": [],
-    "completion": "Done. Sold 1000 ACME at $190.00 ($190,000.00 total)",
-    "finish_reason": "stop",
-    "token_usage": {},
-    "raw_response": null
+    "value": null,
+    "llm": {
+      "text": "Done. Sold 1000 ACME at $190.00 ($190,000.00 total)",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "usage": null
+    }
   },
   "attributes": {
     "chronicle.trace.name": "trace-trade-notional-001"

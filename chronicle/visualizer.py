@@ -8,6 +8,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from typing import Any
 
+from chronicle.envelope.schema import LLMOutput
 from chronicle.execution_graph import ExecutionGraph
 
 _KIND_COLORS = {
@@ -20,6 +21,7 @@ _KIND_COLORS = {
 def _envelope_summary(envelope) -> dict[str, Any]:
     env = envelope
     full_envelope = json.loads(env.model_dump_json())
+    llm = env.output.llm or LLMOutput()
     detail: dict[str, Any] = {
         "envelope_id": env.envelope_id,
         "short_id": env.envelope_id[:8],
@@ -31,23 +33,21 @@ def _envelope_summary(envelope) -> dict[str, Any]:
         "parent_short_id": env.parent_envelope_id[:8] if env.parent_envelope_id else None,
         "kind_color": _KIND_COLORS.get(env.kind, "#6b7280"),
         "full_envelope": full_envelope,
-        "messages": env.input.messages,
-        "graph_state": env.input.graph_state,
-        "system_prompt": env.input.system_prompt,
-        "tool_calls": [tc.model_dump() for tc in env.output.tool_calls],
-        "completion": env.output.completion,
-        "finish_reason": env.output.finish_reason,
-        "raw_response": env.output.raw_response,
-        "model": env.metadata.model,
+        "messages": [m.model_dump() for m in env.input.messages],
+        "arguments": env.input.arguments,
+        "tool_calls": [tc.model_dump() for tc in llm.tool_calls],
+        "completion": llm.text,
+        "finish_reason": llm.finish_reason,
+        "value": env.output.value,
+        "model": env.model,
     }
-    if env.output.tool_calls:
-        tc = env.output.tool_calls[0]
+    if llm.tool_calls:
+        tc = llm.tool_calls[0]
         detail["headline"] = f"tool_call({tc.name})"
-    elif env.output.raw_response:
-        status = env.output.raw_response.get("status", "")
-        detail["headline"] = str(status)
-    elif env.output.completion:
-        detail["headline"] = env.output.completion[:72]
+    elif isinstance(env.output.value, dict) and env.output.value:
+        detail["headline"] = str(env.output.value.get("status", ""))
+    elif llm.text:
+        detail["headline"] = llm.text[:72]
     else:
         detail["headline"] = env.kind
     return detail
@@ -361,8 +361,8 @@ def render_trace_html(graph: ExecutionGraph, *, title: str | None = None) -> str
 
     function renderOverview(node) {{
       let resultClass = "";
-      if (node.raw_response?.status === "deleted") resultClass = "status-deleted";
-      if (node.raw_response?.status === "blocked") resultClass = "status-blocked";
+      if (node.value?.status === "deleted") resultClass = "status-deleted";
+      if (node.value?.status === "blocked") resultClass = "status-blocked";
 
       return `
         <div class="detail-grid">
@@ -374,13 +374,13 @@ parent:   ${{esc(node.parent_envelope_id || "—")}}</pre>
           </div>
           <div class="card">
             <h3>Input</h3>
-            <pre>${{esc(JSON.stringify(node.graph_state, null, 2) || JSON.stringify(node.messages, null, 2))}}</pre>
+            <pre>${{esc(JSON.stringify(node.arguments, null, 2) || JSON.stringify(node.messages, null, 2))}}</pre>
           </div>
           <div class="card">
             <h3>Output</h3>
             <pre class="${{resultClass}}">${{esc(
-              node.raw_response
-                ? JSON.stringify(node.raw_response, null, 2)
+              node.value
+                ? JSON.stringify(node.value, null, 2)
                 : node.tool_calls?.length
                   ? JSON.stringify(node.tool_calls, null, 2)
                   : node.completion || "—"

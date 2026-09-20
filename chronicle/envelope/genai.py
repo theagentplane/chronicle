@@ -1,0 +1,190 @@
+"""Typed, checked views of what a boundary was configured with, flattened into OTel
+attributes.
+
+An Envelope does not carry a separate metadata object: the model, sampling
+parameters and tool definitions live in ``Envelope.attributes`` under the OpenTelemetry
+GenAI semantic-convention keys (currently Development status upstream). The classes
+here exist so a boundary can capture those values as *validated fields*, and
+``to_attributes()`` turns them into the flat attributes the envelope stores.
+"""
+
+from __future__ import annotations
+
+import inspect
+import json
+from collections.abc import Mapping
+from typing import Any, Callable, Union
+
+from pydantic import BaseModel, Field, TypeAdapter
+
+# OTel attribute values: primitives or homogeneous lists of primitives.
+AttributeValue = Union[str, bool, int, float, list[str], list[bool], list[int], list[float]]
+
+# GenAI semantic-convention keys.
+GEN_AI_REQUEST_MODEL = "gen_ai.request.model"
+GEN_AI_REQUEST_TEMPERATURE = "gen_ai.request.temperature"
+GEN_AI_REQUEST_TOP_P = "gen_ai.request.top_p"
+GEN_AI_REQUEST_MAX_TOKENS = "gen_ai.request.max_tokens"
+GEN_AI_REQUEST_SEED = "gen_ai.request.seed"
+GEN_AI_TOOL_DEFINITIONS = "gen_ai.tool.definitions"
+GEN_AI_TOOL_NAME = "gen_ai.tool.name"
+GEN_AI_TOOL_DESCRIPTION = "gen_ai.tool.description"
+
+
+class SamplingParams(BaseModel):
+    temperature: float | None = None
+    top_p: float | None = None
+    max_tokens: int | None = None
+    seed: int | None = None
+
+
+class ToolSchema(BaseModel):
+    name: str
+    description: str | None = None
+    parameters: dict[str, Any] = Field(default_factory=dict)
+
+    def to_attributes(self) -> dict[str, AttributeValue]:
+        """Attributes for a *tool* span: the tool's own name, description and schema."""
+        attributes: dict[str, AttributeValue] = {
+            GEN_AI_TOOL_NAME: self.name,
+            GEN_AI_TOOL_DEFINITIONS: _definitions_json([self]),
+        }
+        if self.description:
+            attributes[GEN_AI_TOOL_DESCRIPTION] = self.description
+        return attributes
+
+
+class LLMRequest(BaseModel):
+    """What an LLM call was configured with. Validated at capture time, then stored
+    only as attributes (see :meth:`to_attributes`)."""
+
+    model: str | None = None
+    sampling: SamplingParams = Field(default_factory=SamplingParams)
+    tools: list[ToolSchema] = Field(default_factory=list)
+
+    def to_attributes(self) -> dict[str, AttributeValue]:
+        attributes: dict[str, AttributeValue] = {}
+        if self.model:
+            attributes[GEN_AI_REQUEST_MODEL] = self.model
+        if self.sampling.temperature is not None:
+            attributes[GEN_AI_REQUEST_TEMPERATURE] = self.sampling.temperature
+        if self.sampling.top_p is not None:
+            attributes[GEN_AI_REQUEST_TOP_P] = self.sampling.top_p
+        if self.sampling.max_tokens is not None:
+            attributes[GEN_AI_REQUEST_MAX_TOKENS] = self.sampling.max_tokens
+        if self.sampling.seed is not None:
+            attributes[GEN_AI_REQUEST_SEED] = self.sampling.seed
+        if self.tools:
+            attributes[GEN_AI_TOOL_DEFINITIONS] = _definitions_json(self.tools)
+        return attributes
+
+
+def _definitions_json(tools: list[ToolSchema]) -> str:
+    return json.dumps([t.model_dump(exclude_none=True) for t in tools], sort_keys=True)
+
+
+def tool_schemas_from_attributes(attributes: Mapping[str, Any]) -> list[ToolSchema]:
+    """Read the tool definitions back out of an envelope's attributes."""
+    raw = attributes.get(GEN_AI_TOOL_DEFINITIONS)
+    if not isinstance(raw, str):
+        return []
+    try:
+        return [ToolSchema(**item) for item in json.loads(raw)]
+    except (ValueError, TypeError):
+        return []
+
+
+# --------------------------------------------------------------------------- #
+# Capture helpers: best-effort extraction from call arguments / results.
+# --------------------------------------------------------------------------- #
+
+
+def infer_tool_schema(fn: Callable[..., Any], name: str) -> ToolSchema:
+    """Infer a tool's schema from the wrapped method itself.
+
+    The description is the docstring's first paragraph and the parameters are the JSON
+    schema of the signature's type hints, so annotating a tool function is all it takes
+    to record what the model could call. Never raises: an unschematizable signature
+    yields an empty object schema.
+    """
+    doc = inspect.getdoc(fn) or ""
+    description = doc.split("\n\n")[0].replace("\n", " ").strip() or None
+    try:
+        schema = TypeAdapter(fn).json_schema()
+    except Exception:
+        schema = {"type": "object", "properties": {}}
+    schema.pop("additionalProperties", None)
+    for prop in schema.get("properties", {}).values():
+        if isinstance(prop, dict):
+            prop.pop("title", None)
+    return ToolSchema(name=name, description=description, parameters=schema)
+
+
+def tool_schemas_from(source: Any) -> list[ToolSchema] | None:
+    """Best-effort extraction of the tool schemas offered to a model.
+
+    Reads ``tool_schemas`` or ``tools`` from a mapping and normalizes the common
+    shapes: OpenAI (``{"type": "function", "function": {...}}``), Anthropic
+    (``{"name", "description", "input_schema"}``) and plain
+    (``{"name", "description", "parameters"}``). Returns ``None`` when there are none.
+    """
+    if not isinstance(source, Mapping):
+        return None
+    tools = source.get("tool_schemas") or source.get("tools")
+    if not isinstance(tools, (list, tuple)):
+        return None
+    schemas: list[ToolSchema] = []
+    for tool in tools:
+        if isinstance(tool, ToolSchema):
+            schemas.append(tool)
+            continue
+        if not isinstance(tool, Mapping):
+            continue
+        spec = tool.get("function") if isinstance(tool.get("function"), Mapping) else tool
+        name = spec.get("name")
+        if not name:
+            continue
+        parameters = spec.get("parameters") or spec.get("input_schema") or {}
+        schemas.append(
+            ToolSchema(
+                name=str(name),
+                description=spec.get("description"),
+                parameters=dict(parameters) if isinstance(parameters, Mapping) else {},
+            )
+        )
+    return schemas or None
+
+
+def sampling_params_from(source: Any) -> SamplingParams | None:
+    """Best-effort extraction of sampling parameters from a result or request kwargs.
+
+    Recognizes either a nested ``sampling_params`` mapping or the flat keys
+    (temperature, top_p, max_tokens, seed) that common LLM SDKs use. Returns ``None``
+    when nothing recognizable is present.
+    """
+    if not isinstance(source, Mapping):
+        return None
+    nested = source.get("sampling_params")
+    if isinstance(nested, Mapping):
+        source = nested
+    keys = ("temperature", "top_p", "max_tokens", "seed")
+    if not any(k in source for k in keys):
+        return None
+    return SamplingParams(
+        temperature=source.get("temperature"),
+        top_p=source.get("top_p"),
+        max_tokens=source.get("max_tokens"),
+        seed=source.get("seed"),
+    )
+
+
+def model_from(source: Any) -> str | None:
+    """Best-effort extraction of the resolved model from a result or request kwargs.
+
+    Prefers an explicit ``model_version`` and falls back to ``model`` (what most SDK
+    responses echo back). Returns ``None`` when neither is present.
+    """
+    if not isinstance(source, Mapping):
+        return None
+    value = source.get("model_version") or source.get("model")
+    return str(value) if value else None

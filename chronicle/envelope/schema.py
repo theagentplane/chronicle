@@ -2,38 +2,25 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import datetime, timezone
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from chronicle.envelope.genai import (
+    GEN_AI_REQUEST_MODEL,
+    AttributeValue,
+    ToolSchema,
+    tool_schemas_from_attributes,
+)
 from chronicle.ids import new_span_id, new_trace_id, validate_span_id, validate_trace_id
 
 
-class SamplingParams(BaseModel):
-    temperature: float | None = None
-    top_p: float | None = None
-    max_tokens: int | None = None
-    seed: int | None = None
-    extra: dict[str, Any] = Field(default_factory=dict)
-
-
-class ToolSchema(BaseModel):
-    name: str
-    description: str | None = None
-    parameters: dict[str, Any] = Field(default_factory=dict)
-
-
-class Metadata(BaseModel):
-    """What the call ran with: the resolved model (not an alias), its sampling
-    parameters, and the tool schemas offered to it."""
-
-    model: str
-    sampling_params: SamplingParams = Field(default_factory=SamplingParams)
-    tool_schemas: list[ToolSchema] = Field(default_factory=list)
-
-
 class RagChunk(BaseModel):
+    """One retrieved passage. Not stored on the envelope itself: read a call's chunks
+    back out of ``Input.arguments`` with :func:`rag_chunks_from`."""
+
     chunk_id: str
     content: str
     source: str | None = None
@@ -42,13 +29,38 @@ class RagChunk(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
-class Input(BaseModel):
-    """Full assembled prompt and retrieved context at the graph boundary."""
+class Message(BaseModel):
+    """One chat message. Extra provider fields (``name``, ``tool_call_id`` ...) are kept."""
 
-    messages: list[dict[str, Any]]
-    system_prompt: str | None = None
-    rag_chunks: list[RagChunk] = Field(default_factory=list)
-    graph_state: dict[str, Any] = Field(default_factory=dict)
+    model_config = ConfigDict(extra="allow")
+
+    role: str
+    content: Any = None
+
+
+class Input(BaseModel):
+    """What the boundary was called with.
+
+    ``arguments`` is the annotated method's (or wrapped call's) arguments by name: the
+    single source of truth that replay and assertions read. ``messages`` is the typed
+    chat view, filled for LLM boundaries only.
+    """
+
+    arguments: dict[str, Any] = Field(default_factory=dict)
+    messages: list[Message] = Field(default_factory=list)
+
+
+def rag_chunks_from(arguments: Mapping[str, Any]) -> list[RagChunk]:
+    """Retrieved chunks from a call's arguments (``rag_chunks`` or ``context``), or ``[]``."""
+    out: list[RagChunk] = []
+    for chunk in arguments.get("rag_chunks") or arguments.get("context") or []:
+        if isinstance(chunk, RagChunk):
+            out.append(chunk)
+        elif isinstance(chunk, Mapping) and "chunk_id" in chunk and "content" in chunk:
+            out.append(RagChunk(**chunk))
+        elif isinstance(chunk, str):
+            out.append(RagChunk(chunk_id=str(len(out)), content=chunk))
+    return out
 
 
 class ToolCall(BaseModel):
@@ -57,14 +69,32 @@ class ToolCall(BaseModel):
     arguments: dict[str, Any] = Field(default_factory=dict)
 
 
-class Output(BaseModel):
-    """Structured tool calls and model completion emitted at this boundary."""
+class Usage(BaseModel):
+    """Normalized token counts (providers report these under different keys)."""
 
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+
+
+class LLMOutput(BaseModel):
+    """The LLM-shaped view of a response, whatever provider produced it."""
+
+    text: str | None = None
     tool_calls: list[ToolCall] = Field(default_factory=list)
-    completion: str | None = None
     finish_reason: str | None = None
-    token_usage: dict[str, int] = Field(default_factory=dict)
-    raw_response: dict[str, Any] | None = None
+    usage: Usage | None = None
+
+
+class Output(BaseModel):
+    """What the boundary returned.
+
+    ``value`` is the JSON-safe return value (what replay hands back for tools, routers and
+    custom boundaries). ``llm`` bundles the normalized LLM response and is set for LLM
+    boundaries only.
+    """
+
+    value: Any = None
+    llm: LLMOutput | None = None
 
 
 class Status(BaseModel):
@@ -79,18 +109,18 @@ class Envelope(BaseModel):
     """
     Immutable, append-only record of a single graph-boundary execution.
 
-    Every envelope captures contextual metadata, input state, and action/result
-    at the intersection of agent nodes — the "flight data" of the agent.
+    Every envelope captures the boundary's input, its output and its span attributes at
+    the intersection of agent nodes — the "flight data" of the agent.
 
     OTel mapping: ``trace_id`` is the OTel trace id (32 lowercase hex chars);
     ``envelope_id`` is the span id (16 lowercase hex chars); ``parent_envelope_id``
     is ``parent_span_id``. Both are validated to OTel's byte formats, so an envelope
     exports as a span without translating ids. Other span fields use OTel names:
     ``name`` (the boundary id), ``kind`` (llm / tool / router / custom),
-    ``start_time`` / ``end_time``, ``status`` and ``attributes`` (flat string
-    attributes: trace-level ones are copied onto every span at record time,
-    envelope-level ones are span-specific). ``span_id`` and ``parent_span_id`` are
-    read-only getters for ``envelope_id`` and ``parent_envelope_id``.
+    ``start_time`` / ``end_time``, ``status`` and ``attributes`` (trace-level ones are
+    copied onto every span at record time, envelope-level ones are span-specific).
+    ``span_id`` and ``parent_span_id`` are read-only getters for ``envelope_id`` and
+    ``parent_envelope_id``; ``model`` and ``tool_schemas`` read the GenAI attributes.
     """
 
     schema_version: str = "2.0"
@@ -106,11 +136,11 @@ class Envelope(BaseModel):
     # Span end: when the envelope was written.
     end_time: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     status: Status = Field(default_factory=Status)
-    metadata: Metadata
     input: Input
     output: Output
-    # Flat string→string span attributes (OTel-style).
-    attributes: dict[str, str] = Field(default_factory=dict)
+    # OTel span attributes: primitives or lists of primitives. Model, sampling and tool
+    # definitions live here under the GenAI semantic-convention keys.
+    attributes: dict[str, AttributeValue] = Field(default_factory=dict)
 
     @property
     def boundary_id(self) -> str:
@@ -126,6 +156,17 @@ class Envelope(BaseModel):
     def parent_span_id(self) -> str | None:
         """OTel alias for ``parent_envelope_id``."""
         return self.parent_envelope_id
+
+    @property
+    def model(self) -> str | None:
+        """The model this call ran with (``gen_ai.request.model``), if recorded."""
+        value = self.attributes.get(GEN_AI_REQUEST_MODEL)
+        return value if isinstance(value, str) else None
+
+    @property
+    def tool_schemas(self) -> list[ToolSchema]:
+        """Tool definitions recorded on this span (``gen_ai.tool.definitions``)."""
+        return tool_schemas_from_attributes(self.attributes)
 
     @field_validator("trace_id")
     @classmethod

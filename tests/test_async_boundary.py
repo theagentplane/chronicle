@@ -26,8 +26,8 @@ def test_async_boundary_records_like_sync():
     assert out["completion"] == "ok"
     env = session._recorded_envelopes[-1]
     assert env.kind == "llm"
-    assert env.metadata.model == "gpt-4o"
-    assert env.metadata.sampling_params.temperature == 0.1
+    assert env.model == "gpt-4o"
+    assert env.attributes["gen_ai.request.temperature"] == 0.1
 
 
 @pytest.mark.layer1
@@ -81,7 +81,6 @@ def test_async_failure_records_error_and_reraises():
     assert env.status.code == "ERROR"
     assert env.status.message == "nope"
     assert env.attributes["error.type"] == "ValueError"
-    assert env.output.finish_reason == "error"
 
 
 @pytest.mark.layer1

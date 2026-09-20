@@ -10,15 +10,15 @@ from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from chronicle.envelope.genai import GEN_AI_REQUEST_MODEL, AttributeValue
 from chronicle.envelope.schema import (
-    Output,
-    Metadata,
     Envelope,
     Input,
-    SamplingParams,
+    LLMOutput,
+    Output,
     Status,
     ToolCall,
-    ToolSchema,
+    Usage,
 )
 from chronicle.envelope.store import EnvelopeStore
 from chronicle.ids import new_span_id, new_trace_id, validate_trace_id
@@ -54,7 +54,8 @@ class ChronicleSession:
     store: EnvelopeStore | None = None
     replay_plan: ReplayPlan = field(default_factory=ReplayPlan)
     fixture_graph: ExecutionGraph | None = None  # type: ignore[name-defined]
-    model: str = "unknown"
+    # Default model for LLM boundaries that do not surface their own.
+    model: str | None = None
     # Optional observer for boundary crossings (LIVE record + LIVE cut-point).
     # Signature: (boundary_id, kind, input, result) -> None
     on_crossing: Callable[[str, str, Input, Any], None] | None = None
@@ -79,7 +80,7 @@ class ChronicleSession:
     # session (``export_trace`` will be empty). Cuts memory traffic on hot paths.
     retain_envelopes: bool = True
     # Trace-level flat string→string attributes (copied onto every envelope).
-    attributes: dict[str, str] = field(default_factory=dict)
+    attributes: dict[str, AttributeValue] = field(default_factory=dict)
 
     _sequence: int = 0
     _invocation_counts: dict[str, int] = field(default_factory=dict)
@@ -96,7 +97,7 @@ class ChronicleSession:
         name: str | None = None,
         *,
         trace_id: str | None = None,
-        attributes: dict[str, str] | None = None,
+        attributes: dict[str, AttributeValue] | None = None,
     ) -> str:
         """Start a new trace and return its id.
 
@@ -106,7 +107,7 @@ class ChronicleSession:
         """
         self.trace_id = validate_trace_id(trace_id) if trace_id else new_trace_id()
         if attributes is not None:
-            self.attributes = {str(k): str(v) for k, v in attributes.items()}
+            self.attributes = {str(k): _attribute(v) for k, v in attributes.items()}
         if name:
             self.attributes[TRACE_NAME_ATTR] = name
         else:
@@ -187,13 +188,10 @@ class ChronicleSession:
         input: Input,
         output: Output,
         *,
-        model: str | None = None,
-        sampling_params: SamplingParams | None = None,
-        tool_schemas: list[ToolSchema] | None = None,
         envelope_id: str | None = None,
         parent_envelope_id: Any = _PARENT_UNSET,
         status: Status | None = None,
-        attributes: dict[str, str] | None = None,
+        attributes: dict[str, AttributeValue] | None = None,
     ) -> Envelope:
         invocation_index = self.next_invocation(boundary_id)
         sequence = self.next_sequence()
@@ -215,11 +213,12 @@ class ChronicleSession:
         else:
             parent_id = parent_envelope_id
 
-        resolved_model = model or self.model
         # Trace attributes first; envelope attributes override.
-        merged_attrs = {str(k): str(v) for k, v in self.attributes.items()}
+        merged_attrs = dict(self.attributes)
         if attributes:
-            merged_attrs.update({str(k): str(v) for k, v in attributes.items()})
+            merged_attrs.update(attributes)
+        if kind == "llm" and self.model:
+            merged_attrs.setdefault(GEN_AI_REQUEST_MODEL, self.model)
 
         # model_construct: fields are produced by Chronicle itself; skip pydantic
         # validation on the hot LIVE path.
@@ -235,15 +234,6 @@ class ChronicleSession:
             start_time=self._span_started_at.pop(envelope_id, None),
             end_time=datetime.now(timezone.utc),
             status=status or Status(),
-            metadata=Metadata.model_construct(
-                # Prefer what the call actually used; fall back to the session
-                # default only when the boundary surfaced no real metadata.
-                model=resolved_model,
-                sampling_params=sampling_params or SamplingParams.model_construct(
-                    temperature=None, top_p=None, max_tokens=None, seed=None, extra={},
-                ),
-                tool_schemas=tool_schemas or [],
-            ),
             input=input,
             output=output,
             attributes=merged_attrs,
@@ -344,33 +334,27 @@ def reset_session() -> ChronicleSession:
 
 
 def envelope_to_return_value(envelope: Envelope, kind: str) -> Any:
+    """What a stubbed boundary returns to its caller on replay."""
     if kind == "tool":
-        raw = envelope.output.raw_response
-        if raw is not None:
-            return raw
-        return {
-            "status": envelope.output.completion or "ok",
-            "blocked": False,
-        }
+        value = envelope.output.value
+        return value if value is not None else {"status": "ok", "blocked": False}
     if kind == "llm":
-        state = dict(envelope.input.graph_state)
-        state["tool_calls"] = [tc.model_dump() for tc in envelope.output.tool_calls]
-        state["completion"] = envelope.output.completion
-        state["finish_reason"] = envelope.output.finish_reason
+        llm = envelope.output.llm or LLMOutput()
+        state = dict(envelope.input.arguments)
+        state["tool_calls"] = [tc.model_dump() for tc in llm.tool_calls]
+        state["completion"] = llm.text
+        state["finish_reason"] = llm.finish_reason
         return state
     if kind == "router":
         # A router's return value is a plain node-name (or list of names), not a
-        # dict, so it lives inside raw_response under a fixed key rather than
-        # being raw_response itself — the generic dict-passthrough below would
-        # otherwise hand back {"decision": ...} instead of the decision itself.
-        raw = envelope.output.raw_response
-        if raw is not None and "decision" in raw:
-            return raw["decision"]
-        return envelope.output.completion
-    raw = envelope.output.raw_response
-    if raw is not None:
-        return raw
-    return envelope.output.completion
+        # dict, so it lives inside ``value`` under a fixed key rather than being the
+        # value itself: the generic passthrough below would otherwise hand back
+        # {"decision": ...} instead of the decision.
+        value = envelope.output.value
+        if isinstance(value, dict) and "decision" in value:
+            return value["decision"]
+        return value
+    return envelope.output.value
 
 
 def _router_decision(result: Any) -> Any:
@@ -387,20 +371,8 @@ def _router_decision(result: Any) -> Any:
 
 
 def result_to_output(result: Any, kind: str) -> Output:
-    if kind == "tool" and isinstance(result, dict):
-        return Output.model_construct(
-            tool_calls=[],
-            completion=result.get("status", str(result)),
-            finish_reason=None,
-            token_usage={},
-            raw_response=result,
-        )
     if kind == "router":
-        decision = _router_decision(result)
-        return Output(
-            completion=decision if isinstance(decision, str) else str(decision),
-            raw_response={"decision": decision},
-        )
+        return Output(value={"decision": _router_decision(result)})
     if kind == "llm" and isinstance(result, dict):
         tool_calls = [
             ToolCall.model_construct(
@@ -411,108 +383,64 @@ def result_to_output(result: Any, kind: str) -> Output:
             for tc in result.get("tool_calls", [])
         ]
         return Output.model_construct(
-            tool_calls=tool_calls,
-            completion=result.get("completion"),
-            finish_reason=result.get("finish_reason"),
-            token_usage=_as_token_usage(result.get("token_usage") or result.get("usage")),
-            raw_response=None,
+            value=None,
+            llm=LLMOutput.model_construct(
+                text=result.get("completion"),
+                tool_calls=tool_calls,
+                finish_reason=result.get("finish_reason"),
+                usage=usage_from(result.get("token_usage") or result.get("usage")),
+            ),
         )
-    return Output.model_construct(
-        tool_calls=[],
-        completion=str(result),
-        finish_reason=None,
-        token_usage={},
-        raw_response=result if isinstance(result, dict) else None,
-    )
+    return Output.model_construct(value=_value(result), llm=None)
 
 
-def _as_token_usage(source: Any) -> dict[str, int]:
-    """Coerce a usage mapping into the envelope's ``dict[str, int]`` shape.
+def _value(result: Any) -> Any:
+    """A return value the envelope can always serialize: dicts and primitives as-is,
+    anything else as its string form."""
+    if result is None or isinstance(result, (dict, str, bool, int, float)):
+        return result
+    return str(result)
 
-    LLM SDKs report usage under slightly different keys and occasionally as
-    floats, so keep only the integer counts and drop anything else rather than
-    fail validation on a stray value.
+
+def usage_from(source: Any) -> Usage | None:
+    """Normalize a provider usage payload (mapping or SDK object) into :class:`Usage`.
+
+    Providers name the counts differently (``prompt_tokens`` / ``input_tokens``,
+    ``completion_tokens`` / ``output_tokens``) and occasionally return floats; only
+    integral counts are kept. Returns ``None`` when there is nothing to record.
     """
-    if not isinstance(source, Mapping):
-        return {}
-    usage: dict[str, int] = {}
-    for key, value in source.items():
-        if isinstance(value, bool):
-            continue
-        if isinstance(value, int):
-            usage[str(key)] = value
-        elif isinstance(value, float) and value.is_integer():
-            usage[str(key)] = int(value)
-    return usage
-
-
-def sampling_params_from(source: Any) -> SamplingParams | None:
-    """Best-effort extraction of sampling parameters from a boundary result.
-
-    Recognizes either a nested ``sampling_params`` mapping or the flat keys
-    (temperature, top_p, max_tokens, seed) that common LLM SDKs return. Returns
-    ``None`` when nothing recognizable is present, so callers fall back to the
-    session/recorder default instead of recording empty parameters.
-    """
+    if source is not None and not isinstance(source, Mapping) and hasattr(source, "model_dump"):
+        try:
+            source = source.model_dump()
+        except Exception:
+            return None
     if not isinstance(source, Mapping):
         return None
-    nested = source.get("sampling_params")
-    if isinstance(nested, Mapping):
-        source = nested
-    keys = ("temperature", "top_p", "max_tokens", "seed")
-    if not any(k in source for k in keys):
+
+    def count(*keys: str) -> int | None:
+        for key in keys:
+            value = source.get(key)
+            if isinstance(value, bool):
+                continue
+            if isinstance(value, int):
+                return value
+            if isinstance(value, float) and value.is_integer():
+                return int(value)
         return None
-    return SamplingParams(
-        temperature=source.get("temperature"),
-        top_p=source.get("top_p"),
-        max_tokens=source.get("max_tokens"),
-        seed=source.get("seed"),
-    )
 
-
-def tool_schemas_from(source: Any) -> list[ToolSchema] | None:
-    """Best-effort extraction of the tool schemas offered to a model.
-
-    Reads ``tool_schemas`` or ``tools`` from a mapping and normalizes the common
-    shapes to :class:`ToolSchema`: OpenAI (``{"type": "function", "function": {...}}``),
-    Anthropic (``{"name", "description", "input_schema"}``) and plain
-    (``{"name", "description", "parameters"}``). Returns ``None`` when there are none,
-    so callers can fall back instead of recording an empty list.
-    """
-    if not isinstance(source, Mapping):
+    input_tokens = count("input_tokens", "prompt_tokens")
+    output_tokens = count("output_tokens", "completion_tokens")
+    if input_tokens is None and output_tokens is None:
         return None
-    tools = source.get("tool_schemas") or source.get("tools")
-    if not isinstance(tools, (list, tuple)):
-        return None
-    schemas: list[ToolSchema] = []
-    for tool in tools:
-        if isinstance(tool, ToolSchema):
-            schemas.append(tool)
-            continue
-        if not isinstance(tool, Mapping):
-            continue
-        spec = tool.get("function") if isinstance(tool.get("function"), Mapping) else tool
-        name = spec.get("name")
-        if not name:
-            continue
-        parameters = spec.get("parameters") or spec.get("input_schema") or {}
-        schemas.append(
-            ToolSchema(
-                name=str(name),
-                description=spec.get("description"),
-                parameters=dict(parameters) if isinstance(parameters, Mapping) else {},
-            )
-        )
-    return schemas or None
+    return Usage(input_tokens=input_tokens, output_tokens=output_tokens)
 
 
-def model_from(source: Any) -> str | None:
-    """Best-effort extraction of the resolved model version from a result.
-
-    Prefers an explicit ``model_version`` and falls back to ``model`` (what
-    most SDK responses echo back). Returns ``None`` when neither is present.
-    """
-    if not isinstance(source, Mapping):
-        return None
-    value = source.get("model_version") or source.get("model")
-    return str(value) if value else None
+def _attribute(value: Any) -> AttributeValue:
+    """Keep OTel-legal attribute values as they are; stringify anything else."""
+    if isinstance(value, (str, bool, int, float)):
+        return value
+    if isinstance(value, (list, tuple)) and value and all(
+        isinstance(v, type(value[0])) and isinstance(v, (str, bool, int, float)) for v in value
+    ):
+        return list(value)
+    return str(value)

@@ -22,6 +22,7 @@ def test_replay_injects_recorded_state(sample_envelope: Envelope):
     state = injector.inject_state({})
     assert state["messages"][0]["content"] == "How do I reset my API key?"
     assert len(state["rag_chunks"]) == 1
+    assert state["messages"][0]["role"] == "user"
 
 
 @pytest.mark.layer1
@@ -30,7 +31,7 @@ def test_replay_stubs_llm_without_api(sample_envelope: Envelope):
 
     def agent(state, inj):
         result = inj.stub_llm()
-        return {"completion": result.completion, "finish_reason": result.finish_reason}
+        return {"completion": result.llm.text, "finish_reason": result.llm.finish_reason}
 
     _, ctx, assertions = injector.replay(agent)
     no_llm = next(a for a in assertions if a.name == "no_llm_calls")
@@ -43,7 +44,7 @@ def test_replay_asserts_tool_calls(sample_envelope: Envelope):
 
     def agent(state, inj):
         inj.stub_llm()
-        for tc in sample_envelope.output.tool_calls:
+        for tc in sample_envelope.output.llm.tool_calls:
             inj.stub_tool(tc.name, tc.arguments)
         return {"finish_reason": "tool_calls"}
 
@@ -69,11 +70,11 @@ def test_fixture_regression_suite(sample_envelope: Envelope):
 
     def replay_agent(state, inj):
         inj.stub_llm()
-        for tc in sample_envelope.output.tool_calls:
+        for tc in sample_envelope.output.llm.tool_calls:
             inj.stub_tool(tc.name, tc.arguments)
         return {
-            "completion": sample_envelope.output.completion,
-            "finish_reason": sample_envelope.output.finish_reason,
+            "completion": sample_envelope.output.llm.text,
+            "finish_reason": sample_envelope.output.llm.finish_reason,
         }
 
     _, _, assertions = injector.replay(replay_agent)
@@ -94,9 +95,9 @@ def test_all_fixtures_pass_layer1(fixture_path: Path):
 
     def agent(state, inj):
         inj.stub_llm()
-        for tc in envelope.output.tool_calls:
+        for tc in envelope.output.llm.tool_calls:
             inj.stub_tool(tc.name, tc.arguments)
-        return {"finish_reason": envelope.output.finish_reason}
+        return {"finish_reason": envelope.output.llm.finish_reason}
 
     _, _, assertions = injector.replay(agent)
     assert all(a.passed for a in assertions)

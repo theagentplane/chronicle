@@ -93,11 +93,10 @@ deterministic.
 
 | Field | Contents |
 |---|---|
-| Metadata | Resolved model, sampling parameters, tool schemas offered to the model |
-| Input | Assembled prompt, graph state, retrieved context chunks |
-| Output | Structured tool calls and model completion |
+| Input | The boundary's arguments by name (`arguments`), plus the typed chat `messages` for LLM boundaries |
+| Output | The JSON-safe return value (`value`), plus a normalized `llm` block (`text`, `tool_calls`, `finish_reason`, `usage`) for LLM boundaries |
 | Graph linkage | `trace_id` (OTel, 32 hex), `envelope_id` (OTel span id, 16 hex), `parent_envelope_id`, `sequence`, `invocation_index` for retries |
-| Attributes | Flat `dict[str, str]` (trace-level via `record(..., attributes=...)`, e.g. `session_id`) |
+| Attributes | OTel span attributes (`str`, `bool`, `int`, `float`, or lists of them). Trace-level ones come from `record(..., attributes=...)`, e.g. `session_id`. The model, sampling parameters and tool definitions are recorded here under the OTel GenAI keys (`gen_ai.request.model`, `gen_ai.request.temperature`, `gen_ai.tool.definitions`, ...). A tool boundary's schema is inferred from the decorated function's signature and docstring. |
 
 ## Install
 
