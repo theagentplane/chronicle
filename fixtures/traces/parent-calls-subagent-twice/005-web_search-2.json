@@ -1,14 +1,14 @@
 {
   "schema_version": "2.0",
-  "envelope_id": "53b20b3079100ba3",
-  "trace_id": "e5507c84e697747b24f548e948379603",
+  "envelope_id": "b2cdf168d5f572c5",
+  "trace_id": "91d219852d914be735a7ca7351cf4d4b",
   "name": "web_search",
   "kind": "tool",
-  "parent_envelope_id": "afc34e2811806c8c",
+  "parent_envelope_id": "45d3c0da20b79bf8",
   "sequence": 5,
   "invocation_index": 2,
-  "start_time": "2026-09-20T14:47:53.785883Z",
-  "end_time": "2026-09-20T14:47:53.796488Z",
+  "start_time": "2026-09-20T15:02:11.266050Z",
+  "end_time": "2026-09-20T15:02:11.276576Z",
   "status": {
     "code": "UNSET",
     "message": null
@@ -34,7 +34,10 @@
     "user_id": "dev",
     "scenario": "parent_calls_subagent_twice",
     "chronicle.trace.name": "parent-calls-subagent-twice",
+    "chronicle.input.schema": "{\"properties\": {\"query\": {\"type\": \"string\"}}, \"required\": [\"query\"], \"type\": \"object\"}",
+    "chronicle.output.schema": "{\"additionalProperties\": true, \"type\": \"object\"}",
+    "gen_ai.operation.name": "execute_tool",
     "gen_ai.tool.name": "web_search",
-    "gen_ai.tool.definitions": "[{\"name\": \"web_search\", \"parameters\": {\"properties\": {\"query\": {\"type\": \"string\"}}, \"required\": [\"query\"], \"type\": \"object\"}}]"
+    "gen_ai.tool.definitions": "[{\"name\": \"web_search\", \"parameters\": {\"properties\": {\"query\": {\"type\": \"string\"}}, \"required\": [\"query\"], \"type\": \"object\"}, \"type\": \"function\"}]"
   }
 }

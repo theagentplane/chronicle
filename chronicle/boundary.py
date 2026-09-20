@@ -26,7 +26,7 @@ from chronicle.config import is_enabled
 from chronicle.envelope.genai import (
     LLMRequest,
     SamplingParams,
-    infer_tool_schema,
+    infer_method_schema,
     model_from,
     sampling_params_from,
     tool_schemas_from,
@@ -133,8 +133,13 @@ def _bind_boundary(
         cached_sig: inspect.Signature | None = inspect.signature(fn)
     except (TypeError, ValueError):
         cached_sig = None
-    # A tool's schema is inferred once from the wrapped method (signature + docstring).
-    static_attributes = infer_tool_schema(fn, boundary_id).to_attributes() if kind == "tool" else None
+    # A method boundary's schema is inferred once from the wrapped method (signature,
+    # return annotation, docstring). An LLM boundary has no method shape to infer.
+    static_attributes = (
+        None
+        if kind == "llm"
+        else infer_method_schema(fn, boundary_id).to_attributes(tool=kind == "tool")
+    )
 
     if inspect.iscoroutinefunction(fn):
 

@@ -1,13 +1,13 @@
-Trace: e5507c84e697747b24f548e948379603
-  total: 43.2ms   [0ms ──► 43.2ms]
+Trace: 91d219852d914be735a7ca7351cf4d4b
+  total: 44.1ms   [0ms ──► 44.1ms]
   resource/attributes: chronicle.trace.name=parent-calls-subagent-twice message_id=msg_042 scenario=parent_calls_subagent_twice session_id=sess_subagent_x2 user_id=dev
 
-orchestrator#1   ███████████████████████████████████████████████     43.2ms  custom
-  researcher#1   ████████████████████████                            21.6ms  custom
-    llm#1        ████████████                                        11.0ms  llm
-    web_search#1             ███████████                             10.3ms  tool
-  researcher#2                           ███████████████████████     21.5ms  custom
-    llm#2                                ███████████                 10.6ms  llm
-    web_search#2                                    ████████████     10.6ms  tool
+orchestrator#1   ███████████████████████████████████████████████     44.1ms  custom
+  researcher#1   ████████████████████████                            22.2ms  custom
+    llm#1        ████████████                                        10.8ms  llm
+    web_search#1             ████████████                            10.9ms  tool
+  researcher#2                           ███████████████████████     21.6ms  custom
+    llm#2                                ███████████                 10.7ms  llm
+    web_search#2                                     ███████████     10.5ms  tool
                  └──────────────────────────────────────────────┘
-                 0ms                                      43ms
+                 0ms                                      44ms

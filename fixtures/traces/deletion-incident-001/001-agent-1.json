@@ -1,14 +1,14 @@
 {
   "schema_version": "2.0",
-  "envelope_id": "70829c00657cfa7e",
-  "trace_id": "9a10add1391e2b49a6199ee2c8878349",
+  "envelope_id": "7cd5fcacffc43148",
+  "trace_id": "529e1a6814bd092a9a1ef254b64785a5",
   "name": "agent",
   "kind": "llm",
   "parent_envelope_id": null,
   "sequence": 1,
   "invocation_index": 1,
-  "start_time": "2026-09-20T14:47:52.793512Z",
-  "end_time": "2026-09-20T14:47:52.793727Z",
+  "start_time": "2026-09-20T15:02:09.926179Z",
+  "end_time": "2026-09-20T15:02:09.926421Z",
   "status": {
     "code": "UNSET",
     "message": null

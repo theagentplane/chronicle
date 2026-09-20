@@ -3,9 +3,12 @@ attributes.
 
 An Envelope does not carry a separate metadata object: the model, sampling
 parameters and tool definitions live in ``Envelope.attributes`` under the OpenTelemetry
-GenAI semantic-convention keys (currently Development status upstream). The classes
-here exist so a boundary can capture those values as *validated fields*, and
-``to_attributes()`` turns them into the flat attributes the envelope stores.
+GenAI semantic-convention keys. The conventions live in the
+``open-telemetry/semantic-conventions-genai`` repository and are Development status, so
+key names can still change; ``tests/test_genai_attributes.py`` pins ours to the released
+``opentelemetry-semantic-conventions`` package. The classes here exist so a boundary can
+capture those values as *validated fields*, and ``to_attributes()`` turns them into the
+flat attributes the envelope stores.
 """
 
 from __future__ import annotations
@@ -13,7 +16,7 @@ from __future__ import annotations
 import inspect
 import json
 from collections.abc import Mapping
-from typing import Any, Callable, Union
+from typing import Any, Callable, Union, get_type_hints
 
 from pydantic import BaseModel, Field, TypeAdapter
 
@@ -29,6 +32,12 @@ GEN_AI_REQUEST_SEED = "gen_ai.request.seed"
 GEN_AI_TOOL_DEFINITIONS = "gen_ai.tool.definitions"
 GEN_AI_TOOL_NAME = "gen_ai.tool.name"
 GEN_AI_TOOL_DESCRIPTION = "gen_ai.tool.description"
+GEN_AI_OPERATION_NAME = "gen_ai.operation.name"
+GEN_AI_OPERATION_EXECUTE_TOOL = "execute_tool"
+
+# Chronicle's own keys: the JSON schema of a boundary method's input and output.
+CHRONICLE_INPUT_SCHEMA = "chronicle.input.schema"
+CHRONICLE_OUTPUT_SCHEMA = "chronicle.output.schema"
 
 
 class SamplingParams(BaseModel):
@@ -39,18 +48,47 @@ class SamplingParams(BaseModel):
 
 
 class ToolSchema(BaseModel):
+    """A tool definition offered to a model (OTel ``FunctionToolDefinition``)."""
+
     name: str
     description: str | None = None
     parameters: dict[str, Any] = Field(default_factory=dict)
 
-    def to_attributes(self) -> dict[str, AttributeValue]:
-        """Attributes for a *tool* span: the tool's own name, description and schema."""
+
+class MethodSchema(BaseModel):
+    """The shape of a boundary method: its input parameters and its return type.
+
+    ``input`` is a JSON schema of the signature. It always names every parameter, and adds
+    types, defaults and ``required`` where the method is annotated, so an unannotated
+    method still records its field names. ``output`` is the JSON schema of the return
+    annotation, or ``None`` when the method declares none.
+    """
+
+    name: str
+    description: str | None = None
+    input: dict[str, Any] = Field(default_factory=dict)
+    output: dict[str, Any] | None = None
+
+    def to_attributes(self, *, tool: bool = False) -> dict[str, AttributeValue]:
+        """Span attributes for this method.
+
+        Every method records ``chronicle.input.schema`` / ``chronicle.output.schema``. A
+        tool boundary also follows the GenAI *execute tool* span convention
+        (``gen_ai.operation.name``, ``gen_ai.tool.name`` / ``.description`` / ``.definitions``).
+        """
         attributes: dict[str, AttributeValue] = {
-            GEN_AI_TOOL_NAME: self.name,
-            GEN_AI_TOOL_DEFINITIONS: _definitions_json([self]),
+            CHRONICLE_INPUT_SCHEMA: json.dumps(self.input, sort_keys=True),
         }
-        if self.description:
-            attributes[GEN_AI_TOOL_DESCRIPTION] = self.description
+        if self.output is not None:
+            attributes[CHRONICLE_OUTPUT_SCHEMA] = json.dumps(self.output, sort_keys=True)
+        if tool:
+            attributes[GEN_AI_OPERATION_NAME] = GEN_AI_OPERATION_EXECUTE_TOOL
+            attributes[GEN_AI_TOOL_NAME] = self.name
+            attributes[GEN_AI_TOOL_DEFINITIONS] = _definitions_json(
+                [ToolSchema(name=self.name, description=self.description, parameters=self.input)]
+            )
+            if self.description:
+                attributes[GEN_AI_TOOL_DESCRIPTION] = self.description
         return attributes
 
 
@@ -80,7 +118,11 @@ class LLMRequest(BaseModel):
 
 
 def _definitions_json(tools: list[ToolSchema]) -> str:
-    return json.dumps([t.model_dump(exclude_none=True) for t in tools], sort_keys=True)
+    """``gen_ai.tool.definitions`` value: each item is a ``FunctionToolDefinition``, which
+    requires ``"type": "function"`` and a ``name``."""
+    return json.dumps(
+        [{"type": "function", **t.model_dump(exclude_none=True)} for t in tools], sort_keys=True
+    )
 
 
 def tool_schemas_from_attributes(attributes: Mapping[str, Any]) -> list[ToolSchema]:
@@ -99,25 +141,56 @@ def tool_schemas_from_attributes(attributes: Mapping[str, Any]) -> list[ToolSche
 # --------------------------------------------------------------------------- #
 
 
-def infer_tool_schema(fn: Callable[..., Any], name: str) -> ToolSchema:
-    """Infer a tool's schema from the wrapped method itself.
+def infer_method_schema(fn: Callable[..., Any], name: str) -> MethodSchema:
+    """Infer a boundary method's schema from the method itself.
 
-    The description is the docstring's first paragraph and the parameters are the JSON
-    schema of the signature's type hints, so annotating a tool function is all it takes
-    to record what the model could call. Never raises: an unschematizable signature
-    yields an empty object schema.
+    The input is the JSON schema of the signature and the output is the JSON schema of the
+    return annotation. The description is the docstring's first paragraph. When the method
+    is not annotated the input still records the untyped parameter names, and the output
+    is left out. Never raises: an unschematizable signature keeps just its parameter names.
     """
     doc = inspect.getdoc(fn) or ""
     description = doc.split("\n\n")[0].replace("\n", " ").strip() or None
     try:
-        schema = TypeAdapter(fn).json_schema()
+        input_schema = TypeAdapter(fn).json_schema()
     except Exception:
-        schema = {"type": "object", "properties": {}}
-    schema.pop("additionalProperties", None)
-    for prop in schema.get("properties", {}).values():
+        input_schema = {"type": "object", "properties": _parameter_names(fn)}
+    input_schema.pop("additionalProperties", None)
+    for prop in input_schema.get("properties", {}).values():
         if isinstance(prop, dict):
             prop.pop("title", None)
-    return ToolSchema(name=name, description=description, parameters=schema)
+    return MethodSchema(
+        name=name, description=description, input=input_schema, output=_return_schema(fn)
+    )
+
+
+def _parameter_names(fn: Callable[..., Any]) -> dict[str, dict[str, Any]]:
+    try:
+        params = inspect.signature(fn).parameters
+    except (TypeError, ValueError):
+        return {}
+    return {
+        p: {}
+        for p, param in params.items()
+        if p not in ("self", "cls")
+        and param.kind not in (param.VAR_POSITIONAL, param.VAR_KEYWORD)
+    }
+
+
+def _return_schema(fn: Callable[..., Any]) -> dict[str, Any] | None:
+    try:
+        annotation = inspect.signature(fn).return_annotation
+        if annotation is inspect.Signature.empty:
+            return None
+        if isinstance(annotation, str):  # ``from __future__ import annotations``
+            annotation = get_type_hints(fn).get("return", inspect.Signature.empty)
+            if annotation is inspect.Signature.empty:
+                return None
+        schema = TypeAdapter(annotation).json_schema()
+    except Exception:
+        return None
+    schema.pop("title", None)
+    return schema
 
 
 def tool_schemas_from(source: Any) -> list[ToolSchema] | None:

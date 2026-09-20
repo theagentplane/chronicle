@@ -1,14 +1,14 @@
 {
   "schema_version": "2.0",
-  "envelope_id": "ffb99eaba493fe5c",
-  "trace_id": "12e17996e9230ab1e06158ca7437e910",
+  "envelope_id": "71138c619e6a5bb9",
+  "trace_id": "2a93cca4a73be4b0c3a216edab4d7325",
   "name": "create_invoice",
   "kind": "tool",
   "parent_envelope_id": null,
   "sequence": 2,
   "invocation_index": 1,
-  "start_time": "2026-09-20T14:47:51.887202Z",
-  "end_time": "2026-09-20T14:47:51.887233Z",
+  "start_time": "2026-09-20T15:02:08.633154Z",
+  "end_time": "2026-09-20T15:02:08.633196Z",
   "status": {
     "code": "UNSET",
     "message": null
@@ -38,8 +38,11 @@
   },
   "attributes": {
     "chronicle.trace.name": "trace-invoice-currency-001",
+    "chronicle.input.schema": "{\"properties\": {\"amount_cents\": {\"type\": \"integer\"}, \"currency\": {\"type\": \"string\"}, \"customer_id\": {\"type\": \"string\"}}, \"required\": [\"customer_id\", \"amount_cents\", \"currency\"], \"type\": \"object\"}",
+    "chronicle.output.schema": "{\"additionalProperties\": true, \"type\": \"object\"}",
+    "gen_ai.operation.name": "execute_tool",
     "gen_ai.tool.name": "create_invoice",
-    "gen_ai.tool.definitions": "[{\"description\": \"Invoice tool \\u2014 gated version enforces a max invoice amount.\", \"name\": \"create_invoice\", \"parameters\": {\"properties\": {\"amount_cents\": {\"type\": \"integer\"}, \"currency\": {\"type\": \"string\"}, \"customer_id\": {\"type\": \"string\"}}, \"required\": [\"customer_id\", \"amount_cents\", \"currency\"], \"type\": \"object\"}}]",
+    "gen_ai.tool.definitions": "[{\"description\": \"Invoice tool \\u2014 gated version enforces a max invoice amount.\", \"name\": \"create_invoice\", \"parameters\": {\"properties\": {\"amount_cents\": {\"type\": \"integer\"}, \"currency\": {\"type\": \"string\"}, \"customer_id\": {\"type\": \"string\"}}, \"required\": [\"customer_id\", \"amount_cents\", \"currency\"], \"type\": \"object\"}, \"type\": \"function\"}]",
     "gen_ai.tool.description": "Invoice tool — gated version enforces a max invoice amount."
   }
 }

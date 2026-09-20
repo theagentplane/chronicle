@@ -1,14 +1,14 @@
 {
   "schema_version": "2.0",
-  "envelope_id": "5ef546d81a01258e",
-  "trace_id": "5561e21097e164e1362e3dfe416191ea",
+  "envelope_id": "80199250699ecff6",
+  "trace_id": "66f226d2fec0fcac321e012b933c3e33",
   "name": "agent",
   "kind": "llm",
   "parent_envelope_id": null,
   "sequence": 1,
   "invocation_index": 1,
-  "start_time": "2026-09-20T14:47:54.849633Z",
-  "end_time": "2026-09-20T14:47:54.850008Z",
+  "start_time": "2026-09-20T15:02:13.230872Z",
+  "end_time": "2026-09-20T15:02:13.231690Z",
   "status": {
     "code": "UNSET",
     "message": null
@@ -86,6 +86,6 @@
     "gen_ai.request.top_p": 1.0,
     "gen_ai.request.max_tokens": 1024,
     "gen_ai.request.seed": 42,
-    "gen_ai.tool.definitions": "[{\"description\": \"Search internal documentation\", \"name\": \"search_docs\", \"parameters\": {\"properties\": {\"query\": {\"type\": \"string\"}}, \"required\": [\"query\"], \"type\": \"object\"}}]"
+    "gen_ai.tool.definitions": "[{\"description\": \"Search internal documentation\", \"name\": \"search_docs\", \"parameters\": {\"properties\": {\"query\": {\"type\": \"string\"}}, \"required\": [\"query\"], \"type\": \"object\"}, \"type\": \"function\"}]"
   }
 }

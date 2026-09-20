@@ -1,14 +1,14 @@
 {
   "schema_version": "2.0",
-  "envelope_id": "0d97e0cce4e18621",
-  "trace_id": "e5507c84e697747b24f548e948379603",
+  "envelope_id": "4c106742645f9c7e",
+  "trace_id": "91d219852d914be735a7ca7351cf4d4b",
   "name": "researcher",
   "kind": "custom",
-  "parent_envelope_id": "4d63fcf94f6c1e96",
+  "parent_envelope_id": "0287549509d04aa5",
   "sequence": 3,
   "invocation_index": 1,
-  "start_time": "2026-09-20T14:47:53.753411Z",
-  "end_time": "2026-09-20T14:47:53.774978Z",
+  "start_time": "2026-09-20T15:02:11.232728Z",
+  "end_time": "2026-09-20T15:02:11.254975Z",
   "status": {
     "code": "UNSET",
     "message": null
@@ -34,6 +34,8 @@
     "message_id": "msg_042",
     "user_id": "dev",
     "scenario": "parent_calls_subagent_twice",
-    "chronicle.trace.name": "parent-calls-subagent-twice"
+    "chronicle.trace.name": "parent-calls-subagent-twice",
+    "chronicle.input.schema": "{\"properties\": {\"topic\": {\"type\": \"string\"}}, \"required\": [\"topic\"], \"type\": \"object\"}",
+    "chronicle.output.schema": "{\"additionalProperties\": true, \"type\": \"object\"}"
   }
 }

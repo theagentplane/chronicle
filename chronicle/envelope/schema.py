@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping
 from datetime import datetime, timezone
 from typing import Any, Literal
@@ -9,6 +10,8 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from chronicle.envelope.genai import (
+    CHRONICLE_INPUT_SCHEMA,
+    CHRONICLE_OUTPUT_SCHEMA,
     GEN_AI_REQUEST_MODEL,
     AttributeValue,
     ToolSchema,
@@ -105,6 +108,16 @@ class Status(BaseModel):
     message: str | None = None
 
 
+def _json_attribute(raw: Any) -> dict[str, Any] | None:
+    if not isinstance(raw, str):
+        return None
+    try:
+        value = json.loads(raw)
+    except ValueError:
+        return None
+    return value if isinstance(value, dict) else None
+
+
 class Envelope(BaseModel):
     """
     Immutable, append-only record of a single graph-boundary execution.
@@ -167,6 +180,16 @@ class Envelope(BaseModel):
     def tool_schemas(self) -> list[ToolSchema]:
         """Tool definitions recorded on this span (``gen_ai.tool.definitions``)."""
         return tool_schemas_from_attributes(self.attributes)
+
+    @property
+    def input_schema(self) -> dict[str, Any] | None:
+        """JSON schema of the boundary method's input, for method boundaries."""
+        return _json_attribute(self.attributes.get(CHRONICLE_INPUT_SCHEMA))
+
+    @property
+    def output_schema(self) -> dict[str, Any] | None:
+        """JSON schema of the boundary method's return type, when it is annotated."""
+        return _json_attribute(self.attributes.get(CHRONICLE_OUTPUT_SCHEMA))
 
     @field_validator("trace_id")
     @classmethod

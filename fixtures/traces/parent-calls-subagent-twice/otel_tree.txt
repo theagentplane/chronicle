@@ -1,14 +1,17 @@
-Trace: e5507c84e697747b24f548e948379603
+Trace: 91d219852d914be735a7ca7351cf4d4b
   resource/attributes: chronicle.trace.name=parent-calls-subagent-twice message_id=msg_042 scenario=parent_calls_subagent_twice session_id=sess_subagent_x2 user_id=dev
 
-└─ orchestrator#1 (custom)  span=4d63fcf9 parent=—
-   ├─ researcher#1 (custom)  span=0d97e0cc parent=4d63fcf9
-   │  ├─ llm#1 (llm)  span=95fcee4b parent=0d97e0cc
+└─ orchestrator#1 (custom)  span=02875495 parent=—
+   attrs: chronicle.input.schema={"properties": {"task": {"type": "string"}}, "required": ["task"], "type": "object"} chronicle.output.schema={"additionalProperties": true, "type": "object"}
+   ├─ researcher#1 (custom)  span=4c106742 parent=02875495
+   │  attrs: chronicle.input.schema={"properties": {"topic": {"type": "string"}}, "required": ["topic"], "type": "object"} chronicle.output.schema={"additionalProperties": true, "type": "object"}
+   │  ├─ llm#1 (llm)  span=b10efcff parent=4c106742
    │  │  attrs: gen_ai.request.model=stub-researcher
-   │  └─ web_search#1 (tool)  span=684a8963 parent=0d97e0cc
-   │     attrs: gen_ai.tool.name=web_search
-   └─ researcher#2 (custom)  span=afc34e28 parent=4d63fcf9
-      ├─ llm#2 (llm)  span=002f2d79 parent=afc34e28
+   │  └─ web_search#1 (tool)  span=e1ef8140 parent=4c106742
+   │     attrs: chronicle.input.schema={"properties": {"query": {"type": "string"}}, "required": ["query"], "type": "object"} chronicle.output.schema={"additionalProperties": true, "type": "object"} gen_ai.operation.name=execute_tool gen_ai.tool.name=web_search
+   └─ researcher#2 (custom)  span=45d3c0da parent=02875495
+      attrs: chronicle.input.schema={"properties": {"topic": {"type": "string"}}, "required": ["topic"], "type": "object"} chronicle.output.schema={"additionalProperties": true, "type": "object"}
+      ├─ llm#2 (llm)  span=cf9b4648 parent=45d3c0da
       │  attrs: gen_ai.request.model=stub-researcher
-      └─ web_search#2 (tool)  span=53b20b30 parent=afc34e28
-         attrs: gen_ai.tool.name=web_search
+      └─ web_search#2 (tool)  span=b2cdf168 parent=45d3c0da
+         attrs: chronicle.input.schema={"properties": {"query": {"type": "string"}}, "required": ["query"], "type": "object"} chronicle.output.schema={"additionalProperties": true, "type": "object"} gen_ai.operation.name=execute_tool gen_ai.tool.name=web_search

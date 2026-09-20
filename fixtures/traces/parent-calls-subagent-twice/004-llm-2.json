@@ -1,14 +1,14 @@
 {
   "schema_version": "2.0",
-  "envelope_id": "002f2d7932d81a18",
-  "trace_id": "e5507c84e697747b24f548e948379603",
+  "envelope_id": "cf9b4648a8b74f15",
+  "trace_id": "91d219852d914be735a7ca7351cf4d4b",
   "name": "llm",
   "kind": "llm",
-  "parent_envelope_id": "afc34e2811806c8c",
+  "parent_envelope_id": "45d3c0da20b79bf8",
   "sequence": 4,
   "invocation_index": 2,
-  "start_time": "2026-09-20T14:47:53.775128Z",
-  "end_time": "2026-09-20T14:47:53.785770Z",
+  "start_time": "2026-09-20T15:02:11.255179Z",
+  "end_time": "2026-09-20T15:02:11.265908Z",
   "status": {
     "code": "UNSET",
     "message": null

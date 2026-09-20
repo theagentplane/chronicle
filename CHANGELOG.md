@@ -66,12 +66,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   bundle (`text`, `tool_calls`, `finish_reason`, `usage`) for LLM boundaries. `usage` is a
   normalized `Usage(input_tokens, output_tokens)` instead of a provider-keyed dict.
 
+- **OTel dependencies** in the `[otel]` extra are bumped to the latest releases:
+  `opentelemetry-api` / `-sdk` / `-exporter-otlp` >= 1.44, `openinference-instrumentation` >=
+  0.1.65, `openinference-semantic-conventions` >= 0.1.38, and `opentelemetry-semantic-conventions`
+  >= 0.65b0 is now listed explicitly (the GenAI keys are tested against it).
+
 ### Added
-- **Tool schemas are inferred from the wrapped method.** A `@boundary(kind="tool")` records
-  its own name, description (docstring) and JSON-schema parameters (type hints) as
-  `gen_ai.tool.name` / `.description` / `.definitions`. An LLM boundary (`@boundary(kind="llm")`,
-  `wrap()`) records the tools it was given (a `tools` / `tool_schemas` argument in OpenAI,
-  Anthropic or plain shape), or those returned by `extract_metadata`.
+- **Method boundaries record their shape, inferred from the wrapped method.** Every
+  non-LLM boundary stores `chronicle.input.schema` (JSON schema of the signature; an
+  unannotated method still records its parameter names) and `chronicle.output.schema` (the
+  return annotation, when there is one), readable as `Envelope.input_schema` /
+  `Envelope.output_schema`. A `kind="tool"` boundary also follows the GenAI *execute tool*
+  span convention: `gen_ai.operation.name=execute_tool`, `gen_ai.tool.name`, `.description`
+  and `.definitions` (each definition now carries the required `"type": "function"`).
+- **LLM boundaries record the tools they were given** (`@boundary(kind="llm")`, `wrap()`): a
+  `tools` / `tool_schemas` argument in OpenAI, Anthropic or plain shape, or those returned by
+  `extract_metadata`, as `gen_ai.tool.definitions`.
 - `chronicle.LLMRequest`, a validated capture-side view (model, sampling, tools) that
   flattens into attributes with `to_attributes()`; `Envelope.model` / `Envelope.tool_schemas`.
 - `chronicle.Status` and `Envelope.status`; `boundary_id`, `span_id` and

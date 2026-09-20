@@ -1,14 +1,14 @@
 {
   "schema_version": "2.0",
-  "envelope_id": "1e6d29276d2b4d9b",
-  "trace_id": "9a10add1391e2b49a6199ee2c8878349",
+  "envelope_id": "184e291f52fe75e4",
+  "trace_id": "529e1a6814bd092a9a1ef254b64785a5",
   "name": "delete_file",
   "kind": "tool",
   "parent_envelope_id": null,
   "sequence": 2,
   "invocation_index": 1,
-  "start_time": "2026-09-20T14:47:52.794543Z",
-  "end_time": "2026-09-20T14:47:52.794583Z",
+  "start_time": "2026-09-20T15:02:09.927380Z",
+  "end_time": "2026-09-20T15:02:09.927470Z",
   "status": {
     "code": "UNSET",
     "message": null
@@ -32,8 +32,11 @@
   },
   "attributes": {
     "chronicle.trace.name": "trace-deletion-incident-001",
+    "chronicle.input.schema": "{\"properties\": {\"environment\": {\"type\": \"string\"}, \"path\": {\"type\": \"string\"}}, \"required\": [\"path\", \"environment\"], \"type\": \"object\"}",
+    "chronicle.output.schema": "{\"additionalProperties\": true, \"type\": \"object\"}",
+    "gen_ai.operation.name": "execute_tool",
     "gen_ai.tool.name": "delete_file",
-    "gen_ai.tool.definitions": "[{\"description\": \"Annotated tool boundary \\u2014 same ID for record and cut-point replay.\", \"name\": \"delete_file\", \"parameters\": {\"properties\": {\"environment\": {\"type\": \"string\"}, \"path\": {\"type\": \"string\"}}, \"required\": [\"path\", \"environment\"], \"type\": \"object\"}}]",
+    "gen_ai.tool.definitions": "[{\"description\": \"Annotated tool boundary \\u2014 same ID for record and cut-point replay.\", \"name\": \"delete_file\", \"parameters\": {\"properties\": {\"environment\": {\"type\": \"string\"}, \"path\": {\"type\": \"string\"}}, \"required\": [\"path\", \"environment\"], \"type\": \"object\"}, \"type\": \"function\"}]",
     "gen_ai.tool.description": "Annotated tool boundary — same ID for record and cut-point replay."
   }
 }

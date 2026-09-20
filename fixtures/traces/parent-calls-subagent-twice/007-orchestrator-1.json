@@ -1,14 +1,14 @@
 {
   "schema_version": "2.0",
-  "envelope_id": "4d63fcf94f6c1e96",
-  "trace_id": "e5507c84e697747b24f548e948379603",
+  "envelope_id": "0287549509d04aa5",
+  "trace_id": "91d219852d914be735a7ca7351cf4d4b",
   "name": "orchestrator",
   "kind": "custom",
   "parent_envelope_id": null,
   "sequence": 7,
   "invocation_index": 1,
-  "start_time": "2026-09-20T14:47:53.753361Z",
-  "end_time": "2026-09-20T14:47:53.796585Z",
+  "start_time": "2026-09-20T15:02:11.232652Z",
+  "end_time": "2026-09-20T15:02:11.276735Z",
   "status": {
     "code": "UNSET",
     "message": null
@@ -46,6 +46,8 @@
     "message_id": "msg_042",
     "user_id": "dev",
     "scenario": "parent_calls_subagent_twice",
-    "chronicle.trace.name": "parent-calls-subagent-twice"
+    "chronicle.trace.name": "parent-calls-subagent-twice",
+    "chronicle.input.schema": "{\"properties\": {\"task\": {\"type\": \"string\"}}, \"required\": [\"task\"], \"type\": \"object\"}",
+    "chronicle.output.schema": "{\"additionalProperties\": true, \"type\": \"object\"}"
   }
 }

@@ -1,5 +1,5 @@
 {
-  "trace_id": "e5507c84e697747b24f548e948379603",
+  "trace_id": "91d219852d914be735a7ca7351cf4d4b",
   "attributes": {
     "session_id": "sess_subagent_x2",
     "message_id": "msg_042",
@@ -9,7 +9,7 @@
   },
   "spans": [
     {
-      "envelope_id": "95fcee4b6dc32ba9",
+      "envelope_id": "b10efcffb273a5dd",
       "name": "llm",
       "kind": "llm",
       "invocation_index": 1,
@@ -17,7 +17,7 @@
       "fixture": "001-llm-1.json"
     },
     {
-      "envelope_id": "684a8963252e9e4f",
+      "envelope_id": "e1ef8140f6e4b8c3",
       "name": "web_search",
       "kind": "tool",
       "invocation_index": 1,
@@ -25,7 +25,7 @@
       "fixture": "002-web_search-1.json"
     },
     {
-      "envelope_id": "0d97e0cce4e18621",
+      "envelope_id": "4c106742645f9c7e",
       "name": "researcher",
       "kind": "custom",
       "invocation_index": 1,
@@ -33,7 +33,7 @@
       "fixture": "003-researcher-1.json"
     },
     {
-      "envelope_id": "002f2d7932d81a18",
+      "envelope_id": "cf9b4648a8b74f15",
       "name": "llm",
       "kind": "llm",
       "invocation_index": 2,
@@ -41,7 +41,7 @@
       "fixture": "004-llm-2.json"
     },
     {
-      "envelope_id": "53b20b3079100ba3",
+      "envelope_id": "b2cdf168d5f572c5",
       "name": "web_search",
       "kind": "tool",
       "invocation_index": 2,
@@ -49,7 +49,7 @@
       "fixture": "005-web_search-2.json"
     },
     {
-      "envelope_id": "afc34e2811806c8c",
+      "envelope_id": "45d3c0da20b79bf8",
       "name": "researcher",
       "kind": "custom",
       "invocation_index": 2,
@@ -57,7 +57,7 @@
       "fixture": "006-researcher-2.json"
     },
     {
-      "envelope_id": "4d63fcf94f6c1e96",
+      "envelope_id": "0287549509d04aa5",
       "name": "orchestrator",
       "kind": "custom",
       "invocation_index": 1,
@@ -67,7 +67,7 @@
   ],
   "nodes": [
     {
-      "envelope_id": "95fcee4b6dc32ba9",
+      "envelope_id": "b10efcffb273a5dd",
       "name": "llm",
       "kind": "llm",
       "invocation_index": 1,
@@ -75,7 +75,7 @@
       "fixture": "001-llm-1.json"
     },
     {
-      "envelope_id": "684a8963252e9e4f",
+      "envelope_id": "e1ef8140f6e4b8c3",
       "name": "web_search",
       "kind": "tool",
       "invocation_index": 1,
@@ -83,7 +83,7 @@
       "fixture": "002-web_search-1.json"
     },
     {
-      "envelope_id": "0d97e0cce4e18621",
+      "envelope_id": "4c106742645f9c7e",
       "name": "researcher",
       "kind": "custom",
       "invocation_index": 1,
@@ -91,7 +91,7 @@
       "fixture": "003-researcher-1.json"
     },
     {
-      "envelope_id": "002f2d7932d81a18",
+      "envelope_id": "cf9b4648a8b74f15",
       "name": "llm",
       "kind": "llm",
       "invocation_index": 2,
@@ -99,7 +99,7 @@
       "fixture": "004-llm-2.json"
     },
     {
-      "envelope_id": "53b20b3079100ba3",
+      "envelope_id": "b2cdf168d5f572c5",
       "name": "web_search",
       "kind": "tool",
       "invocation_index": 2,
@@ -107,7 +107,7 @@
       "fixture": "005-web_search-2.json"
     },
     {
-      "envelope_id": "afc34e2811806c8c",
+      "envelope_id": "45d3c0da20b79bf8",
       "name": "researcher",
       "kind": "custom",
       "invocation_index": 2,
@@ -115,7 +115,7 @@
       "fixture": "006-researcher-2.json"
     },
     {
-      "envelope_id": "4d63fcf94f6c1e96",
+      "envelope_id": "0287549509d04aa5",
       "name": "orchestrator",
       "kind": "custom",
       "invocation_index": 1,
@@ -125,31 +125,31 @@
   ],
   "edges": [
     [
-      "0d97e0cce4e18621",
-      "95fcee4b6dc32ba9"
+      "4c106742645f9c7e",
+      "b10efcffb273a5dd"
     ],
     [
-      "0d97e0cce4e18621",
-      "684a8963252e9e4f"
+      "4c106742645f9c7e",
+      "e1ef8140f6e4b8c3"
     ],
     [
-      "4d63fcf94f6c1e96",
-      "0d97e0cce4e18621"
+      "0287549509d04aa5",
+      "4c106742645f9c7e"
     ],
     [
-      "afc34e2811806c8c",
-      "002f2d7932d81a18"
+      "45d3c0da20b79bf8",
+      "cf9b4648a8b74f15"
     ],
     [
-      "afc34e2811806c8c",
-      "53b20b3079100ba3"
+      "45d3c0da20b79bf8",
+      "b2cdf168d5f572c5"
     ],
     [
-      "4d63fcf94f6c1e96",
-      "afc34e2811806c8c"
+      "0287549509d04aa5",
+      "45d3c0da20b79bf8"
     ]
   ],
   "roots": [
-    "4d63fcf94f6c1e96"
+    "0287549509d04aa5"
   ]
 }

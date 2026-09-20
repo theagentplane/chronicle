@@ -1,14 +1,14 @@
 {
   "schema_version": "2.0",
-  "envelope_id": "2505ce9076acfdde",
-  "trace_id": "32a95dc4b27821ef90c5e61cbd4eaff5",
+  "envelope_id": "7e1dc15f15f32b7f",
+  "trace_id": "3d33fe80a886b57ff761e8cf1cbb9ceb",
   "name": "issue_refund",
   "kind": "tool",
   "parent_envelope_id": null,
   "sequence": 2,
   "invocation_index": 1,
-  "start_time": "2026-09-20T14:47:51.879993Z",
-  "end_time": "2026-09-20T14:47:51.880035Z",
+  "start_time": "2026-09-20T15:02:08.622794Z",
+  "end_time": "2026-09-20T15:02:08.622872Z",
   "status": {
     "code": "UNSET",
     "message": null
@@ -35,8 +35,11 @@
   },
   "attributes": {
     "chronicle.trace.name": "trace-refund-order-id-001",
+    "chronicle.input.schema": "{\"properties\": {\"amount_cents\": {\"type\": \"integer\"}, \"order_id\": {\"type\": \"string\"}}, \"required\": [\"order_id\", \"amount_cents\"], \"type\": \"object\"}",
+    "chronicle.output.schema": "{\"additionalProperties\": true, \"type\": \"object\"}",
+    "gen_ai.operation.name": "execute_tool",
     "gen_ai.tool.name": "issue_refund",
-    "gen_ai.tool.definitions": "[{\"description\": \"Refund tool \\u2014 gated version enforces a max refund amount.\", \"name\": \"issue_refund\", \"parameters\": {\"properties\": {\"amount_cents\": {\"type\": \"integer\"}, \"order_id\": {\"type\": \"string\"}}, \"required\": [\"order_id\", \"amount_cents\"], \"type\": \"object\"}}]",
+    "gen_ai.tool.definitions": "[{\"description\": \"Refund tool \\u2014 gated version enforces a max refund amount.\", \"name\": \"issue_refund\", \"parameters\": {\"properties\": {\"amount_cents\": {\"type\": \"integer\"}, \"order_id\": {\"type\": \"string\"}}, \"required\": [\"order_id\", \"amount_cents\"], \"type\": \"object\"}, \"type\": \"function\"}]",
     "gen_ai.tool.description": "Refund tool — gated version enforces a max refund amount."
   }
 }

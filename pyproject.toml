@@ -55,11 +55,13 @@ langgraph = [
 ]
 # OpenTelemetry + OpenInference (chronicle.instrument_otel, tests). No Phoenix server.
 otel = [
-    "opentelemetry-api>=1.20",
-    "opentelemetry-sdk>=1.20",
-    "opentelemetry-exporter-otlp>=1.20",
-    "openinference-instrumentation>=0.1",
-    "openinference-semantic-conventions>=0.1",
+    "opentelemetry-api>=1.44",
+    "opentelemetry-sdk>=1.44",
+    "opentelemetry-exporter-otlp>=1.44",
+    # GenAI attribute keys are pinned against this package in tests (Development status upstream).
+    "opentelemetry-semantic-conventions>=0.65b0",
+    "openinference-instrumentation>=0.1.65",
+    "openinference-semantic-conventions>=0.1.38",
 ]
 # Phoenix UI/collector on top of otel. Kept out of [dev]: recent arize-phoenix
 # releases register a pytest plugin that can crash collection (seen on 3.11).
