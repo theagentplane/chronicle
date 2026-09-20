@@ -119,7 +119,7 @@ def main() -> None:
     envelopes = store.read_all()
     print(f"Recorded {len(envelopes)} envelope(s) to {store_path}")
     for e in envelopes:
-        print(f"  node={e.node_id}  tools={[tc.name for tc in e.action_result.tool_calls]}")
+        print(f"  node={e.name}  tools={[tc.name for tc in e.action_result.tool_calls]}")
     print(f"Completion: {result['completion']}")
 
 

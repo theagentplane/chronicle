@@ -51,8 +51,9 @@ def test_failure_records_an_error_envelope_and_reraises():
         boom(1)
 
     env = session._recorded_envelopes[-1]
-    assert env.action_result.error == "kaboom"
-    assert env.action_result.error_type == "RuntimeError"
+    assert env.status.code == "ERROR"
+    assert env.status.message == "kaboom"
+    assert env.attributes["error.type"] == "RuntimeError"
     assert env.action_result.finish_reason == "error"
 
 

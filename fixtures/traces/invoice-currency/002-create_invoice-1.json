@@ -1,14 +1,18 @@
 {
   "schema_version": "1.0",
-  "envelope_id": "0944c6ad5831a3ec",
-  "trace_id": "262f35c137d76fd5b62ea6c714e6fe7c",
-  "node_id": "create_invoice",
-  "boundary_kind": "tool",
+  "envelope_id": "994fdcbba9ab9b02",
+  "trace_id": "86afc39289c94e8fee14da815de3939d",
+  "name": "create_invoice",
+  "kind": "tool",
   "parent_envelope_id": null,
   "sequence": 2,
   "invocation_index": 1,
-  "timestamp": "2026-09-20T13:26:23.467633Z",
-  "started_at": "2026-09-20T13:26:23.467598Z",
+  "start_time": "2026-09-20T14:03:12.004138Z",
+  "end_time": "2026-09-20T14:03:12.004164Z",
+  "status": {
+    "code": "UNSET",
+    "message": null
+  },
   "metadata": {
     "model_version": "unknown",
     "sampling_params": {
@@ -49,13 +53,9 @@
       "currency": "USD",
       "contract_currency": "EUR",
       "message": "Invoice sent to acme-corp for 2,000,000.00 USD"
-    },
-    "error": null,
-    "error_type": null
+    }
   },
-  "dims": {
-    "chronicle.trace.name": "trace-invoice-currency-001",
-    "boundary_kind": "tool",
-    "node_id": "create_invoice"
+  "attributes": {
+    "chronicle.trace.name": "trace-invoice-currency-001"
   }
 }

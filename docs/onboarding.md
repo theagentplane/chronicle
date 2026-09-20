@@ -132,7 +132,7 @@ one crossing plus context; it does not capture the inside of your function.
 
 ## Step 3: Record a run
 
-Wrap the run you want to capture. Pass product ids as flat `dims` when you have
+Wrap the run you want to capture. Pass product ids as flat `attributes` when you have
 them (one trace ≈ one message turn; Chronicle does not own chat history):
 
 ```python
@@ -140,7 +140,7 @@ with chronicle.record(
     "incident-001",
     store=".chronicle/runs/incident.jsonl",        # raw log (optional)
     export="fixtures/traces/incident-001/",         # the committed fixture
-    dims={
+    attributes={
         "session_id": "sess_abc",
         "message_id": "msg_042",
     },
@@ -150,7 +150,7 @@ with chronicle.record(
 
 - `store=` writes the raw run as it happens (survives a crash). Optional.
 - `export=` writes the trace you keep and commit. This is what makes a test.
-- `dims=` are copied onto every envelope so a dashboard can resolve
+- `attributes=` are copied onto every envelope so a dashboard can resolve
   session/message → trace later.
 
 ---

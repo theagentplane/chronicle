@@ -1,29 +1,29 @@
 {
-  "trace_id": "342fd61fbdc4f7142f3ed70ceaa7742d",
-  "dims": {
+  "trace_id": "8a975e7d6e323653ea66240eb60f243a",
+  "attributes": {
     "chronicle.trace.name": "trace-trade-notional-001"
   },
   "spans": [
     {
-      "envelope_id": "bdb508c59d06275d",
-      "boundary_id": "agent",
-      "boundary_kind": "llm",
+      "envelope_id": "32af4944febd73b2",
+      "name": "agent",
+      "kind": "llm",
       "invocation_index": 1,
       "sequence": 1,
       "fixture": "001-agent-1.json"
     },
     {
-      "envelope_id": "f6a05c3f1bf09bdd",
-      "boundary_id": "place_order",
-      "boundary_kind": "tool",
+      "envelope_id": "8be8c1a172e79ce2",
+      "name": "place_order",
+      "kind": "tool",
       "invocation_index": 1,
       "sequence": 2,
       "fixture": "002-place_order-1.json"
     },
     {
-      "envelope_id": "f12b3352e5e991cc",
-      "boundary_id": "agent",
-      "boundary_kind": "llm",
+      "envelope_id": "d59c070eadade28f",
+      "name": "agent",
+      "kind": "llm",
       "invocation_index": 2,
       "sequence": 3,
       "fixture": "003-agent-2.json"
@@ -31,25 +31,25 @@
   ],
   "nodes": [
     {
-      "envelope_id": "bdb508c59d06275d",
-      "boundary_id": "agent",
-      "boundary_kind": "llm",
+      "envelope_id": "32af4944febd73b2",
+      "name": "agent",
+      "kind": "llm",
       "invocation_index": 1,
       "sequence": 1,
       "fixture": "001-agent-1.json"
     },
     {
-      "envelope_id": "f6a05c3f1bf09bdd",
-      "boundary_id": "place_order",
-      "boundary_kind": "tool",
+      "envelope_id": "8be8c1a172e79ce2",
+      "name": "place_order",
+      "kind": "tool",
       "invocation_index": 1,
       "sequence": 2,
       "fixture": "002-place_order-1.json"
     },
     {
-      "envelope_id": "f12b3352e5e991cc",
-      "boundary_id": "agent",
-      "boundary_kind": "llm",
+      "envelope_id": "d59c070eadade28f",
+      "name": "agent",
+      "kind": "llm",
       "invocation_index": 2,
       "sequence": 3,
       "fixture": "003-agent-2.json"
@@ -57,8 +57,8 @@
   ],
   "edges": [],
   "roots": [
-    "bdb508c59d06275d",
-    "f6a05c3f1bf09bdd",
-    "f12b3352e5e991cc"
+    "32af4944febd73b2",
+    "8be8c1a172e79ce2",
+    "d59c070eadade28f"
   ]
 }

@@ -43,8 +43,8 @@ def test_wrap_llm_records_envelope_kind_llm():
     assert out["completion"] == "openai/gpt-4o-mini:1"
     assert len(session._recorded_envelopes) == 1
     env = session._recorded_envelopes[0]
-    assert env.boundary_kind == "llm"
-    assert env.node_id == "agent.chat"
+    assert env.kind == "llm"
+    assert env.name == "agent.chat"
     assert env.metadata.model_version == "gpt-4o-mini"
     assert env.metadata.sampling_params.temperature == 0.2
     assert env.input_state.messages == [{"role": "user", "content": "hi"}]
@@ -90,7 +90,7 @@ def test_wrap_llm_messages_only_signature():
 
     assert out["completion"] == "hello"
     assert len(session._recorded_envelopes) == 1
-    assert session._recorded_envelopes[0].boundary_kind == "llm"
+    assert session._recorded_envelopes[0].kind == "llm"
     assert crossings[0][1] == "llm"
     assert crossings[0][2].messages[0]["content"] == "hello"
 
@@ -174,5 +174,5 @@ def test_wrap_llm_custom_extract_input():
 
     assert out["completion"] == "HI"
     env = session._recorded_envelopes[0]
-    assert env.boundary_kind == "llm"
+    assert env.kind == "llm"
     assert env.input_state.graph_state["prompt"] == "hi"

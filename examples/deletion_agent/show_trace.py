@@ -73,7 +73,7 @@ def main() -> None:
     print("TIMELINE DETAIL")
     print("-" * 60)
     for env in graph.timeline():
-        print(f"\n[{env.sequence}] {env.node_id}#{env.invocation_index} ({env.boundary_kind})")
+        print(f"\n[{env.sequence}] {env.name}#{env.invocation_index} ({env.kind})")
         print(f"  envelope_id: {env.envelope_id}")
         if env.parent_envelope_id:
             print(f"  parent:      {env.parent_envelope_id}")

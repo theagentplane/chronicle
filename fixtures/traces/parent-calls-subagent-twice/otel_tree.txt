@@ -1,12 +1,12 @@
-Trace: d12e8f0420aeba1c7ebada8abfd01c84
-  resource/dims: chronicle.trace.name=parent-calls-subagent-twice message_id=msg_042 scenario=parent_calls_subagent_twice session_id=sess_subagent_x2 user_id=dev
+Trace: fe45a66c8171b01af1c84d5b38e2ae7e
+  resource/attributes: chronicle.trace.name=parent-calls-subagent-twice message_id=msg_042 scenario=parent_calls_subagent_twice session_id=sess_subagent_x2 user_id=dev
 
-└─ orchestrator#1 (custom)  span=6467c8c4 parent=—
-   ├─ researcher#1 (custom)  span=089cef04 parent=6467c8c4
-   │  ├─ llm#1 (llm)  span=04b45ad3 parent=089cef04
+└─ orchestrator#1 (custom)  span=569ec6d2 parent=—
+   ├─ researcher#1 (custom)  span=7e19a1fe parent=569ec6d2
+   │  ├─ llm#1 (llm)  span=a91de465 parent=7e19a1fe
    │  │  attrs: model_version=stub-researcher
-   │  └─ web_search#1 (tool)  span=ede03f6c parent=089cef04
-   └─ researcher#2 (custom)  span=85b4de7a parent=6467c8c4
-      ├─ llm#2 (llm)  span=70f362a6 parent=85b4de7a
+   │  └─ web_search#1 (tool)  span=59fa9df4 parent=7e19a1fe
+   └─ researcher#2 (custom)  span=d93e606d parent=569ec6d2
+      ├─ llm#2 (llm)  span=34a199e5 parent=d93e606d
       │  attrs: model_version=stub-researcher
-      └─ web_search#2 (tool)  span=7000fae9 parent=85b4de7a
+      └─ web_search#2 (tool)  span=c7cd2d42 parent=d93e606d

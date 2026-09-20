@@ -1,14 +1,18 @@
 {
   "schema_version": "1.0",
-  "envelope_id": "6467c8c4a9a14aca",
-  "trace_id": "d12e8f0420aeba1c7ebada8abfd01c84",
-  "node_id": "orchestrator",
-  "boundary_kind": "custom",
+  "envelope_id": "569ec6d2cd850236",
+  "trace_id": "fe45a66c8171b01af1c84d5b38e2ae7e",
+  "name": "orchestrator",
+  "kind": "custom",
   "parent_envelope_id": null,
   "sequence": 7,
   "invocation_index": 1,
-  "timestamp": "2026-09-20T13:27:09.656588Z",
-  "started_at": "2026-09-20T13:27:09.613945Z",
+  "start_time": "2026-09-20T14:03:13.013498Z",
+  "end_time": "2026-09-20T14:03:13.055774Z",
+  "status": {
+    "code": "UNSET",
+    "message": null
+  },
   "metadata": {
     "model_version": "unknown",
     "sampling_params": {
@@ -54,17 +58,13 @@
           ]
         }
       ]
-    },
-    "error": null,
-    "error_type": null
+    }
   },
-  "dims": {
+  "attributes": {
     "session_id": "sess_subagent_x2",
     "message_id": "msg_042",
     "user_id": "dev",
     "scenario": "parent_calls_subagent_twice",
-    "chronicle.trace.name": "parent-calls-subagent-twice",
-    "boundary_kind": "custom",
-    "node_id": "orchestrator"
+    "chronicle.trace.name": "parent-calls-subagent-twice"
   }
 }

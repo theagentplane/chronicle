@@ -31,8 +31,8 @@ T2 = "b" * 32
 
 def _env(trace_id: str, seq: int, node: str = "agent") -> Envelope:
     return Envelope(
-        node_id=node,
-        boundary_kind="tool",
+        name=node,
+        kind="tool",
         trace_id=trace_id,
         sequence=seq,
         metadata=ContextMetadata(model_version="m", build_id="b"),

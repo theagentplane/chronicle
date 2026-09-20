@@ -25,7 +25,7 @@ def test_async_boundary_records_like_sync():
     session, out = asyncio.run(run())
     assert out["completion"] == "ok"
     env = session._recorded_envelopes[-1]
-    assert env.boundary_kind == "llm"
+    assert env.kind == "llm"
     assert env.metadata.model_version == "gpt-4o"
     assert env.metadata.sampling_params.temperature == 0.1
 
@@ -59,8 +59,8 @@ def test_concurrent_async_traces_are_isolated():
     assert sa.trace_id != sb.trace_id
     assert all(e.trace_id == sa.trace_id for e in sa._recorded_envelopes)
     assert all(e.trace_id == sb.trace_id for e in sb._recorded_envelopes)
-    assert {e.dims["chronicle.trace.name"] for e in sa._recorded_envelopes} == {"trace-a"}
-    assert {e.dims["chronicle.trace.name"] for e in sb._recorded_envelopes} == {"trace-b"}
+    assert {e.attributes["chronicle.trace.name"] for e in sa._recorded_envelopes} == {"trace-a"}
+    assert {e.attributes["chronicle.trace.name"] for e in sb._recorded_envelopes} == {"trace-b"}
 
 
 @pytest.mark.layer1
@@ -78,8 +78,9 @@ def test_async_failure_records_error_and_reraises():
 
     session = asyncio.run(run())
     env = session._recorded_envelopes[-1]
-    assert env.action_result.error == "nope"
-    assert env.action_result.error_type == "ValueError"
+    assert env.status.code == "ERROR"
+    assert env.status.message == "nope"
+    assert env.attributes["error.type"] == "ValueError"
     assert env.action_result.finish_reason == "error"
 
 

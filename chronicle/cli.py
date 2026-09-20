@@ -171,7 +171,7 @@ def list_fixtures(directory: str) -> None:
         return
     for p in paths:
         envelope = Envelope.from_file(str(p))
-        click.echo(f"{p.name}  trace={envelope.trace_id}  node={envelope.node_id}")
+        click.echo(f"{p.name}  trace={envelope.trace_id}  name={envelope.name}")
 
 
 if __name__ == "__main__":

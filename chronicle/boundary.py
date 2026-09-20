@@ -23,7 +23,7 @@ from collections.abc import Callable, Mapping
 from typing import Any, TypeVar
 
 from chronicle.config import is_enabled
-from chronicle.envelope.schema import ActionResult, InputState
+from chronicle.envelope.schema import ActionResult, InputState, Status
 from chronicle.session import (
     SessionMode,
     get_session,
@@ -283,14 +283,12 @@ def _record_failure(
     parent_envelope_id: str | None = None,
 ):
     """Record a failed crossing so incidents that raise are still reproducible."""
-    action_result = ActionResult(
-        error=str(exc),
-        error_type=type(exc).__name__,
-        finish_reason="error",
-    )
+    action_result = ActionResult(finish_reason="error")
     session.record_envelope(
         boundary_id, kind, input_state, action_result,
         envelope_id=envelope_id, parent_envelope_id=parent_envelope_id,
+        status=Status(code="ERROR", message=str(exc)),
+        attributes={"error.type": type(exc).__name__},
     )
 
 

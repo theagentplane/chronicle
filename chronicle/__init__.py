@@ -10,6 +10,7 @@ from chronicle.envelope.schema import (
     InputState,
     RagChunk,
     SamplingParams,
+    Status,
     ToolCall,
     ToolSchema,
 )
@@ -58,6 +59,7 @@ __all__ = [
     "SamplingParams",
     "SessionMode",
     "SqliteStore",
+    "Status",
     "Store",
     "ToolCall",
     "ToolSchema",

@@ -114,7 +114,7 @@ def main() -> None:
     sink = NullSink()
     cfg = RunConfig()
 
-    dims = {
+    attributes = {
         "session_id": "sess_mas1_demo",
         "message_id": "msg_001",
         "user_id": "dev",
@@ -125,7 +125,7 @@ def main() -> None:
     with chronicle.record(
         "mas1-otel-tree",
         store=JsonlStore(store_path),
-        dims=dims,
+        attributes=attributes,
         export=OUT / "trace",
     ) as session:
         graph = build_instrumented_graph(client, sink, cfg)

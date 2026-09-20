@@ -71,8 +71,8 @@ def _scrub(value: Any, redact: Redactor) -> Any:
 
 
 def apply_redactors(envelope: Envelope, redactors: list[Redactor]) -> Envelope:
-    """Return a copy of the envelope with every string in the input state and
-    action result passed through the redactors.
+    """Return a copy of the envelope with every string in the input state,
+    action result and status message passed through the redactors.
 
     Identifiers, timestamps, and pinned metadata (model version, sampling params)
     are left intact so the record stays diagnostically useful and replayable.
@@ -86,6 +86,6 @@ def apply_redactors(envelope: Envelope, redactors: list[Redactor]) -> Envelope:
         return text
 
     data = envelope.model_dump()
-    for section in ("input_state", "action_result"):
+    for section in ("input_state", "action_result", "status"):
         data[section] = _scrub(data[section], run)
     return Envelope.model_validate(data)

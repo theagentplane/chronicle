@@ -1,14 +1,18 @@
 {
   "schema_version": "1.0",
-  "envelope_id": "f12b3352e5e991cc",
-  "trace_id": "342fd61fbdc4f7142f3ed70ceaa7742d",
-  "node_id": "agent",
-  "boundary_kind": "llm",
+  "envelope_id": "d59c070eadade28f",
+  "trace_id": "8a975e7d6e323653ea66240eb60f243a",
+  "name": "agent",
+  "kind": "llm",
   "parent_envelope_id": null,
   "sequence": 3,
   "invocation_index": 2,
-  "timestamp": "2026-09-20T13:26:23.472931Z",
-  "started_at": "2026-09-20T13:26:23.472878Z",
+  "start_time": "2026-09-20T14:03:12.007827Z",
+  "end_time": "2026-09-20T14:03:12.007850Z",
+  "status": {
+    "code": "UNSET",
+    "message": null
+  },
   "metadata": {
     "model_version": "unknown",
     "sampling_params": {
@@ -74,13 +78,9 @@
     "completion": "Done. Sold 1000 ACME at $190.00 ($190,000.00 total)",
     "finish_reason": "stop",
     "token_usage": {},
-    "raw_response": null,
-    "error": null,
-    "error_type": null
+    "raw_response": null
   },
-  "dims": {
-    "chronicle.trace.name": "trace-trade-notional-001",
-    "boundary_kind": "llm",
-    "node_id": "agent"
+  "attributes": {
+    "chronicle.trace.name": "trace-trade-notional-001"
   }
 }

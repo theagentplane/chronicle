@@ -23,13 +23,13 @@ def _envelope_summary(envelope) -> dict[str, Any]:
     detail: dict[str, Any] = {
         "envelope_id": env.envelope_id,
         "short_id": env.envelope_id[:8],
-        "boundary_id": env.node_id,
-        "boundary_kind": env.boundary_kind,
+        "name": env.name,
+        "kind": env.kind,
         "invocation_index": env.invocation_index,
         "sequence": env.sequence,
         "parent_envelope_id": env.parent_envelope_id,
         "parent_short_id": env.parent_envelope_id[:8] if env.parent_envelope_id else None,
-        "kind_color": _KIND_COLORS.get(env.boundary_kind, "#6b7280"),
+        "kind_color": _KIND_COLORS.get(env.kind, "#6b7280"),
         "full_envelope": full_envelope,
         "messages": env.input_state.messages,
         "graph_state": env.input_state.graph_state,
@@ -50,7 +50,7 @@ def _envelope_summary(envelope) -> dict[str, Any]:
     elif env.action_result.completion:
         detail["headline"] = env.action_result.completion[:72]
     else:
-        detail["headline"] = env.boundary_kind
+        detail["headline"] = env.kind
     return detail
 
 
@@ -60,7 +60,7 @@ def render_trace_html(graph: ExecutionGraph, *, title: str | None = None) -> str
     nodes_json = json.dumps(nodes)
     mermaid = graph.to_mermaid()
     mermaid_clicks = [
-        f'    click {n["short_id"]} selectByShortId "{n["boundary_id"]}@{n["invocation_index"]}"'
+        f'    click {n["short_id"]} selectByShortId "{n["name"]}@{n["invocation_index"]}"'
         for n in nodes
     ]
     page_title = title or f"Chronicle — {graph.trace_id}"
@@ -72,7 +72,7 @@ def render_trace_html(graph: ExecutionGraph, *, title: str | None = None) -> str
         "    classDef custom fill:#2a1f4a,stroke:#8b5cf6,color:#e8ecf4",
     ]
     for n in nodes:
-        kind = n["boundary_kind"] if n["boundary_kind"] in _KIND_COLORS else "custom"
+        kind = n["kind"] if n["kind"] in _KIND_COLORS else "custom"
         mermaid_classes.append(f"    class {n['short_id']} {kind}")
 
     return f"""<!DOCTYPE html>
@@ -369,7 +369,7 @@ def render_trace_html(graph: ExecutionGraph, *, title: str | None = None) -> str
         <div class="detail-grid">
           <div class="card">
             <h3>Boundary</h3>
-            <pre>${{esc(node.boundary_id)}}@${{node.invocation_index}} (${{esc(node.boundary_kind)}})
+            <pre>${{esc(node.name)}}@${{node.invocation_index}} (${{esc(node.kind)}})
 envelope: ${{esc(node.envelope_id)}}
 parent:   ${{esc(node.parent_envelope_id || "—")}}</pre>
           </div>
@@ -413,7 +413,7 @@ finish: ${{esc(node.finish_reason || "—")}}</pre>
         title.textContent = "Envelope";
         return;
       }}
-      title.textContent = `${{node.boundary_id}}@${{node.invocation_index}} — envelope`;
+      title.textContent = `${{node.name}}@${{node.invocation_index}} — envelope`;
       panel.innerHTML = activeTab === "full"
         ? renderFullEnvelope(node)
         : renderOverview(node);
@@ -458,8 +458,8 @@ finish: ${{esc(node.finish_reason || "—")}}</pre>
       el.innerHTML = `
         <div class="seq">#${{node.sequence}}</div>
         <div class="name">
-          ${{esc(node.boundary_id)}}@${{node.invocation_index}}
-          <span class="badge ${{esc(node.boundary_kind)}}">${{esc(node.boundary_kind)}}</span>
+          ${{esc(node.name)}}@${{node.invocation_index}}
+          <span class="badge ${{esc(node.kind)}}">${{esc(node.kind)}}</span>
         </div>
         <div class="headline">${{esc(node.headline)}}</div>
       `;

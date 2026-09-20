@@ -24,7 +24,7 @@ Agents (RemoteStore / buffered)
    Ingest API  ──ack──► durable write or durable queue
         │
         ▼
-   Postgres (or equiv.) + indexes on trace_id / dims
+   Postgres (or equiv.) + indexes on trace_id / attributes
         │
         ▼
    Query API  ◄── dashboard / TokenOps / shared viz
@@ -44,20 +44,20 @@ append. That is fine for demos; it is not production. Multi-agent deployments ne
 2. Auth so only trusted agents/services ingest and read.
 3. Durability guarantees the agent can trust (or explicitly accept “best effort”).
 4. Fast ingest under burst (batching, backpressure).
-5. Query by `trace_id` and attribution **dims** (`session_id`, `message_id`, …)
+5. Query by `trace_id` and **attributes** (`session_id`, `message_id`, …)
    for the dashboard — not ad-hoc JSONL scans inside the library.
 
 This RFC locks the **HTTP API + durability/auth semantics**. Implementation can live
 in a dedicated control-plane service (see #30); Chronicle keeps emitting envelopes
-and dims.
+and attributes.
 
 ## Goals
 
 - **Fast** — low agent-side latency; batch ingest; optional async ack modes.
 - **Authenticated** — mutual trust for ingest and for privileged reads.
 - **Durable** — acknowledged writes survive process crash (DB fsync or durable queue).
-- Stable JSON envelope body compatible with today’s `Envelope` schema (+ `dims`,
-  `started_at`, nest parents).
+- Stable JSON envelope body compatible with today’s `Envelope` schema (+ `attributes`,
+  `start_time`, nest parents).
 - Clear separation: **ingest** (agents) vs **query** (dashboard / TokenOps).
 - Fail-open option on the agent (`RemoteStore` today drops on error) vs strict mode
   for pipelines that must not lose data.
@@ -95,7 +95,7 @@ Target (aspirational, to validate in load tests): p99 single-envelope ingest ack
 | **Agent ingest** | `Authorization: Bearer <agent_api_key>` (scoped: `ingest`). Keys are per-environment / per-service, rotatable. |
 | **Dashboard / TokenOps read** | Separate keys or JWT with scopes `read`, `admin`. |
 | **Optional mTLS** | Service mesh / private CA for agent fleets that prefer certs over long-lived bearers. |
-| **Tenancy** | Every key maps to a `tenant_id` (or `project_id`). All writes/reads are tenant-scoped. Envelope dims must not be able to escape the tenant. |
+| **Tenancy** | Every key maps to a `tenant_id` (or `project_id`). All writes/reads are tenant-scoped. Envelope attributes must not be able to escape the tenant. |
 | **Rejection** | `401` missing/invalid creds; `403` valid creds, wrong scope. |
 
 Reference `RemoteStore` already supports `api_key` → `Authorization: Bearer …`. The
@@ -134,7 +134,7 @@ admin note.
 ## API overview
 
 Version prefix: **`/v1`**. JSON request/response. Envelope body = Chronicle
-`Envelope.model_dump()` (JSON), including `dims`, `started_at`, `parent_envelope_id`.
+`Envelope.model_dump()` (JSON), including `attributes`, `start_time`, `parent_envelope_id`.
 
 ### Health
 
@@ -207,10 +207,10 @@ All require `read` (or stronger) scope.
 GET /v1/traces/{trace_id}
 → 200 {
     "trace_id": "...",
-    "dims": {"session_id":"...","message_id":"..."},
+    "attributes": {"session_id":"...","message_id":"..."},
     "span_count": 7,
-    "started_at": "...",
-    "ended_at": "..."
+    "start_time": "...",
+    "end_time": "..."
   }
 
 GET /v1/traces/{trace_id}/envelopes
@@ -221,14 +221,14 @@ GET /v1/traces/{trace_id}/envelopes/{envelope_id}
 
 GET /v1/traces?session_id=...&message_id=...&user_id=...&limit=50&cursor=...
 → 200 {
-    "traces": [ { "trace_id", "dims", "started_at", "ended_at" }, ... ],
+    "traces": [ { "trace_id", "attributes", "start_time", "end_time" }, ... ],
     "next_cursor": "..."
   }
 ```
 
 Notes:
 
-- Filter params match **envelope/trace dims** written by `record(..., dims=...)`.
+- Filter params match **envelope/trace attributes** written by `record(..., attributes=...)`.
 - `message_id` alone should be unique enough within a tenant for feedback → trace.
 - List endpoints are paginated; never unbounded `GET /envelopes` in production
   (deprecate the reference server’s full dump).
@@ -254,9 +254,9 @@ Migration: plane can temporarily accept legacy `POST /envelopes` as an alias of
 Logical tables (illustrative):
 
 - `tenants(id, …)`
-- `traces(tenant_id, trace_id, dims jsonb, started_at, ended_at, …)` unique `(tenant_id, trace_id)`
-- `envelopes(tenant_id, envelope_id, trace_id, sequence, parent_envelope_id, dims jsonb, body jsonb, started_at, ended_at, …)` unique `(tenant_id, trace_id, envelope_id)`
-- Indexes: `(tenant_id, trace_id, sequence)`, `(tenant_id, (dims->>'session_id'))`, `(tenant_id, (dims->>'message_id'))`
+- `traces(tenant_id, trace_id, attributes jsonb, start_time, end_time, …)` unique `(tenant_id, trace_id)`
+- `envelopes(tenant_id, envelope_id, trace_id, sequence, parent_envelope_id, attributes jsonb, body jsonb, start_time, end_time, …)` unique `(tenant_id, trace_id, envelope_id)`
+- Indexes: `(tenant_id, trace_id, sequence)`, `(tenant_id, (attributes->>'session_id'))`, `(tenant_id, (attributes->>'message_id'))`
 
 `body` holds the full envelope JSON for fidelity; projected columns support query and
 waterfall assembly.
@@ -266,7 +266,7 @@ waterfall assembly.
 - Never log full envelope bodies at info level (may contain prompts / PII); redact or
   sample.
 - Rate limit per API key.
-- Size limits on `dims` values (e.g. 1 KiB per key) to protect indexes.
+- Size limits on `attributes` values (e.g. 1 KiB per key) to protect indexes.
 - Tenant isolation enforced in every query (`WHERE tenant_id = :t`).
 
 ## Open questions
@@ -281,7 +281,7 @@ waterfall assembly.
 
 ## Acceptance criteria (for an implementing PR / service)
 
-- [ ] Spec frozen for `/v1` ingest (single + batch) and query (trace, envelopes, dims filter)
+- [ ] Spec frozen for `/v1` ingest (single + batch) and query (trace, envelopes, attributes filter)
 - [ ] Auth enforced (Bearer scopes + tenant binding); reference server updated or replaced
 - [ ] Durability modes documented and tested (`sync` commit, `queued` durable produce)
 - [ ] Idempotent ingest on `(trace_id, envelope_id)`
@@ -293,6 +293,6 @@ waterfall assembly.
 
 - `chronicle/envelope/backends.py` — `RemoteStore`, `BufferedStore`, `SqliteStore`
 - `examples/control_plane/server.py` — current unauthenticated reference
-- Envelope schema — `dims`, `started_at`, `parent_envelope_id` (OTel-aligned)
+- Envelope schema — `attributes`, `start_time`, `parent_envelope_id` (OTel-aligned)
 - Issue #30 — shared control plane package topology
 - Issue #40 — attribution dims; lookup owned by plane/dashboard

@@ -81,15 +81,15 @@ class ExecutionGraph:
         edges = []
 
         for i, node in enumerate(ordered, start=1):
-            filename = f"{i:03d}-{node.envelope.node_id}-{node.envelope.invocation_index}.json"
+            filename = f"{i:03d}-{node.envelope.name}-{node.envelope.invocation_index}.json"
             path = root / filename
             node.envelope.write_file(str(path))
             node.fixture_path = str(path)
             node_entries.append(
                 {
                     "envelope_id": node.envelope.envelope_id,
-                    "boundary_id": node.envelope.node_id,
-                    "boundary_kind": node.envelope.boundary_kind,
+                    "name": node.envelope.name,
+                    "kind": node.envelope.kind,
                     "invocation_index": node.envelope.invocation_index,
                     "sequence": node.envelope.sequence,
                     "fixture": filename,
@@ -100,7 +100,7 @@ class ExecutionGraph:
 
         graph_json = {
             "trace_id": self.trace_id,
-            "dims": self.dims,
+            "attributes": self.attributes,
             "spans": node_entries,  # OTel name; ``nodes`` kept for back-compat
             "nodes": node_entries,
             "edges": edges,
@@ -118,7 +118,7 @@ class ExecutionGraph:
         matches = [
             n.envelope
             for n in self.nodes.values()
-            if n.envelope.node_id == boundary_id
+            if n.envelope.name == boundary_id
             and n.envelope.invocation_index == invocation_index
         ]
         if not matches:
@@ -126,15 +126,15 @@ class ExecutionGraph:
         return matches[0]
 
     @property
-    def dims(self) -> dict[str, str]:
-        """Trace-level dims: keys shared by every span (minus span-only stamps)."""
+    def attributes(self) -> dict[str, str]:
+        """Trace-level attributes: keys shared by every span (minus span-only ones)."""
         timelines = self.timeline()
         if not timelines:
             return {}
-        shared = dict(timelines[0].dims)
+        shared = dict(timelines[0].attributes)
         for env in timelines[1:]:
-            shared = {k: v for k, v in shared.items() if env.dims.get(k) == v}
-        for key in ("boundary_kind", "node_id", "model_version"):
+            shared = {k: v for k, v in shared.items() if env.attributes.get(k) == v}
+        for key in ("model_version", "error.type"):
             shared.pop(key, None)
         return shared
 
@@ -143,8 +143,8 @@ class ExecutionGraph:
         for node in self.timeline():
             eid = node.envelope_id[:8]
             label = (
-                f"{node.node_id}@{node.invocation_index}"
-                f"<br/>{node.boundary_kind}"
+                f"{node.name}@{node.invocation_index}"
+                f"<br/>{node.kind}"
             )
             if node.action_result.tool_calls:
                 tools = ",".join(tc.name for tc in node.action_result.tool_calls)
@@ -165,10 +165,10 @@ class ExecutionGraph:
     def to_otel_tree(self) -> str:
         """Render the run as an OpenTelemetry-style Trace → Spans tree."""
         lines = [f"Trace: {self.trace_id}"]
-        trace_dims = self.dims
-        if trace_dims:
-            dim_str = " ".join(f"{k}={v}" for k, v in sorted(trace_dims.items()))
-            lines.append(f"  resource/dims: {dim_str}")
+        trace_attrs = self.attributes
+        if trace_attrs:
+            dim_str = " ".join(f"{k}={v}" for k, v in sorted(trace_attrs.items()))
+            lines.append(f"  resource/attributes: {dim_str}")
         lines.append("")
 
         children: dict[str | None, list[Envelope]] = {}
@@ -184,16 +184,16 @@ class ExecutionGraph:
                 span_short = env.span_id[:8]
                 parent_short = env.parent_span_id[:8] if env.parent_span_id else "—"
                 lines.append(
-                    f"{prefix}{branch} {env.node_id}#{env.invocation_index} "
-                    f"({env.boundary_kind})  span={span_short} parent={parent_short}"
+                    f"{prefix}{branch} {env.name}#{env.invocation_index} "
+                    f"({env.kind})  span={span_short} parent={parent_short}"
                 )
-                span_dims = {
+                span_attrs = {
                     k: v
-                    for k, v in env.dims.items()
-                    if k not in trace_dims and k not in ("boundary_kind", "node_id")
+                    for k, v in env.attributes.items()
+                    if k not in trace_attrs
                 }
-                if span_dims:
-                    dim_str = " ".join(f"{k}={v}" for k, v in sorted(span_dims.items()))
+                if span_attrs:
+                    dim_str = " ".join(f"{k}={v}" for k, v in sorted(span_attrs.items()))
                     lines.append(f"{child_prefix}attrs: {dim_str}")
                 walk(env.envelope_id, child_prefix)
 
@@ -204,7 +204,7 @@ class ExecutionGraph:
             for env in self.timeline():
                 parent_short = (env.parent_span_id or "—")[:8]
                 lines.append(
-                    f"- {env.node_id}#{env.invocation_index} ({env.boundary_kind})  "
+                    f"- {env.name}#{env.invocation_index} ({env.kind})  "
                     f"span={env.span_id[:8]} parent={parent_short}"
                 )
 
@@ -214,7 +214,7 @@ class ExecutionGraph:
         """Render an OpenTelemetry-style timeline waterfall (nested bars over time).
 
         Each row is a span; indentation follows parent→child. The bar covers
-        ``started_at`` → ``timestamp`` (end). Missing ``started_at`` falls back
+        ``start_time`` → ``end_time``. Missing ``start_time`` falls back
         to reconstructing from children / end time.
         """
         envelopes = self.timeline()
@@ -224,8 +224,8 @@ class ExecutionGraph:
         # Resolve [start, end] per span. Parent opens before children and closes after.
         intervals: dict[str, tuple[datetime, datetime]] = {}
         for env in envelopes:
-            end = env.timestamp
-            start = env.started_at or end
+            end = env.end_time
+            start = env.start_time or end
             intervals[env.envelope_id] = (start, end)
 
         # Expand parents to enclose children (OTel parent fully wraps nested work).
@@ -259,13 +259,13 @@ class ExecutionGraph:
             f"Trace: {self.trace_id}",
             f"  total: {total_ms:.1f}ms   [0ms ──► {total_ms:.1f}ms]",
         ]
-        trace_dims = self.dims
-        if trace_dims:
-            dim_str = " ".join(f"{k}={v}" for k, v in sorted(trace_dims.items()))
-            lines.append(f"  resource/dims: {dim_str}")
+        trace_attrs = self.attributes
+        if trace_attrs:
+            dim_str = " ".join(f"{k}={v}" for k, v in sorted(trace_attrs.items()))
+            lines.append(f"  resource/attributes: {dim_str}")
         lines.append("")
         label_w = max(
-            (len(f"{e.node_id}#{e.invocation_index}") + depth * 2 for depth, e in
+            (len(f"{e.name}#{e.invocation_index}") + depth * 2 for depth, e in
              self._waterfall_rows(children)),
             default=12,
         )
@@ -281,9 +281,9 @@ class ExecutionGraph:
                 bar = " " * left + "█" * (right - left)
                 bar = bar.ljust(width)
                 dur_ms = (end - start).total_seconds() * 1000.0
-                name = f"{'  ' * depth}{env.node_id}#{env.invocation_index}"
+                name = f"{'  ' * depth}{env.name}#{env.invocation_index}"
                 lines.append(
-                    f"{name:<{label_w}} {bar}  {dur_ms:6.1f}ms  {env.boundary_kind}"
+                    f"{name:<{label_w}} {bar}  {dur_ms:6.1f}ms  {env.kind}"
                 )
                 render(env.envelope_id, depth + 1)
 

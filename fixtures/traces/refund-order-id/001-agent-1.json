@@ -1,14 +1,18 @@
 {
   "schema_version": "1.0",
-  "envelope_id": "367635ee4ae116df",
-  "trace_id": "ba016c80f2b58c7b920489d457f7ff52",
-  "node_id": "agent",
-  "boundary_kind": "llm",
+  "envelope_id": "246bcf2b6a324127",
+  "trace_id": "f9e78007223ce174a7b561a70e76eac9",
+  "name": "agent",
+  "kind": "llm",
   "parent_envelope_id": null,
   "sequence": 1,
   "invocation_index": 1,
-  "timestamp": "2026-09-20T13:26:23.458934Z",
-  "started_at": "2026-09-20T13:26:23.458711Z",
+  "start_time": "2026-09-20T14:03:11.997161Z",
+  "end_time": "2026-09-20T14:03:11.997332Z",
+  "status": {
+    "code": "UNSET",
+    "message": null
+  },
   "metadata": {
     "model_version": "unknown",
     "sampling_params": {
@@ -62,13 +66,9 @@
     "completion": "I'll process the refund for order #9847261 now.",
     "finish_reason": "tool_calls",
     "token_usage": {},
-    "raw_response": null,
-    "error": null,
-    "error_type": null
+    "raw_response": null
   },
-  "dims": {
-    "chronicle.trace.name": "trace-refund-order-id-001",
-    "boundary_kind": "llm",
-    "node_id": "agent"
+  "attributes": {
+    "chronicle.trace.name": "trace-refund-order-id-001"
   }
 }

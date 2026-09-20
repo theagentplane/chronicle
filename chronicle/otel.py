@@ -43,10 +43,10 @@ def _require_trace():
         ) from exc
 
 
-def _span_kind(boundary_kind: str) -> str:
+def _span_kind(kind: str) -> str:
     from openinference.semconv.trace import OpenInferenceSpanKindValues as Kind
 
-    return {"llm": Kind.LLM.value, "tool": Kind.TOOL.value}.get(boundary_kind, Kind.CHAIN.value)
+    return {"llm": Kind.LLM.value, "tool": Kind.TOOL.value}.get(kind, Kind.CHAIN.value)
 
 
 def _input_value(envelope: Envelope) -> Any:
@@ -56,8 +56,8 @@ def _input_value(envelope: Envelope) -> Any:
 
 def _output_value(envelope: Envelope) -> Any:
     action = envelope.action_result
-    if action.error:
-        return {"error": action.error, "error_type": action.error_type}
+    if envelope.status.code == "ERROR":
+        return {"error": envelope.status.message, "error_type": envelope.attributes.get("error.type")}
     if action.tool_calls:
         return [tc.model_dump() if hasattr(tc, "model_dump") else tc for tc in action.tool_calls]
     if action.completion is not None:
@@ -81,14 +81,14 @@ def envelope_span_attributes(envelope: Envelope) -> dict[str, Any]:
     from openinference.semconv.trace import SpanAttributes as S
 
     attributes: dict[str, Any] = {
-        S.OPENINFERENCE_SPAN_KIND: _span_kind(envelope.boundary_kind),
+        S.OPENINFERENCE_SPAN_KIND: _span_kind(envelope.kind),
         S.INPUT_VALUE: _as_json(_input_value(envelope)),
         S.OUTPUT_VALUE: _as_json(_output_value(envelope)),
         "chronicle.invocation_index": envelope.invocation_index,
     }
     if envelope.metadata.build_id:
         attributes["chronicle.build_id"] = envelope.metadata.build_id
-    if envelope.boundary_kind == "llm":
+    if envelope.kind == "llm":
         if envelope.metadata.model_version:
             attributes[S.LLM_MODEL_NAME] = envelope.metadata.model_version
         usage = envelope.action_result.token_usage or {}
@@ -98,11 +98,10 @@ def envelope_span_attributes(envelope: Envelope) -> dict[str, Any]:
             attributes[S.LLM_TOKEN_COUNT_PROMPT] = int(prompt)
         if completion is not None:
             attributes[S.LLM_TOKEN_COUNT_COMPLETION] = int(completion)
-    if envelope.boundary_kind == "tool":
-        attributes[S.TOOL_NAME] = envelope.node_id
-    for key, value in (envelope.dims or {}).items():
-        # Chronicle-namespaced dims (e.g. chronicle.trace.name) are already attribute keys.
-        attributes[key if key.startswith("chronicle.") else f"chronicle.dims.{key}"] = value
+    if envelope.kind == "tool":
+        attributes[S.TOOL_NAME] = envelope.name
+    for key, value in (envelope.attributes or {}).items():
+        attributes[key] = value
     return attributes
 
 
@@ -138,7 +137,7 @@ def _start_with_ids(
     context: Any,
     trace_id: str,
     span_id: str,
-    started_at: datetime | None,
+    start_time: datetime | None,
 ) -> Any:
     """Start an OTel span whose ids are the envelope's, not freshly generated ones.
 
@@ -146,7 +145,7 @@ def _start_with_ids(
     one-shot generator around ``start_span``. A tracer without an ``id_generator``
     (a non-SDK tracer) keeps its own ids; the span is still emitted and nested.
     """
-    kwargs = {"context": context, "start_time": _to_ns(started_at)}
+    kwargs = {"context": context, "start_time": _to_ns(start_time)}
     if not hasattr(tracer, "id_generator"):
         return tracer.start_span(name, **kwargs)
     with _id_swap_lock:
@@ -200,15 +199,17 @@ def instrument_otel(
             context = trace.set_span_in_context(parent) if parent is not None else None
             span = _start_with_ids(
                 tracer, envelope.name, context, envelope.trace_id, envelope.span_id,
-                envelope.start_time,
+                envelope.start_time or envelope.end_time,
             )
             spans[envelope.envelope_id] = span
         else:
             span.update_name(envelope.name)
         for key, value in envelope_span_attributes(envelope).items():
             span.set_attribute(key, value)
-        if envelope.action_result.error:
-            span.set_status(trace.Status(trace.StatusCode.ERROR, envelope.action_result.error))
+        if envelope.status.code == "ERROR":
+            span.set_status(trace.Status(trace.StatusCode.ERROR, envelope.status.message))
+        elif envelope.status.code == "OK":
+            span.set_status(trace.Status(trace.StatusCode.OK))
         span.end(end_time=_to_ns(envelope.end_time))
         if previous_on_record is not None:
             previous_on_record(envelope)

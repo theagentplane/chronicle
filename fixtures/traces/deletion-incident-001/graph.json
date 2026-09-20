@@ -1,29 +1,29 @@
 {
-  "trace_id": "f7adbf4adb0fed8f265e2fde94016ca3",
-  "dims": {
+  "trace_id": "ffc77d2b4623e0d378a8585d71358f91",
+  "attributes": {
     "chronicle.trace.name": "trace-deletion-incident-001"
   },
   "spans": [
     {
-      "envelope_id": "d3c9fa6d3634f63b",
-      "boundary_id": "agent",
-      "boundary_kind": "llm",
+      "envelope_id": "094d67cafb409425",
+      "name": "agent",
+      "kind": "llm",
       "invocation_index": 1,
       "sequence": 1,
       "fixture": "001-agent-1.json"
     },
     {
-      "envelope_id": "791525089e9b7c2a",
-      "boundary_id": "delete_file",
-      "boundary_kind": "tool",
+      "envelope_id": "66b7a0bea69f868f",
+      "name": "delete_file",
+      "kind": "tool",
       "invocation_index": 1,
       "sequence": 2,
       "fixture": "002-delete_file-1.json"
     },
     {
-      "envelope_id": "7e46512f29547e9b",
-      "boundary_id": "agent",
-      "boundary_kind": "llm",
+      "envelope_id": "5d4593ea760aa4fe",
+      "name": "agent",
+      "kind": "llm",
       "invocation_index": 2,
       "sequence": 3,
       "fixture": "003-agent-2.json"
@@ -31,25 +31,25 @@
   ],
   "nodes": [
     {
-      "envelope_id": "d3c9fa6d3634f63b",
-      "boundary_id": "agent",
-      "boundary_kind": "llm",
+      "envelope_id": "094d67cafb409425",
+      "name": "agent",
+      "kind": "llm",
       "invocation_index": 1,
       "sequence": 1,
       "fixture": "001-agent-1.json"
     },
     {
-      "envelope_id": "791525089e9b7c2a",
-      "boundary_id": "delete_file",
-      "boundary_kind": "tool",
+      "envelope_id": "66b7a0bea69f868f",
+      "name": "delete_file",
+      "kind": "tool",
       "invocation_index": 1,
       "sequence": 2,
       "fixture": "002-delete_file-1.json"
     },
     {
-      "envelope_id": "7e46512f29547e9b",
-      "boundary_id": "agent",
-      "boundary_kind": "llm",
+      "envelope_id": "5d4593ea760aa4fe",
+      "name": "agent",
+      "kind": "llm",
       "invocation_index": 2,
       "sequence": 3,
       "fixture": "003-agent-2.json"
@@ -57,8 +57,8 @@
   ],
   "edges": [],
   "roots": [
-    "d3c9fa6d3634f63b",
-    "791525089e9b7c2a",
-    "7e46512f29547e9b"
+    "094d67cafb409425",
+    "66b7a0bea69f868f",
+    "5d4593ea760aa4fe"
   ]
 }

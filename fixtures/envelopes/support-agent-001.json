@@ -1,14 +1,18 @@
 {
   "schema_version": "1.0",
-  "envelope_id": "34ad3085df3c9723",
-  "trace_id": "8554e163b71d2f02975ef9532cba167e",
-  "node_id": "agent",
-  "boundary_kind": "llm",
+  "envelope_id": "2f9d5712f535a77f",
+  "trace_id": "2b7e55f9f78388467ee53a6216c61e94",
+  "name": "agent",
+  "kind": "llm",
   "parent_envelope_id": null,
   "sequence": 1,
   "invocation_index": 1,
-  "timestamp": "2026-09-20T13:27:10.212743Z",
-  "started_at": "2026-09-20T13:27:10.212630Z",
+  "start_time": "2026-09-20T14:03:13.650335Z",
+  "end_time": "2026-09-20T14:03:13.650436Z",
+  "status": {
+    "code": "UNSET",
+    "message": null
+  },
   "metadata": {
     "model_version": "stub-support-model-1",
     "sampling_params": {
@@ -75,14 +79,10 @@
       "prompt_tokens": 256,
       "completion_tokens": 24
     },
-    "raw_response": null,
-    "error": null,
-    "error_type": null
+    "raw_response": null
   },
-  "dims": {
+  "attributes": {
     "chronicle.trace.name": "support-agent-001",
-    "model_version": "stub-support-model-1",
-    "boundary_kind": "llm",
-    "node_id": "agent"
+    "model_version": "stub-support-model-1"
   }
 }

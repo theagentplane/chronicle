@@ -17,6 +17,7 @@ from chronicle.envelope.schema import (
     Envelope,
     InputState,
     SamplingParams,
+    Status,
     ToolCall,
     ToolSchema,
 )
@@ -30,8 +31,8 @@ if TYPE_CHECKING:
 _envelope_stack: ContextVar[list[str]] = ContextVar("chronicle_envelope_stack", default=[])
 # Sentinel so record_envelope can accept parent_envelope_id=None for root spans.
 _PARENT_UNSET = object()
-# Dim carrying the human label of a trace (``record(name=...)``).
-TRACE_NAME_DIM = "chronicle.trace.name"
+# Attribute carrying the human label of a trace (``record(name=...)``).
+TRACE_NAME_ATTR = "chronicle.trace.name"
 
 
 class SessionMode(str, Enum):
@@ -80,7 +81,7 @@ class ChronicleSession:
     # session (``export_trace`` will be empty). Cuts memory traffic on hot paths.
     retain_envelopes: bool = True
     # Trace-level flat string→string attributes (copied onto every envelope).
-    dims: dict[str, str] = field(default_factory=dict)
+    attributes: dict[str, str] = field(default_factory=dict)
 
     _sequence: int = 0
     _invocation_counts: dict[str, int] = field(default_factory=dict)
@@ -97,21 +98,21 @@ class ChronicleSession:
         name: str | None = None,
         *,
         trace_id: str | None = None,
-        dims: dict[str, str] | None = None,
+        attributes: dict[str, str] | None = None,
     ) -> str:
         """Start a new trace and return its id.
 
-        ``name`` is a human label, stored as the ``chronicle.trace.name`` dim on every
+        ``name`` is a human label, stored as the ``chronicle.trace.name`` attribute on every
         envelope. ``trace_id`` must be an OTel trace id (32 lowercase hex); omit it to
         mint one. The trace id itself is never free-form.
         """
         self.trace_id = validate_trace_id(trace_id) if trace_id else new_trace_id()
-        if dims is not None:
-            self.dims = {str(k): str(v) for k, v in dims.items()}
+        if attributes is not None:
+            self.attributes = {str(k): str(v) for k, v in attributes.items()}
         if name:
-            self.dims[TRACE_NAME_DIM] = name
+            self.attributes[TRACE_NAME_ATTR] = name
         else:
-            self.dims.pop(TRACE_NAME_DIM, None)
+            self.attributes.pop(TRACE_NAME_ATTR, None)
         self._sequence = 0
         self._invocation_counts.clear()
         self._replay_cursor.clear()
@@ -193,7 +194,8 @@ class ChronicleSession:
         tool_schemas: list[ToolSchema] | None = None,
         envelope_id: str | None = None,
         parent_envelope_id: Any = _PARENT_UNSET,
-        dims: dict[str, str] | None = None,
+        status: Status | None = None,
+        attributes: dict[str, str] | None = None,
     ) -> Envelope:
         invocation_index = self.next_invocation(boundary_id)
         sequence = self.next_sequence()
@@ -216,28 +218,27 @@ class ChronicleSession:
             parent_id = parent_envelope_id
 
         resolved_model = model_version or self.model_version
-        # Trace dims first; envelope dims override. Promote common span attrs.
-        merged_dims = {str(k): str(v) for k, v in self.dims.items()}
+        # Trace attributes first; envelope attributes override. Promote the model.
+        merged_attrs = {str(k): str(v) for k, v in self.attributes.items()}
         if resolved_model and resolved_model != "unknown":
-            merged_dims.setdefault("model_version", str(resolved_model))
-        merged_dims.setdefault("boundary_kind", kind)
-        merged_dims.setdefault("node_id", boundary_id)
-        if dims:
-            merged_dims.update({str(k): str(v) for k, v in dims.items()})
+            merged_attrs.setdefault("model_version", str(resolved_model))
+        if attributes:
+            merged_attrs.update({str(k): str(v) for k, v in attributes.items()})
 
         # model_construct: fields are produced by Chronicle itself; skip pydantic
         # validation on the hot LIVE path.
         envelope = Envelope.model_construct(
-            schema_version="1.0",
+            schema_version="2.0",
             envelope_id=envelope_id,
             trace_id=self.trace_id,
-            node_id=boundary_id,
-            boundary_kind=kind,
+            name=boundary_id,
+            kind=kind,
             parent_envelope_id=parent_id,
             sequence=sequence,
             invocation_index=invocation_index,
-            timestamp=datetime.now(timezone.utc),
-            started_at=self._span_started_at.pop(envelope_id, None),
+            start_time=self._span_started_at.pop(envelope_id, None),
+            end_time=datetime.now(timezone.utc),
+            status=status or Status(),
             metadata=ContextMetadata.model_construct(
                 # Prefer what the call actually used; fall back to the session
                 # default only when the boundary surfaced no real metadata.
@@ -252,7 +253,7 @@ class ChronicleSession:
             ),
             input_state=input_state,
             action_result=action_result,
-            dims=merged_dims,
+            attributes=merged_attrs,
         )
 
         if self.redactors:
@@ -400,8 +401,6 @@ def result_to_action_result(result: Any, kind: str) -> ActionResult:
             finish_reason=None,
             token_usage={},
             raw_response=result,
-            error=None,
-            error_type=None,
         )
     if kind == "router":
         decision = _router_decision(result)
@@ -424,8 +423,6 @@ def result_to_action_result(result: Any, kind: str) -> ActionResult:
             finish_reason=result.get("finish_reason"),
             token_usage=_as_token_usage(result.get("token_usage") or result.get("usage")),
             raw_response=None,
-            error=None,
-            error_type=None,
         )
     return ActionResult.model_construct(
         tool_calls=[],
@@ -433,8 +430,6 @@ def result_to_action_result(result: Any, kind: str) -> ActionResult:
         finish_reason=None,
         token_usage={},
         raw_response=result if isinstance(result, dict) else None,
-        error=None,
-        error_type=None,
     )
 
 

@@ -46,11 +46,11 @@ def test_instrument_records_nodes_and_router_decision():
     result = app.invoke({"x": 1, "path": []})
 
     assert result["path"] == ["a", "b"]
-    node_ids = {e.node_id for e in session._recorded_envelopes}
+    node_ids = {e.name for e in session._recorded_envelopes}
     assert node_ids == {"a", "a:route", "b"}
 
-    router_env = next(e for e in session._recorded_envelopes if e.node_id == "a:route")
-    assert router_env.boundary_kind == "router"
+    router_env = next(e for e in session._recorded_envelopes if e.name == "a:route")
+    assert router_env.kind == "router"
     assert router_env.action_result.completion == "b"
 
 

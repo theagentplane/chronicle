@@ -1,6 +1,6 @@
 {
-  "trace_id": "d12e8f0420aeba1c7ebada8abfd01c84",
-  "dims": {
+  "trace_id": "fe45a66c8171b01af1c84d5b38e2ae7e",
+  "attributes": {
     "session_id": "sess_subagent_x2",
     "message_id": "msg_042",
     "user_id": "dev",
@@ -9,57 +9,57 @@
   },
   "spans": [
     {
-      "envelope_id": "04b45ad38dac642f",
-      "boundary_id": "llm",
-      "boundary_kind": "llm",
+      "envelope_id": "a91de465d3fc0167",
+      "name": "llm",
+      "kind": "llm",
       "invocation_index": 1,
       "sequence": 1,
       "fixture": "001-llm-1.json"
     },
     {
-      "envelope_id": "ede03f6c735a29fe",
-      "boundary_id": "web_search",
-      "boundary_kind": "tool",
+      "envelope_id": "59fa9df4e8b67a67",
+      "name": "web_search",
+      "kind": "tool",
       "invocation_index": 1,
       "sequence": 2,
       "fixture": "002-web_search-1.json"
     },
     {
-      "envelope_id": "089cef04cd9523e2",
-      "boundary_id": "researcher",
-      "boundary_kind": "custom",
+      "envelope_id": "7e19a1fe41977630",
+      "name": "researcher",
+      "kind": "custom",
       "invocation_index": 1,
       "sequence": 3,
       "fixture": "003-researcher-1.json"
     },
     {
-      "envelope_id": "70f362a69148836b",
-      "boundary_id": "llm",
-      "boundary_kind": "llm",
+      "envelope_id": "34a199e5532ce7bd",
+      "name": "llm",
+      "kind": "llm",
       "invocation_index": 2,
       "sequence": 4,
       "fixture": "004-llm-2.json"
     },
     {
-      "envelope_id": "7000fae92c4bd9cb",
-      "boundary_id": "web_search",
-      "boundary_kind": "tool",
+      "envelope_id": "c7cd2d42f4796ebb",
+      "name": "web_search",
+      "kind": "tool",
       "invocation_index": 2,
       "sequence": 5,
       "fixture": "005-web_search-2.json"
     },
     {
-      "envelope_id": "85b4de7a79c705ec",
-      "boundary_id": "researcher",
-      "boundary_kind": "custom",
+      "envelope_id": "d93e606d7777f343",
+      "name": "researcher",
+      "kind": "custom",
       "invocation_index": 2,
       "sequence": 6,
       "fixture": "006-researcher-2.json"
     },
     {
-      "envelope_id": "6467c8c4a9a14aca",
-      "boundary_id": "orchestrator",
-      "boundary_kind": "custom",
+      "envelope_id": "569ec6d2cd850236",
+      "name": "orchestrator",
+      "kind": "custom",
       "invocation_index": 1,
       "sequence": 7,
       "fixture": "007-orchestrator-1.json"
@@ -67,57 +67,57 @@
   ],
   "nodes": [
     {
-      "envelope_id": "04b45ad38dac642f",
-      "boundary_id": "llm",
-      "boundary_kind": "llm",
+      "envelope_id": "a91de465d3fc0167",
+      "name": "llm",
+      "kind": "llm",
       "invocation_index": 1,
       "sequence": 1,
       "fixture": "001-llm-1.json"
     },
     {
-      "envelope_id": "ede03f6c735a29fe",
-      "boundary_id": "web_search",
-      "boundary_kind": "tool",
+      "envelope_id": "59fa9df4e8b67a67",
+      "name": "web_search",
+      "kind": "tool",
       "invocation_index": 1,
       "sequence": 2,
       "fixture": "002-web_search-1.json"
     },
     {
-      "envelope_id": "089cef04cd9523e2",
-      "boundary_id": "researcher",
-      "boundary_kind": "custom",
+      "envelope_id": "7e19a1fe41977630",
+      "name": "researcher",
+      "kind": "custom",
       "invocation_index": 1,
       "sequence": 3,
       "fixture": "003-researcher-1.json"
     },
     {
-      "envelope_id": "70f362a69148836b",
-      "boundary_id": "llm",
-      "boundary_kind": "llm",
+      "envelope_id": "34a199e5532ce7bd",
+      "name": "llm",
+      "kind": "llm",
       "invocation_index": 2,
       "sequence": 4,
       "fixture": "004-llm-2.json"
     },
     {
-      "envelope_id": "7000fae92c4bd9cb",
-      "boundary_id": "web_search",
-      "boundary_kind": "tool",
+      "envelope_id": "c7cd2d42f4796ebb",
+      "name": "web_search",
+      "kind": "tool",
       "invocation_index": 2,
       "sequence": 5,
       "fixture": "005-web_search-2.json"
     },
     {
-      "envelope_id": "85b4de7a79c705ec",
-      "boundary_id": "researcher",
-      "boundary_kind": "custom",
+      "envelope_id": "d93e606d7777f343",
+      "name": "researcher",
+      "kind": "custom",
       "invocation_index": 2,
       "sequence": 6,
       "fixture": "006-researcher-2.json"
     },
     {
-      "envelope_id": "6467c8c4a9a14aca",
-      "boundary_id": "orchestrator",
-      "boundary_kind": "custom",
+      "envelope_id": "569ec6d2cd850236",
+      "name": "orchestrator",
+      "kind": "custom",
       "invocation_index": 1,
       "sequence": 7,
       "fixture": "007-orchestrator-1.json"
@@ -125,31 +125,31 @@
   ],
   "edges": [
     [
-      "089cef04cd9523e2",
-      "04b45ad38dac642f"
+      "7e19a1fe41977630",
+      "a91de465d3fc0167"
     ],
     [
-      "089cef04cd9523e2",
-      "ede03f6c735a29fe"
+      "7e19a1fe41977630",
+      "59fa9df4e8b67a67"
     ],
     [
-      "6467c8c4a9a14aca",
-      "089cef04cd9523e2"
+      "569ec6d2cd850236",
+      "7e19a1fe41977630"
     ],
     [
-      "85b4de7a79c705ec",
-      "70f362a69148836b"
+      "d93e606d7777f343",
+      "34a199e5532ce7bd"
     ],
     [
-      "85b4de7a79c705ec",
-      "7000fae92c4bd9cb"
+      "d93e606d7777f343",
+      "c7cd2d42f4796ebb"
     ],
     [
-      "6467c8c4a9a14aca",
-      "85b4de7a79c705ec"
+      "569ec6d2cd850236",
+      "d93e606d7777f343"
     ]
   ],
   "roots": [
-    "6467c8c4a9a14aca"
+    "569ec6d2cd850236"
   ]
 }

@@ -33,7 +33,7 @@ walks you from install to a committed regression test.
 **[Why](#why-chronicle) · [Quick start](#quick-start) · [Cut-point replay](#cut-point-replay) · [Recording](#recording-entry-points) · [Verification](#verification-layers) · [Compare](#how-chronicle-compares) · [Demos](#demos) · [FAQ](#faq) · [Roadmap](#roadmap)**
 
 <details>
-<summary><b>Key terms</b> (boundary, Envelope, trace, dims, fixture, stub, live, cut-point)</summary>
+<summary><b>Key terms</b> (boundary, Envelope, trace, attributes, fixture, stub, live, cut-point)</summary>
 
 <br>
 
@@ -42,7 +42,7 @@ walks you from install to a committed regression test.
 | **Boundary** | A decision **node** you mark: an LLM call, a tool call, or a routing choice — not the whole agent process. Orchestration stays plain code. |
 | **Envelope** | The immutable record of one boundary crossing: its input, its output, and metadata. It records I/O, not the side effects inside the function. OTel: one **span**; `envelope_id` is the span id (16 lowercase hex chars), also readable as `span_id`. |
 | **Trace** | One whole run (typically one message turn), as an ordered set of Envelopes sharing a `trace_id`. The id is an OpenTelemetry trace id (32 lowercase hex chars); give a trace a human label with `record("name")`. |
-| **Dims** | Flat `dict[str, str]` attributes on each envelope (e.g. `session_id`, `message_id`). Trace-level dims are passed into `record(...)` and copied onto every span. |
+| **Attributes** | Flat `dict[str, str]` attributes on each envelope (e.g. `session_id`, `message_id`). Trace-level attributes are passed into `record(...)` and copied onto every span. |
 | **Fixture** | A trace committed to git under `fixtures/traces/`. Your permanent, replayable incident. |
 | **Stub** | On replay, hand back a boundary's recorded output *without running its code*. |
 | **Live** | Run the boundary's real code (to record it, or, on replay, to run your new code). |
@@ -97,7 +97,7 @@ deterministic.
 | Input state | Assembled prompt, graph state, retrieved context chunks |
 | Action / result | Structured tool calls and model completion |
 | Graph linkage | `trace_id` (OTel, 32 hex), `envelope_id` (OTel span id, 16 hex), `parent_envelope_id`, `sequence`, `invocation_index` for retries |
-| Dims | Flat `dict[str, str]` (trace-level via `record(..., dims=...)`, plus span attrs like `model_version`) |
+| Attributes | Flat `dict[str, str]` (trace-level via `record(..., attributes=...)`, plus span attrs like `model_version`) |
 
 ## Install
 
@@ -151,7 +151,7 @@ def run_agent(task: str) -> dict:          # plain orchestration — no @boundar
 your function returns or raises. A bare `@boundary` records the call by argument name,
 so extractors are an optional way to trim payloads, never a requirement.
 
-**3. Record a run** (optional product dims for later lookup) **and freeze it as a
+**3. Record a run** (optional product attributes for later lookup) **and freeze it as a
 committed fixture** in one block:
 
 ```python
@@ -161,7 +161,7 @@ with chronicle.record(
     "incident-001",
     store=".chronicle/runs/incident.jsonl",   # raw run, gitignored
     export="fixtures/traces/incident-001/",   # the committed fixture you keep
-    dims={                                    # flat string attrs on every envelope
+    attributes={                                    # flat string attrs on every envelope
         "session_id": "sess_abc",
         "message_id": "msg_042",              # one trace ≈ one message turn
         "user_id": "u1",
@@ -173,9 +173,9 @@ with chronicle.record(
 ### Attribution (session / message)
 
 Chronicle does **not** own chat history or Session↔Message storage. Pass ids as
-`dims` so a control plane or dashboard can resolve feedback → trace later:
+`attributes` so a control plane or dashboard can resolve feedback → trace later:
 
-| Scenario | Dims to pass |
+| Scenario | Attributes to pass |
 |---|---|
 | Multi-turn chat | Same `session_id`, new `message_id` (and new `trace_id`) per user turn |
 | Single-shot / S2S | `session_id` (and optional `caller_id` / `caller_type`) |
@@ -587,7 +587,7 @@ test would look.
 <details>
 <summary><b>How do I correlate a production session / message with a Chronicle trace?</b></summary>
 
-Pass flat string `dims` into `chronicle.record(...)`, e.g. `session_id` and
+Pass flat string `attributes` into `chronicle.record(...)`, e.g. `session_id` and
 `message_id`. They are copied onto every envelope in that run. One trace ≈ one
 message turn; multi-turn chats reuse `session_id` and mint a new `message_id` (and
 trace) per turn. Chronicle does not store chat history — your app or dashboard maps

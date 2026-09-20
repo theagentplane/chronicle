@@ -1,14 +1,18 @@
 {
   "schema_version": "1.0",
-  "envelope_id": "70f362a69148836b",
-  "trace_id": "d12e8f0420aeba1c7ebada8abfd01c84",
-  "node_id": "llm",
-  "boundary_kind": "llm",
-  "parent_envelope_id": "85b4de7a79c705ec",
+  "envelope_id": "34a199e5532ce7bd",
+  "trace_id": "fe45a66c8171b01af1c84d5b38e2ae7e",
+  "name": "llm",
+  "kind": "llm",
+  "parent_envelope_id": "d93e606d7777f343",
   "sequence": 4,
   "invocation_index": 2,
-  "timestamp": "2026-09-20T13:27:09.646031Z",
-  "started_at": "2026-09-20T13:27:09.635520Z",
+  "start_time": "2026-09-20T14:03:13.034567Z",
+  "end_time": "2026-09-20T14:03:13.044801Z",
+  "status": {
+    "code": "UNSET",
+    "message": null
+  },
   "metadata": {
     "model_version": "stub-researcher",
     "sampling_params": {
@@ -46,18 +50,14 @@
     "completion": "Plan: search for 'agent cost controls'",
     "finish_reason": "stop",
     "token_usage": {},
-    "raw_response": null,
-    "error": null,
-    "error_type": null
+    "raw_response": null
   },
-  "dims": {
+  "attributes": {
     "session_id": "sess_subagent_x2",
     "message_id": "msg_042",
     "user_id": "dev",
     "scenario": "parent_calls_subagent_twice",
     "chronicle.trace.name": "parent-calls-subagent-twice",
-    "model_version": "stub-researcher",
-    "boundary_kind": "llm",
-    "node_id": "llm"
+    "model_version": "stub-researcher"
   }
 }

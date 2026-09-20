@@ -1,14 +1,18 @@
 {
   "schema_version": "1.0",
-  "envelope_id": "7000fae92c4bd9cb",
-  "trace_id": "d12e8f0420aeba1c7ebada8abfd01c84",
-  "node_id": "web_search",
-  "boundary_kind": "tool",
-  "parent_envelope_id": "85b4de7a79c705ec",
+  "envelope_id": "c7cd2d42f4796ebb",
+  "trace_id": "fe45a66c8171b01af1c84d5b38e2ae7e",
+  "name": "web_search",
+  "kind": "tool",
+  "parent_envelope_id": "d93e606d7777f343",
   "sequence": 5,
   "invocation_index": 2,
-  "timestamp": "2026-09-20T13:27:09.656468Z",
-  "started_at": "2026-09-20T13:27:09.646125Z",
+  "start_time": "2026-09-20T14:03:13.044910Z",
+  "end_time": "2026-09-20T14:03:13.055528Z",
+  "status": {
+    "code": "UNSET",
+    "message": null
+  },
   "metadata": {
     "model_version": "unknown",
     "sampling_params": {
@@ -41,17 +45,13 @@
       "results": [
         "result for agent cost controls"
       ]
-    },
-    "error": null,
-    "error_type": null
+    }
   },
-  "dims": {
+  "attributes": {
     "session_id": "sess_subagent_x2",
     "message_id": "msg_042",
     "user_id": "dev",
     "scenario": "parent_calls_subagent_twice",
-    "chronicle.trace.name": "parent-calls-subagent-twice",
-    "boundary_kind": "tool",
-    "node_id": "web_search"
+    "chronicle.trace.name": "parent-calls-subagent-twice"
   }
 }

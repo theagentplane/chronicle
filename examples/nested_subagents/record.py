@@ -58,7 +58,7 @@ def main() -> None:
     with chronicle.record(
         "parent-calls-subagent-twice",
         export=OUT,
-        dims={
+        attributes={
             "session_id": "sess_subagent_x2",
             "message_id": "msg_042",
             "user_id": "dev",

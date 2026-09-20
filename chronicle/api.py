@@ -29,11 +29,11 @@ def record(
     redactors: list[Callable[[str], str]] | None = None,
     export: str | Path | None = None,
     retain_envelopes: bool = True,
-    dims: dict[str, str] | None = None,
+    attributes: dict[str, str] | None = None,
 ) -> Iterator[ChronicleSession]:
     """Record a trace in one block.
 
-    ``name`` is a human label for the trace (kept as the ``chronicle.trace.name`` dim
+    ``name`` is a human label for the trace (kept as the ``chronicle.trace.name`` attribute
     on every envelope). The trace id itself is an OpenTelemetry trace id (32
     lowercase hex chars): minted for you, or passed as ``trace_id=``.
 
@@ -45,7 +45,7 @@ def record(
             "incident-001",  # name, a label; the trace id is minted (OTel format)
             store=".chronicle/runs/incident.jsonl",
             export="fixtures/traces/incident-001/",
-            dims={"session_id": "sess_abc", "user_id": "u1"},
+            attributes={"session_id": "sess_abc", "user_id": "u1"},
         ) as session:
             run_agent(...)
 
@@ -56,7 +56,7 @@ def record(
     Set ``retain_envelopes=False`` when you only need the store write (skips the
     in-session list; ``export_trace`` will be empty).
 
-    ``dims`` are trace-level flat string attributes copied onto every recorded
+    ``attributes`` are trace-level flat string attributes copied onto every recorded
     envelope (OTel-style resource/span attributes).
     """
     session = reset_session()
@@ -75,7 +75,7 @@ def record(
     if redactors is not None:
         session.redactors = redactors
     session.retain_envelopes = retain_envelopes
-    session.begin_trace(name, trace_id=trace_id, dims=dims)
+    session.begin_trace(name, trace_id=trace_id, attributes=attributes)
     try:
         yield session
     finally:

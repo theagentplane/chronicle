@@ -109,7 +109,7 @@ class EnvelopeStore:
         dest.mkdir(parents=True, exist_ok=True)
         paths: list[Path] = []
         for i, envelope in enumerate(self.find_by_trace_id(trace_id)):
-            filename = f"{i + 1:03d}-{envelope.node_id}-{envelope.invocation_index}.json"
+            filename = f"{i + 1:03d}-{envelope.name}-{envelope.invocation_index}.json"
             path = dest / filename
             envelope.write_file(str(path))
             paths.append(path)

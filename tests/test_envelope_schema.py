@@ -41,7 +41,7 @@ def test_envelope_store_append_and_query(tmp_path):
     store.append(envelope)
     found = store.find_by_trace_id(envelope.trace_id)
     assert len(found) == 1
-    assert found[0].node_id == "agent"
+    assert found[0].name == "agent"
 
 
 def test_export_trace(tmp_path):

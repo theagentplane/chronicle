@@ -59,11 +59,11 @@ def _label(text: str) -> str:
 def _boundary_rows_from_record(session: ChronicleSession) -> list[BoundaryRow]:
     rows: list[BoundaryRow] = []
     for envelope in sorted(session._recorded_envelopes, key=lambda e: e.sequence):
-        node = f"{envelope.node_id}@{envelope.invocation_index}"
+        node = f"{envelope.name}@{envelope.invocation_index}"
         rows.append(
             (
                 node,
-                envelope.boundary_kind,
+                envelope.kind,
                 "LIVE",
                 summarize_envelope_input(envelope),
                 summarize_envelope_output(envelope),

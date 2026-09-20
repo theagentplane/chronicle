@@ -1,29 +1,29 @@
 {
-  "trace_id": "262f35c137d76fd5b62ea6c714e6fe7c",
-  "dims": {
+  "trace_id": "86afc39289c94e8fee14da815de3939d",
+  "attributes": {
     "chronicle.trace.name": "trace-invoice-currency-001"
   },
   "spans": [
     {
-      "envelope_id": "3730d4c084f8f069",
-      "boundary_id": "agent",
-      "boundary_kind": "llm",
+      "envelope_id": "d635efab59e733e9",
+      "name": "agent",
+      "kind": "llm",
       "invocation_index": 1,
       "sequence": 1,
       "fixture": "001-agent-1.json"
     },
     {
-      "envelope_id": "0944c6ad5831a3ec",
-      "boundary_id": "create_invoice",
-      "boundary_kind": "tool",
+      "envelope_id": "994fdcbba9ab9b02",
+      "name": "create_invoice",
+      "kind": "tool",
       "invocation_index": 1,
       "sequence": 2,
       "fixture": "002-create_invoice-1.json"
     },
     {
-      "envelope_id": "df26ee948b8a2513",
-      "boundary_id": "agent",
-      "boundary_kind": "llm",
+      "envelope_id": "da4cfa7664d32ad9",
+      "name": "agent",
+      "kind": "llm",
       "invocation_index": 2,
       "sequence": 3,
       "fixture": "003-agent-2.json"
@@ -31,25 +31,25 @@
   ],
   "nodes": [
     {
-      "envelope_id": "3730d4c084f8f069",
-      "boundary_id": "agent",
-      "boundary_kind": "llm",
+      "envelope_id": "d635efab59e733e9",
+      "name": "agent",
+      "kind": "llm",
       "invocation_index": 1,
       "sequence": 1,
       "fixture": "001-agent-1.json"
     },
     {
-      "envelope_id": "0944c6ad5831a3ec",
-      "boundary_id": "create_invoice",
-      "boundary_kind": "tool",
+      "envelope_id": "994fdcbba9ab9b02",
+      "name": "create_invoice",
+      "kind": "tool",
       "invocation_index": 1,
       "sequence": 2,
       "fixture": "002-create_invoice-1.json"
     },
     {
-      "envelope_id": "df26ee948b8a2513",
-      "boundary_id": "agent",
-      "boundary_kind": "llm",
+      "envelope_id": "da4cfa7664d32ad9",
+      "name": "agent",
+      "kind": "llm",
       "invocation_index": 2,
       "sequence": 3,
       "fixture": "003-agent-2.json"
@@ -57,8 +57,8 @@
   ],
   "edges": [],
   "roots": [
-    "3730d4c084f8f069",
-    "0944c6ad5831a3ec",
-    "df26ee948b8a2513"
+    "d635efab59e733e9",
+    "994fdcbba9ab9b02",
+    "da4cfa7664d32ad9"
   ]
 }

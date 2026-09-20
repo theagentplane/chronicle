@@ -135,8 +135,8 @@ def test_attribute_mapping_includes_model_and_tokens():
     from chronicle.envelope.schema import ActionResult, ContextMetadata, Envelope, InputState
 
     env = Envelope(
-        node_id="llm",
-        boundary_kind="llm",
+        name="llm",
+        kind="llm",
         metadata=ContextMetadata(model_version="gpt-4o", build_id="b"),
         input_state=InputState(messages=[{"role": "user", "content": "hi"}]),
         action_result=ActionResult(

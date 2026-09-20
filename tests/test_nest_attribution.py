@@ -17,16 +17,16 @@ def test_nested_boundaries_parent_to_active_span():
     def inner() -> str:
         return "ok"
 
-    with record("nest-demo", dims={"session_id": "s1", "user_id": "u1"}) as session:
+    with record("nest-demo", attributes={"session_id": "s1", "user_id": "u1"}) as session:
         assert outer() == "ok"
 
     envelopes = session.envelopes
     assert len(envelopes) == 2
-    by_name = {e.node_id: e for e in envelopes}
+    by_name = {e.name: e for e in envelopes}
     assert by_name["inner"].parent_envelope_id == by_name["outer"].envelope_id
     assert by_name["outer"].parent_envelope_id is None
-    assert by_name["inner"].dims["session_id"] == "s1"
-    assert by_name["outer"].dims["user_id"] == "u1"
+    assert by_name["inner"].attributes["session_id"] == "s1"
+    assert by_name["outer"].attributes["user_id"] == "u1"
 
 
 def test_sibling_roots_when_not_nested():
@@ -75,16 +75,16 @@ def test_boundaries_on_decision_nodes_not_full_agent():
 
     with record(
         "nodes-only",
-        dims={"session_id": "sess_1", "message_id": "msg_9"},
+        attributes={"session_id": "sess_1", "message_id": "msg_9"},
     ) as session:
         assert "summary of doc:vendors" in run_agent("vendors")
 
     envelopes = session.envelopes
-    assert [e.node_id for e in envelopes] == ["planner", "web_search", "summarizer"]
-    assert [e.boundary_kind for e in envelopes] == ["llm", "tool", "llm"]
+    assert [e.name for e in envelopes] == ["planner", "web_search", "summarizer"]
+    assert [e.kind for e in envelopes] == ["llm", "tool", "llm"]
     # Sequential top-level nodes → sibling roots (no fake "agent" parent span).
     assert all(e.parent_envelope_id is None for e in envelopes)
-    assert all(e.dims["session_id"] == "sess_1" for e in envelopes)
+    assert all(e.attributes["session_id"] == "sess_1" for e in envelopes)
 
     tree = ExecutionGraph.from_envelopes(session.trace_id, envelopes).to_otel_tree()
     assert "planner#1" in tree and "web_search#1" in tree and "summarizer#1" in tree
@@ -118,10 +118,10 @@ def test_graph_node_nests_llm_and_tool_children():
     def run(task: str) -> list[str]:
         return [researcher_node("pricing"), researcher_node("risks")]
 
-    with record("graph-node-nest", dims={"session_id": "s2"}) as session:
+    with record("graph-node-nest", attributes={"session_id": "s2"}) as session:
         assert run("compare") == ["doc:pricing", "doc:risks"]
 
-    researchers = [e for e in session.envelopes if e.node_id == "researcher"]
+    researchers = [e for e in session.envelopes if e.name == "researcher"]
     assert len(researchers) == 2
     assert all(r.parent_envelope_id is None for r in researchers)
 
@@ -130,8 +130,8 @@ def test_graph_node_nests_llm_and_tool_children():
             (e for e in session.envelopes if e.parent_envelope_id == r.envelope_id),
             key=lambda e: e.sequence,
         )
-        assert [e.node_id for e in kids] == ["llm", "web_search"]
-        assert [e.boundary_kind for e in kids] == ["llm", "tool"]
+        assert [e.name for e in kids] == ["llm", "web_search"]
+        assert [e.kind for e in kids] == ["llm", "tool"]
         assert kids[0].parent_envelope_id == r.envelope_id
         assert kids[1].parent_envelope_id == r.envelope_id
 
@@ -157,10 +157,10 @@ def test_wrap_llm_nests_under_graph_node():
     def researcher_node() -> str:
         return llm([{"role": "user", "content": "hi"}])["content"]
 
-    with record("wrap-nest", dims={"message_id": "m9"}) as session:
+    with record("wrap-nest", attributes={"message_id": "m9"}) as session:
         assert researcher_node() == "hi"
 
-    by_name = {e.node_id: e for e in session.envelopes}
+    by_name = {e.name: e for e in session.envelopes}
     assert by_name["llm"].parent_envelope_id == by_name["researcher"].envelope_id
-    assert by_name["llm"].dims.get("model_version") == "stub-model"
-    assert by_name["llm"].dims["message_id"] == "m9"
+    assert by_name["llm"].attributes.get("model_version") == "stub-model"
+    assert by_name["llm"].attributes["message_id"] == "m9"

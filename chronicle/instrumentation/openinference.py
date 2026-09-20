@@ -67,7 +67,7 @@ def span_envelope_attributes(envelope_data: dict[str, Any]) -> dict[str, Any]:
     return {
         "chronicle.envelope_id": envelope_data.get("envelope_id"),
         "chronicle.trace_id": envelope_data.get("trace_id"),
-        "chronicle.node_id": envelope_data.get("node_id"),
+        "chronicle.name": envelope_data.get("name"),
         "chronicle.model_version": envelope_data.get("metadata", {}).get("model_version"),
         "chronicle.build_id": envelope_data.get("metadata", {}).get("build_id"),
         "input.value": envelope_data.get("input_state"),

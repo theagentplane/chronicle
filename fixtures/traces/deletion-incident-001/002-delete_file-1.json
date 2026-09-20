@@ -1,14 +1,18 @@
 {
   "schema_version": "1.0",
-  "envelope_id": "791525089e9b7c2a",
-  "trace_id": "f7adbf4adb0fed8f265e2fde94016ca3",
-  "node_id": "delete_file",
-  "boundary_kind": "tool",
+  "envelope_id": "66b7a0bea69f868f",
+  "trace_id": "ffc77d2b4623e0d378a8585d71358f91",
+  "name": "delete_file",
+  "kind": "tool",
   "parent_envelope_id": null,
   "sequence": 2,
   "invocation_index": 1,
-  "timestamp": "2026-09-20T13:26:15.717675Z",
-  "started_at": "2026-09-20T13:26:15.717639Z",
+  "start_time": "2026-09-20T14:03:12.519065Z",
+  "end_time": "2026-09-20T14:03:12.519086Z",
+  "status": {
+    "code": "UNSET",
+    "message": null
+  },
   "metadata": {
     "model_version": "unknown",
     "sampling_params": {
@@ -43,13 +47,9 @@
       "path": "/prod/logs/app.log",
       "environment": "prod",
       "message": "Deleted /prod/logs/app.log in prod"
-    },
-    "error": null,
-    "error_type": null
+    }
   },
-  "dims": {
-    "chronicle.trace.name": "trace-deletion-incident-001",
-    "boundary_kind": "tool",
-    "node_id": "delete_file"
+  "attributes": {
+    "chronicle.trace.name": "trace-deletion-incident-001"
   }
 }

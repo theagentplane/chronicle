@@ -16,6 +16,7 @@ from chronicle.envelope.schema import (
     InputState,
     RagChunk,
     SamplingParams,
+    Status,
     ToolCall,
     ToolSchema,
 )
@@ -78,13 +79,17 @@ class EnvelopeRecorder:
         action_result: ActionResult,
         *,
         trace_id: str | None = None,
+        status: Status | None = None,
+        attributes: dict[str, str] | None = None,
     ) -> Envelope:
         envelope = Envelope(
             trace_id=trace_id or self.trace_id or new_trace_id(),
-            node_id=node_id,
+            name=node_id,
             metadata=self._build_metadata(node_id),
             input_state=input_state,
             action_result=action_result,
+            status=status or Status(),
+            attributes=attributes or {},
         )
         if self.redactors:
             from chronicle.redaction import apply_redactors
@@ -133,9 +138,11 @@ class EnvelopeRecorder:
                 self.record(node_id, input_state, action_result)
 
             def _on_error(input_state, exc):
-                self.record(node_id, input_state, ActionResult(
-                    error=str(exc), error_type=type(exc).__name__, finish_reason="error",
-                ))
+                self.record(
+                    node_id, input_state, ActionResult(finish_reason="error"),
+                    status=Status(code="ERROR", message=str(exc)),
+                    attributes={"error.type": type(exc).__name__},
+                )
 
             if inspect.iscoroutinefunction(fn):
                 @functools.wraps(fn)

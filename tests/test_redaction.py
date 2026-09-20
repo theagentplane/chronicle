@@ -87,3 +87,18 @@ def test_stored_file_is_redacted(tmp_path):
     on_disk = store_path.read_text(encoding="utf-8")
     assert SECRET_KEY not in on_disk
     assert "[REDACTED]" in on_disk
+
+
+def test_error_status_message_is_redacted():
+    @boundary("boom", kind="tool")
+    def boom():
+        raise RuntimeError("upstream rejected key sk-abcdefghijklmnopqrstuvwxyz123456")
+
+    session = reset_session()
+    session.redactors = default_redactors()
+    session.begin_trace("t-redact-error")
+    with pytest.raises(RuntimeError):
+        boom()
+    (env,) = session._recorded_envelopes
+    assert env.status.code == "ERROR"
+    assert "sk-abcdefghijklmnopqrstuvwxyz123456" not in (env.status.message or "")

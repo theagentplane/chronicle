@@ -96,11 +96,11 @@ def summarize_tool_input(inp: InputState) -> str:
 
 
 def summarize_envelope_input(env: Envelope) -> str:
-    if env.boundary_kind == "llm" and env.invocation_index > 1:
+    if env.kind == "llm" and env.invocation_index > 1:
         tool_result = env.input_state.graph_state.get("tool_result")
         if tool_result:
             return truncate(f"tool_result: {tool_result.get('status', tool_result)}")
-    if env.boundary_kind == "llm":
+    if env.kind == "llm":
         return summarize_llm_input(env.input_state)
     return summarize_tool_input(env.input_state)
 

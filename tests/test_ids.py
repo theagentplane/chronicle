@@ -13,7 +13,7 @@ from chronicle.ids import is_span_id, is_trace_id, new_span_id, new_trace_id
 
 def _env(**overrides) -> Envelope:
     return Envelope(
-        node_id="agent",
+        name="agent",
         metadata=ContextMetadata(model_version="m", build_id="b"),
         input_state=InputState(messages=[]),
         action_result=ActionResult(),
@@ -50,13 +50,15 @@ def test_default_envelope_ids_are_valid():
     assert env.parent_envelope_id is None
 
 
-def test_otel_named_getters():
-    env = _env(dims={"k": "v"})
+def test_otel_named_fields_and_getters():
+    env = _env(attributes={"k": "v"})
     assert env.span_id == env.envelope_id
     assert env.parent_span_id is None
-    assert env.name == env.node_id == "agent"
-    assert env.end_time == env.timestamp
-    assert env.start_time == env.timestamp  # no started_at recorded
+    assert env.boundary_id == env.name == "agent"
+    assert env.kind == "custom"
+    assert env.start_time is None  # no span was opened
+    assert env.end_time is not None
+    assert env.status.code == "UNSET" and env.status.message is None
     assert env.attributes == {"k": "v"}
 
 
@@ -70,7 +72,7 @@ def test_record_name_is_a_label_not_the_trace_id():
     assert is_trace_id(session.trace_id)
     (env,) = session.envelopes
     assert env.trace_id == session.trace_id
-    assert env.dims["chronicle.trace.name"] == "my-incident"
+    assert env.attributes["chronicle.trace.name"] == "my-incident"
     assert is_span_id(env.envelope_id)
 
 
@@ -91,4 +93,4 @@ def test_unnamed_trace_has_no_name_dim():
 
     with chronicle.record() as session:
         step()
-    assert "chronicle.trace.name" not in session.envelopes[0].dims
+    assert "chronicle.trace.name" not in session.envelopes[0].attributes

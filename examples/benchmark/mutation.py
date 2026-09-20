@@ -266,7 +266,7 @@ def _record(mod: ModuleType, workdir: Path) -> tuple[Path, int]:
     mod.run_agent()
     trace_dir = workdir / mod.NAME
     session.export_trace(trace_dir)
-    model_crossings = sum(1 for e in session._recorded_envelopes if e.boundary_kind == "llm")
+    model_crossings = sum(1 for e in session._recorded_envelopes if e.kind == "llm")
     return trace_dir, model_crossings
 
 

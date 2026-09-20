@@ -123,7 +123,7 @@ def test_e2e_observer_records_spend_and_envelopes():
     assert summarize("long agent output")["status"] == "ok"
 
     assert len(session._recorded_envelopes) == 2
-    assert [e.node_id for e in session._recorded_envelopes] == ["search", "summarize"]
+    assert [e.name for e in session._recorded_envelopes] == ["search", "summarize"]
     assert len(manager.crossings) == 2
     assert manager.spend == 35.0
     assert manager.halted is False
@@ -183,7 +183,7 @@ def test_e2e_halted_rejects_subsequent_crossings():
     assert manager.spend == spend_after_halt
     # search still executed + recorded before on_crossing rejected
     assert len(session._recorded_envelopes) == 2
-    assert session._recorded_envelopes[-1].node_id == "search"
+    assert session._recorded_envelopes[-1].name == "search"
 
 
 @pytest.mark.layer1

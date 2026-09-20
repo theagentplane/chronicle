@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   bytes, and no longer free-form strings. Envelopes with UUID or free-form ids (fixtures
   recorded before this release) no longer load: re-record them.
 - **`record(name=...)` / `begin_trace(name=...)`.** The first argument is now a human
-  label, stored as the `chronicle.trace.name` dim on every envelope. `trace_id=` is
+  label, stored as the `chronicle.trace.name` attribute on every envelope. `trace_id=` is
   keyword-only and accepts only an OTel trace id. Calls like `record("incident-001")`
   keep working, but the label is no longer the trace id.
 - **Exported OTel spans reuse the envelope's ids** (trace id, span id, parent) and its
@@ -33,9 +33,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   single-envelope samples (now `fixtures/envelopes/support-agent-001.json`). Sequential
   top-level boundaries are sibling roots (nest-stack parenting), not a linear chain.
 
+- **Envelope fields use OTel span names** (`schema_version` is now `2.0`; older envelopes
+  no longer load, so re-record them):
+
+  | Before | Now |
+  |---|---|
+  | `node_id` | `name` (the boundary id; `boundary_id` stays as a read-only getter) |
+  | `boundary_kind` | `kind` (`llm` / `tool` / `router` / `custom`) |
+  | `started_at` | `start_time` |
+  | `timestamp` | `end_time` |
+  | `dims` (and `record(dims=...)`, `session.dims`, `ExecutionGraph.dims`) | `attributes` |
+  | `action_result.error` / `error_type` | `status` (`code` `UNSET`/`OK`/`ERROR` + `message`) and the `error.type` attribute |
+
+  The `boundary_kind` / `node_id` stamps are no longer copied into `attributes` (they are
+  fields now), and exported OTel spans carry envelope attributes under their own keys
+  instead of `chronicle.dims.<key>`. `graph.json` span entries use `name` / `kind`, and
+  its top-level `dims` is now `attributes`. The failure status message is redacted like
+  the rest of the envelope. The `@boundary(kind=...)` argument is unchanged.
+
 ### Added
-- **OTel-named getters on `Envelope`**: `span_id`, `parent_span_id` (already present),
-  plus `name`, `start_time`, `end_time`, `attributes`. Stored field names are unchanged.
+- `chronicle.Status` and `Envelope.status`; `boundary_id`, `span_id` and
+  `parent_span_id` remain as getters.
 - `chronicle.ids`: `new_trace_id`, `new_span_id`, `is_trace_id`, `is_span_id`.
 - **`chronicle.instrument(graph)`**: one call auto-instruments every node *and*
   every `add_conditional_edges` routing function on a LangGraph `StateGraph`,

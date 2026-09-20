@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -82,10 +82,14 @@ class ActionResult(BaseModel):
     finish_reason: str | None = None
     token_usage: dict[str, int] = Field(default_factory=dict)
     raw_response: dict[str, Any] | None = None
-    # Set when the boundary raised. Optional and default None, so pre-0.2
-    # envelopes still load unchanged.
-    error: str | None = None
-    error_type: str | None = None
+
+
+class Status(BaseModel):
+    """OTel span status. ``UNSET`` by default; ``ERROR`` (with a message) when the
+    boundary raised. The exception class goes in the ``error.type`` attribute."""
+
+    code: Literal["UNSET", "OK", "ERROR"] = "UNSET"
+    message: str | None = None
 
 
 class Envelope(BaseModel):
@@ -98,33 +102,37 @@ class Envelope(BaseModel):
     OTel mapping: ``trace_id`` is the OTel trace id (32 lowercase hex chars);
     ``envelope_id`` is the span id (16 lowercase hex chars); ``parent_envelope_id``
     is ``parent_span_id``. Both are validated to OTel's byte formats, so an envelope
-    exports as a span without translating ids. ``dims`` are flat string attributes
-    (trace-level dims are copied onto every span at record time; envelope-level
-    dims are span-specific). Read-only OTel-named getters: ``span_id``,
-    ``parent_span_id``, ``name``, ``start_time``, ``end_time``, ``attributes``.
+    exports as a span without translating ids. Other span fields use OTel names:
+    ``name`` (the boundary id), ``kind`` (llm / tool / router / custom),
+    ``start_time`` / ``end_time``, ``status`` and ``attributes`` (flat string
+    attributes: trace-level ones are copied onto every span at record time,
+    envelope-level ones are span-specific). ``span_id`` and ``parent_span_id`` are
+    read-only getters for ``envelope_id`` and ``parent_envelope_id``.
     """
 
-    schema_version: str = "1.0"
+    schema_version: str = "2.0"
     envelope_id: str = Field(default_factory=new_span_id)
     trace_id: str = Field(default_factory=new_trace_id)
-    node_id: str
-    boundary_kind: str = "custom"
+    name: str
+    kind: str = "custom"
     parent_envelope_id: str | None = None
     sequence: int = 0
     invocation_index: int = 1
-    # End time (when the envelope was written). Prefer ``started_at`` for span start.
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    # Span start (OTel). None on pre-nest fixtures; waterfall falls back to timestamp.
-    started_at: datetime | None = None
+    # Span start (OTel). None when no span was opened; the waterfall falls back to end_time.
+    start_time: datetime | None = None
+    # Span end: when the envelope was written.
+    end_time: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    status: Status = Field(default_factory=Status)
     metadata: ContextMetadata
     input_state: InputState
     action_result: ActionResult
-    # Flat string→string attributes (OTel-style). Missing on pre-0.4 fixtures.
-    dims: dict[str, str] = Field(default_factory=dict)
+    # Flat string→string span attributes (OTel-style).
+    attributes: dict[str, str] = Field(default_factory=dict)
 
     @property
     def boundary_id(self) -> str:
-        return self.node_id
+        """The id of the boundary that produced this envelope (its span ``name``)."""
+        return self.name
 
     @property
     def span_id(self) -> str:
@@ -135,26 +143,6 @@ class Envelope(BaseModel):
     def parent_span_id(self) -> str | None:
         """OTel alias for ``parent_envelope_id``."""
         return self.parent_envelope_id
-
-    @property
-    def name(self) -> str:
-        """OTel span name: the id of the boundary that produced this envelope."""
-        return self.node_id
-
-    @property
-    def start_time(self) -> datetime:
-        """OTel span start. Falls back to ``timestamp`` on pre-nest fixtures."""
-        return self.started_at or self.timestamp
-
-    @property
-    def end_time(self) -> datetime:
-        """OTel span end (alias for ``timestamp``)."""
-        return self.timestamp
-
-    @property
-    def attributes(self) -> dict[str, str]:
-        """OTel span attributes (alias for ``dims``)."""
-        return self.dims
 
     @field_validator("trace_id")
     @classmethod
@@ -171,9 +159,11 @@ class Envelope(BaseModel):
     def _check_parent_envelope_id(cls, v: str | None) -> str | None:
         return None if v is None else validate_span_id(v)
 
-    @field_validator("timestamp", mode="before")
+    @field_validator("start_time", "end_time", mode="before")
     @classmethod
-    def _ensure_utc(cls, v: datetime | str) -> datetime:
+    def _ensure_utc(cls, v: datetime | str | None) -> datetime | None:
+        if v is None:
+            return None
         if isinstance(v, str):
             v = datetime.fromisoformat(v.replace("Z", "+00:00"))
         if v.tzinfo is None:
