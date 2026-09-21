@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from chronicle.envelope.schema import Envelope, rag_chunks_from
+from chronicle.envelope.schema import Envelope
 from chronicle.judge import EvaluationRubric, JudgeRunner, MockJudgeClient
 
 FIXTURES = Path(__file__).parent.parent / "fixtures" / "envelopes"
@@ -36,7 +36,7 @@ def test_rubric_generates_judge_prompt(sample_envelope: Envelope):
     prompt = rubric.judge_prompt(
         input_context="user question",
         completion=sample_envelope.output.llm.text or "",
-        rag_chunks=[c.content for c in rag_chunks_from(sample_envelope.input.arguments)],
+        rag_chunks=[c["content"] for c in sample_envelope.input.arguments["rag_chunks"]],
     )
     assert "grounding" in prompt
     assert "API keys can be reset" in prompt

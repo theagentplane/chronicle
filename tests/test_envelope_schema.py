@@ -6,7 +6,6 @@ from pathlib import Path
 import pytest
 
 from chronicle import Envelope, Input, Output
-from chronicle.envelope.schema import rag_chunks_from
 from chronicle.envelope.store import EnvelopeStore
 
 
@@ -18,7 +17,7 @@ def test_envelope_round_trip():
     restored = Envelope.from_json(envelope.to_json())
     assert restored.envelope_id == envelope.envelope_id
     assert restored.model == "stub-support-model-1"
-    assert len(rag_chunks_from(restored.input.arguments)) == 1
+    assert len(restored.input.arguments["rag_chunks"]) == 1
 
 
 def test_envelope_has_no_metadata_object():

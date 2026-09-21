@@ -63,7 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`InputState` → `Input`** (`Envelope.input_state` → `Envelope.input`) with a minimal shape:
   `arguments` (the call's arguments by name; replaces `graph_state`) and `messages` (typed
   `Message`s, LLM boundaries only). `system_prompt`, `rag_chunks` and `content_hash` are no
-  longer fields; read chunks with `chronicle.envelope.schema.rag_chunks_from(input.arguments)`.
+  longer fields (a `rag_chunks` argument stays in `input.arguments`), and `RagChunk` / `rag_chunks_from` are removed.
 - **`ActionResult` → `Output`** (`Envelope.action_result` → `Envelope.output`):
   `value` (the JSON-safe return value; replaces `raw_response`) and `llm`, one `LLMOutput`
   bundle (`text`, `tool_calls`, `finish_reason`, `usage`) for LLM boundaries. `usage` is a

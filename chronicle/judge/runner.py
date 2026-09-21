@@ -6,8 +6,16 @@ import json
 from dataclasses import dataclass
 from typing import Any, Protocol
 
-from chronicle.envelope.schema import Envelope, rag_chunks_from
+from chronicle.envelope.schema import Envelope
 from chronicle.judge.rubric import Criterion, EvaluationRubric, RubricScore
+
+
+def _chunk_texts(arguments: dict[str, Any]) -> list[str]:
+    """Text of the retrieved chunks in a call's arguments (``rag_chunks`` or ``context``):
+    a chunk is a string or a mapping with ``content``."""
+    chunks = arguments.get("rag_chunks") or arguments.get("context") or []
+    texts = [c if isinstance(c, str) else c.get("content") for c in chunks if isinstance(c, (str, dict))]
+    return [t for t in texts if isinstance(t, str)]
 
 
 class JudgeClient(Protocol):
@@ -42,7 +50,7 @@ class JudgeRunner:
         messages = [m.model_dump() for m in envelope.input.messages]
         input_text = json.dumps(messages or envelope.input.arguments, indent=2, default=str)
         completion = (envelope.output.llm.text if envelope.output.llm else None) or ""
-        rag_chunks = [c.content for c in rag_chunks_from(envelope.input.arguments)]
+        rag_chunks = _chunk_texts(envelope.input.arguments)
 
         prompt = self.rubric.judge_prompt(
             input_context=input_text,

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
 from datetime import datetime, timezone
 from typing import Any, Literal
 
@@ -189,31 +188,6 @@ class Usage(BaseModel):
 
     input_tokens: int | None = None
     output_tokens: int | None = None
-
-
-class RagChunk(BaseModel):
-    """One retrieved passage. Not stored on the envelope itself: read a call's chunks
-    back out of ``Input.arguments`` with :func:`rag_chunks_from`."""
-
-    chunk_id: str
-    content: str
-    source: str | None = None
-    score: float | None = None
-    index_version: str | None = None
-    metadata: dict[str, Any] = Field(default_factory=dict)
-
-
-def rag_chunks_from(arguments: Mapping[str, Any]) -> list[RagChunk]:
-    """Retrieved chunks from a call's arguments (``rag_chunks`` or ``context``), or ``[]``."""
-    out: list[RagChunk] = []
-    for chunk in arguments.get("rag_chunks") or arguments.get("context") or []:
-        if isinstance(chunk, RagChunk):
-            out.append(chunk)
-        elif isinstance(chunk, Mapping) and "chunk_id" in chunk and "content" in chunk:
-            out.append(RagChunk(**chunk))
-        elif isinstance(chunk, str):
-            out.append(RagChunk(chunk_id=str(len(out)), content=chunk))
-    return out
 
 
 def _json_attribute(raw: Any) -> dict[str, Any] | None:
