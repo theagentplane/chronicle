@@ -43,7 +43,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 
 def boundary(
-    boundary_id: str,
+    name: str,
     *,
     kind: str = "custom",
     extract_input: Callable[..., Input] | None = None,
@@ -76,7 +76,7 @@ def boundary(
     def decorator(fn: F) -> F:
         return _bind_boundary(  # type: ignore[return-value]
             fn,
-            boundary_id,
+            name,
             kind,
             extract_input=extract_input,
             extract_result=extract_result,
@@ -87,7 +87,7 @@ def boundary(
 
 
 def wrap_llm(
-    boundary_id: str,
+    name: str,
     dispatch: Callable[..., Any],
     *,
     extract_input: Callable[..., Input] | None = None,
@@ -109,7 +109,7 @@ def wrap_llm(
     """
     return _bind_boundary(
         dispatch,
-        boundary_id,
+        name,
         "llm",
         extract_input=extract_input,
         extract_result=extract_result,
@@ -119,7 +119,7 @@ def wrap_llm(
 
 def _bind_boundary(
     fn: Callable[..., Any],
-    boundary_id: str,
+    name: str,
     kind: str,
     *,
     extract_input: Callable[..., Input] | None,
@@ -138,7 +138,7 @@ def _bind_boundary(
     static_attributes = (
         None
         if kind == "llm"
-        else infer_method_schema(fn, boundary_id).to_attributes(tool=kind == "tool")
+        else infer_method_schema(fn, name).to_attributes(tool=kind == "tool")
     )
 
     if inspect.iscoroutinefunction(fn):
@@ -154,14 +154,14 @@ def _bind_boundary(
                 session = get_session()
             if session.mode == SessionMode.LIVE:
                 return await _record_call_async(
-                    session, fn, boundary_id, kind, args, kwargs,
+                    session, fn, name, kind, args, kwargs,
                     extract_input, extract_result, extract_metadata, cached_sig, static_attributes,
                 )
-            invocation_index = session._replay_cursor.get(boundary_id, 0) + 1
-            if session.replay_plan.should_stub(boundary_id, invocation_index):
-                return session.stub_result(boundary_id, kind)
+            invocation_index = session._replay_cursor.get(name, 0) + 1
+            if session.replay_plan.should_stub(name, invocation_index):
+                return session.stub_result(name, kind)
             return await _live_cutpoint_call_async(
-                session, fn, boundary_id, kind, args, kwargs,
+                session, fn, name, kind, args, kwargs,
                 extract_input, invocation_index, cached_sig,
             )
 
@@ -178,14 +178,14 @@ def _bind_boundary(
             session = get_session()
         if session.mode == SessionMode.LIVE:
             return _record_call(
-                session, fn, boundary_id, kind, args, kwargs,
+                session, fn, name, kind, args, kwargs,
                 extract_input, extract_result, extract_metadata, cached_sig, static_attributes,
             )
-        invocation_index = session._replay_cursor.get(boundary_id, 0) + 1
-        if session.replay_plan.should_stub(boundary_id, invocation_index):
-            return session.stub_result(boundary_id, kind)
+        invocation_index = session._replay_cursor.get(name, 0) + 1
+        if session.replay_plan.should_stub(name, invocation_index):
+            return session.stub_result(name, kind)
         return _live_cutpoint_call(
-            session, fn, boundary_id, kind, args, kwargs,
+            session, fn, name, kind, args, kwargs,
             extract_input, invocation_index, cached_sig,
         )
 
@@ -196,7 +196,7 @@ def _bind_boundary(
 # Recording (LIVE mode)
 # --------------------------------------------------------------------------- #
 
-def _apply_on_enter(session, boundary_id, kind, input, kwargs) -> tuple[dict, bool]:
+def _apply_on_enter(session, name, kind, input, kwargs) -> tuple[dict, bool]:
     """Run ``on_enter`` if set. Returns ``(call_kwargs, entered)``.
 
     ``entered`` is True only when ``on_enter`` returned (so ``on_leave`` can pair).
@@ -206,23 +206,23 @@ def _apply_on_enter(session, boundary_id, kind, input, kwargs) -> tuple[dict, bo
     call_kwargs = dict(kwargs)
     if session.on_enter is None:
         return call_kwargs, False
-    patch = session.on_enter(boundary_id, kind, input)
+    patch = session.on_enter(name, kind, input)
     if patch:
         call_kwargs.update(dict(patch))
     return call_kwargs, True
 
 
-def _run_on_leave(session, boundary_id, kind, input, entered: bool) -> None:
+def _run_on_leave(session, name, kind, input, entered: bool) -> None:
     if entered and session.on_leave is not None:
-        session.on_leave(boundary_id, kind, input)
+        session.on_leave(name, kind, input)
 
 
 def _record_call(
-    session, fn, boundary_id, kind, args, kwargs,
+    session, fn, name, kind, args, kwargs,
     extract_input, extract_result, extract_metadata, cached_sig=None, static_attributes=None,
 ):
     input = _capture_input(fn, kind, args, kwargs, extract_input, cached_sig)
-    call_kwargs, entered = _apply_on_enter(session, boundary_id, kind, input, kwargs)
+    call_kwargs, entered = _apply_on_enter(session, name, kind, input, kwargs)
     # Open the span before the body so nested boundaries parent here (OTel Context).
     span_id, parent_id = session.start_span()
     try:
@@ -230,50 +230,50 @@ def _record_call(
             result = fn(*args, **call_kwargs)
         except Exception as exc:
             _record_failure(
-                session, boundary_id, kind, input, exc, static_attributes,
+                session, name, kind, input, exc, static_attributes,
                 envelope_id=span_id, parent_envelope_id=parent_id,
             )
             raise
         _record_success(
-            session, boundary_id, kind, input, result, extract_result, extract_metadata,
+            session, name, kind, input, result, extract_result, extract_metadata,
             static_attributes,
             envelope_id=span_id, parent_envelope_id=parent_id,
         )
         return result
     finally:
         session.end_span()
-        _run_on_leave(session, boundary_id, kind, input, entered)
+        _run_on_leave(session, name, kind, input, entered)
 
 
 async def _record_call_async(
-    session, fn, boundary_id, kind, args, kwargs,
+    session, fn, name, kind, args, kwargs,
     extract_input, extract_result, extract_metadata, cached_sig=None, static_attributes=None,
 ):
     input = _capture_input(fn, kind, args, kwargs, extract_input, cached_sig)
-    call_kwargs, entered = _apply_on_enter(session, boundary_id, kind, input, kwargs)
+    call_kwargs, entered = _apply_on_enter(session, name, kind, input, kwargs)
     span_id, parent_id = session.start_span()
     try:
         try:
             result = await fn(*args, **call_kwargs)
         except Exception as exc:
             _record_failure(
-                session, boundary_id, kind, input, exc, static_attributes,
+                session, name, kind, input, exc, static_attributes,
                 envelope_id=span_id, parent_envelope_id=parent_id,
             )
             raise
         _record_success(
-            session, boundary_id, kind, input, result, extract_result, extract_metadata,
+            session, name, kind, input, result, extract_result, extract_metadata,
             static_attributes,
             envelope_id=span_id, parent_envelope_id=parent_id,
         )
         return result
     finally:
         session.end_span()
-        _run_on_leave(session, boundary_id, kind, input, entered)
+        _run_on_leave(session, name, kind, input, entered)
 
 
 def _record_success(
-    session, boundary_id, kind, input, result, extract_result, extract_metadata,
+    session, name, kind, input, result, extract_result, extract_metadata,
     static_attributes=None,
     *,
     envelope_id: str | None = None,
@@ -284,23 +284,23 @@ def _record_success(
     output = result_to_output(recorded, kind)
     attributes = _call_attributes(recorded, kind, extract_metadata, input, static_attributes)
     session.record_envelope(
-        boundary_id, kind, input, output,
+        name, kind, input, output,
         envelope_id=envelope_id, parent_envelope_id=parent_envelope_id,
         attributes=attributes,
     )
     if session.on_crossing is not None:
-        session.on_crossing(boundary_id, kind, input, result)
+        session.on_crossing(name, kind, input, result)
 
 
 def _record_failure(
-    session, boundary_id, kind, input, exc, static_attributes=None,
+    session, name, kind, input, exc, static_attributes=None,
     *,
     envelope_id: str | None = None,
     parent_envelope_id: str | None = None,
 ):
     """Record a failed crossing so incidents that raise are still reproducible."""
     session.record_envelope(
-        boundary_id, kind, input, Output(),
+        name, kind, input, Output(),
         envelope_id=envelope_id, parent_envelope_id=parent_envelope_id,
         status=Status(code="ERROR", message=str(exc)),
         attributes={**(static_attributes or {}), "error.type": type(exc).__name__},
@@ -341,51 +341,51 @@ def _call_attributes(result, kind, extract_metadata, input, static_attributes):
 # --------------------------------------------------------------------------- #
 
 def _live_cutpoint_call(
-    session, fn, boundary_id, kind, args, kwargs, extract_input, invocation_index, cached_sig=None,
+    session, fn, name, kind, args, kwargs, extract_input, invocation_index, cached_sig=None,
 ):
     input = _capture_input(fn, kind, args, kwargs, extract_input, cached_sig)
-    session.capture_live_input(boundary_id, invocation_index, input)
-    call_kwargs, entered = _apply_on_enter(session, boundary_id, kind, input, kwargs)
+    session.capture_live_input(name, invocation_index, input)
+    call_kwargs, entered = _apply_on_enter(session, name, kind, input, kwargs)
     try:
         try:
             result = fn(*args, **call_kwargs)
         except Exception:
-            _advance_cutpoint(session, boundary_id, invocation_index)
+            _advance_cutpoint(session, name, invocation_index)
             raise
-        _finish_cutpoint(session, boundary_id, kind, input, result, invocation_index)
+        _finish_cutpoint(session, name, kind, input, result, invocation_index)
         return result
     finally:
-        _run_on_leave(session, boundary_id, kind, input, entered)
+        _run_on_leave(session, name, kind, input, entered)
 
 
 async def _live_cutpoint_call_async(
-    session, fn, boundary_id, kind, args, kwargs, extract_input, invocation_index, cached_sig=None,
+    session, fn, name, kind, args, kwargs, extract_input, invocation_index, cached_sig=None,
 ):
     input = _capture_input(fn, kind, args, kwargs, extract_input, cached_sig)
-    session.capture_live_input(boundary_id, invocation_index, input)
-    call_kwargs, entered = _apply_on_enter(session, boundary_id, kind, input, kwargs)
+    session.capture_live_input(name, invocation_index, input)
+    call_kwargs, entered = _apply_on_enter(session, name, kind, input, kwargs)
     try:
         try:
             result = await fn(*args, **call_kwargs)
         except Exception:
-            _advance_cutpoint(session, boundary_id, invocation_index)
+            _advance_cutpoint(session, name, invocation_index)
             raise
-        _finish_cutpoint(session, boundary_id, kind, input, result, invocation_index)
+        _finish_cutpoint(session, name, kind, input, result, invocation_index)
         return result
     finally:
-        _run_on_leave(session, boundary_id, kind, input, entered)
+        _run_on_leave(session, name, kind, input, entered)
 
 
-def _finish_cutpoint(session, boundary_id, kind, input, result, invocation_index):
-    session.capture_live_result(boundary_id, invocation_index, result)
-    _advance_cutpoint(session, boundary_id, invocation_index)
+def _finish_cutpoint(session, name, kind, input, result, invocation_index):
+    session.capture_live_result(name, invocation_index, result)
+    _advance_cutpoint(session, name, invocation_index)
     if session.on_crossing is not None:
-        session.on_crossing(boundary_id, kind, input, result)
+        session.on_crossing(name, kind, input, result)
 
 
-def _advance_cutpoint(session, boundary_id, invocation_index):
-    session.next_invocation(boundary_id)
-    session._replay_cursor[boundary_id] = invocation_index
+def _advance_cutpoint(session, name, invocation_index):
+    session.next_invocation(name)
+    session._replay_cursor[name] = invocation_index
 
 
 # --------------------------------------------------------------------------- #

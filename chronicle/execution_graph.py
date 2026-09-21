@@ -108,15 +108,15 @@ class ExecutionGraph:
             key=lambda e: e.sequence,
         )
 
-    def envelope(self, boundary_id: str, invocation_index: int) -> Envelope:
+    def envelope(self, name: str, invocation_index: int) -> Envelope:
         matches = [
             n.envelope
             for n in self.nodes.values()
-            if n.envelope.name == boundary_id
+            if n.envelope.name == name
             and n.envelope.invocation_index == invocation_index
         ]
         if not matches:
-            raise KeyError(f"No envelope for {boundary_id} invocation {invocation_index}")
+            raise KeyError(f"No envelope for {name} invocation {invocation_index}")
         return matches[0]
 
     @property

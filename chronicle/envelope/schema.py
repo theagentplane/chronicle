@@ -31,7 +31,7 @@ class Envelope(BaseModel):
     ``envelope_id`` is the span id (16 lowercase hex chars); ``parent_envelope_id``
     is ``parent_span_id``. Both are validated to OTel's byte formats, so an envelope
     exports as a span without translating ids. Other span fields use OTel names:
-    ``name`` (the boundary id), ``kind`` (llm / tool / router / custom),
+    ``name`` (the boundary name), ``kind`` (llm / tool / router / custom),
     ``start_time`` / ``end_time``, ``status`` and ``attributes`` (trace-level ones are
     copied onto every span at record time, envelope-level ones are span-specific).
     ``span_id`` and ``parent_span_id`` are read-only getters for ``envelope_id`` and
@@ -56,11 +56,6 @@ class Envelope(BaseModel):
     # OTel span attributes: primitives or lists of primitives. Model, sampling and tool
     # definitions live here under the GenAI semantic-convention keys.
     attributes: dict[str, AttributeValue] = Field(default_factory=dict)
-
-    @property
-    def boundary_id(self) -> str:
-        """The id of the boundary that produced this envelope (its span ``name``)."""
-        return self.name
 
     @property
     def span_id(self) -> str:

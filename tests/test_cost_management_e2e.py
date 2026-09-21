@@ -31,18 +31,18 @@ from chronicle.session import reset_session
 class BudgetExceeded(Exception):
     """Raised by the fake governor when cumulative spend exceeds budget."""
 
-    def __init__(self, spend: float, budget: float, boundary_id: str):
+    def __init__(self, spend: float, budget: float, name: str):
         self.spend = spend
         self.budget = budget
-        self.boundary_id = boundary_id
+        self.name = name
         super().__init__(
-            f"budget exceeded at {boundary_id!r}: spend={spend} > budget={budget}"
+            f"budget exceeded at {name!r}: spend={spend} > budget={budget}"
         )
 
 
 @dataclass
 class CrossingSpend:
-    boundary_id: str
+    name: str
     kind: str
     cost: float
     result: Any
@@ -63,27 +63,27 @@ class FakeCostManager:
     halted: bool = False
     crossings: list[CrossingSpend] = field(default_factory=list)
 
-    def cost_for(self, boundary_id: str) -> float:
-        return self.cost_by_boundary.get(boundary_id, self.default_cost)
+    def cost_for(self, name: str) -> float:
+        return self.cost_by_boundary.get(name, self.default_cost)
 
     def on_crossing(
         self,
-        boundary_id: str,
+        name: str,
         kind: str,
         input: Input,
         result: Any,
     ) -> None:
         if self.halted:
-            raise BudgetExceeded(self.spend, self.budget, boundary_id)
+            raise BudgetExceeded(self.spend, self.budget, name)
 
-        cost = self.cost_for(boundary_id)
+        cost = self.cost_for(name)
         self.spend += cost
         self.crossings.append(
-            CrossingSpend(boundary_id=boundary_id, kind=kind, cost=cost, result=result)
+            CrossingSpend(name=name, kind=kind, cost=cost, result=result)
         )
         if self.spend > self.budget:
             self.halted = True
-            raise BudgetExceeded(self.spend, self.budget, boundary_id)
+            raise BudgetExceeded(self.spend, self.budget, name)
 
 
 @boundary("search", kind="tool")
@@ -127,9 +127,9 @@ def test_e2e_observer_records_spend_and_envelopes():
     assert len(manager.crossings) == 2
     assert manager.spend == 35.0
     assert manager.halted is False
-    assert manager.crossings[0].boundary_id == "search"
+    assert manager.crossings[0].name == "search"
     assert manager.crossings[0].cost == 10.0
-    assert manager.crossings[1].boundary_id == "summarize"
+    assert manager.crossings[1].name == "summarize"
     assert manager.crossings[1].cost == 25.0
 
 
@@ -148,7 +148,7 @@ def test_e2e_budget_exceeded_signals_halt():
         search("second")  # spend=20 > 15
 
     err = exc_info.value
-    assert err.boundary_id == "search"
+    assert err.name == "search"
     assert err.spend == 20.0
     assert err.budget == 15.0
     assert manager.halted is True
@@ -261,7 +261,7 @@ def test_e2e_multi_crossing_cumulative_spend():
 
     assert exc_info.value.spend == 45.0
     assert manager.spend == 45.0
-    assert [c.boundary_id for c in manager.crossings] == [
+    assert [c.name for c in manager.crossings] == [
         "search",
         "search",
         "summarize",

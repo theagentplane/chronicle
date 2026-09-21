@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed (breaking)
+- **`boundary_id` is now `name`.** The boundary's name is one concept, matching `Envelope.name`: `@boundary(name, ...)`, `wrap_llm(name, ...)`, `ReplayPlan.stub/live/mode_for/should_stub(name, ...)`, `ChronicleSession` methods and `CallRecord.name`. The `Envelope.boundary_id` getter is removed; use `Envelope.name`. Positional calls and the `on_enter` / `on_leave` / `on_crossing` hooks (called positionally) are unaffected; keyword uses of `boundary_id=` and reads of `.boundary_id` must change.
 - **Removed `EnvelopeRecorder`** (`chronicle/envelope/capture.py`), `instrument_graph_nodes` and the LangGraph extractors (`chronicle/instrumentation/langgraph.py`), and `examples/langgraph_demo/agent.py`. Use `chronicle.record()`, `@boundary` and `chronicle.instrument_langgraph(nodes)`. `chronicle init` now points there too.
 - **OpenTelemetry-format ids.** `trace_id` is now an OTel trace id (32 lowercase hex
   chars, 16 bytes) and `envelope_id` / `parent_envelope_id` are OTel span ids (16
@@ -37,7 +38,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
   | Before | Now |
   |---|---|
-  | `node_id` | `name` (the boundary id; `boundary_id` stays as a read-only getter) |
+  | `node_id` | `name` (the boundary name) |
   | `boundary_kind` | `kind` (`llm` / `tool` / `router` / `custom`) |
   | `started_at` | `start_time` |
   | `timestamp` | `end_time` |
@@ -85,7 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `extract_metadata`, as `gen_ai.tool.definitions`.
 - `chronicle.LLMRequest`, a validated capture-side view (model, sampling, tools) that
   flattens into attributes with `to_attributes()`; `Envelope.model` / `Envelope.tool_schemas`.
-- `chronicle.Status` and `Envelope.status`; `boundary_id`, `span_id` and
+- `chronicle.Status` and `Envelope.status`; `span_id` and
   `parent_span_id` remain as getters.
 - `chronicle.ids`: `new_trace_id`, `new_span_id`, `is_trace_id`, `is_span_id`.
 - **`chronicle.instrument(graph)`**: one call auto-instruments every node *and*

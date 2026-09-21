@@ -41,7 +41,7 @@ class SessionMode(str, Enum):
 
 @dataclass
 class CallRecord:
-    boundary_id: str
+    name: str
     invocation_index: int
     mode: str
     envelope_id: str | None = None
@@ -57,16 +57,16 @@ class ChronicleSession:
     # Default model for LLM boundaries that do not surface their own.
     model: str | None = None
     # Optional observer for boundary crossings (LIVE record + LIVE cut-point).
-    # Signature: (boundary_id, kind, input, result) -> None
+    # Signature: (name, kind, input, result) -> None
     on_crossing: Callable[[str, str, Input, Any], None] | None = None
     # Optional pre-call hook (LIVE record + LIVE cut-point), after input capture
     # and before the wrapped function runs. May raise to abort (e.g. a governor
     # Halt). May return a mapping of kwargs to merge into the call (MUTATE).
-    # Signature: (boundary_id, kind, input) -> Mapping[str, Any] | None
+    # Signature: (name, kind, input) -> Mapping[str, Any] | None
     on_enter: Callable[[str, str, Input], Mapping[str, Any] | None] | None = None
     # Optional post-call cleanup (LIVE), always run after a successful on_enter
     # whether the function returned or raised. Signature:
-    # (boundary_id, kind, input) -> None
+    # (name, kind, input) -> None
     on_leave: Callable[[str, str, Input], None] | None = None
     # Optional observer fired with the full Envelope right after it is recorded
     # (LIVE). Used by exporters (e.g. OpenTelemetry) to emit one span per crossing.
@@ -172,9 +172,9 @@ class ChronicleSession:
             stack.pop()
         _envelope_stack.set(stack)
 
-    def next_invocation(self, boundary_id: str) -> int:
-        count = self._invocation_counts.get(boundary_id, 0) + 1
-        self._invocation_counts[boundary_id] = count
+    def next_invocation(self, name: str) -> int:
+        count = self._invocation_counts.get(name, 0) + 1
+        self._invocation_counts[name] = count
         return count
 
     def next_sequence(self) -> int:
@@ -183,7 +183,7 @@ class ChronicleSession:
 
     def record_envelope(
         self,
-        boundary_id: str,
+        name: str,
         kind: str,
         input: Input,
         output: Output,
@@ -193,7 +193,7 @@ class ChronicleSession:
         status: Status | None = None,
         attributes: dict[str, AttributeValue] | None = None,
     ) -> Envelope:
-        invocation_index = self.next_invocation(boundary_id)
+        invocation_index = self.next_invocation(name)
         sequence = self.next_sequence()
         # Prefer explicit ids from start_span (OTel Context nesting). Fall back to
         # linear last-finished only when the caller did not open a span.
@@ -226,7 +226,7 @@ class ChronicleSession:
             schema_version="2.0",
             envelope_id=envelope_id,
             trace_id=self.trace_id,
-            name=boundary_id,
+            name=name,
             kind=kind,
             parent_envelope_id=parent_id,
             sequence=sequence,
@@ -251,44 +251,44 @@ class ChronicleSession:
             self.store.append(envelope)
 
         self._call_log.append(
-            CallRecord(boundary_id, invocation_index, "record", envelope.envelope_id)
+            CallRecord(name, invocation_index, "record", envelope.envelope_id)
         )
         if self.on_record is not None:
             self.on_record(envelope)
         return envelope
 
-    def _fixture_for(self, boundary_id: str) -> Envelope:
+    def _fixture_for(self, name: str) -> Envelope:
         if self.fixture_graph is None:
             raise RuntimeError("No fixture graph loaded — call load_trace() first")
-        cursor = self._replay_cursor.get(boundary_id, 0) + 1
-        self._replay_cursor[boundary_id] = cursor
-        envelope = self.fixture_graph.envelope(boundary_id, cursor)
+        cursor = self._replay_cursor.get(name, 0) + 1
+        self._replay_cursor[name] = cursor
+        envelope = self.fixture_graph.envelope(name, cursor)
         self._call_log.append(
-            CallRecord(boundary_id, cursor, "stub", envelope.envelope_id)
+            CallRecord(name, cursor, "stub", envelope.envelope_id)
         )
         return envelope
 
-    def stub_result(self, boundary_id: str, kind: str) -> Any:
-        envelope = self._fixture_for(boundary_id)
+    def stub_result(self, name: str, kind: str) -> Any:
+        envelope = self._fixture_for(name)
         return envelope_to_return_value(envelope, kind)
 
-    def capture_live_input(self, boundary_id: str, invocation_index: int, input: Input) -> None:
-        self._captured_inputs[(boundary_id, invocation_index)] = input
+    def capture_live_input(self, name: str, invocation_index: int, input: Input) -> None:
+        self._captured_inputs[(name, invocation_index)] = input
 
-    def capture_live_result(self, boundary_id: str, invocation_index: int, result: Any) -> None:
-        self._captured_results[(boundary_id, invocation_index)] = result
+    def capture_live_result(self, name: str, invocation_index: int, result: Any) -> None:
+        self._captured_results[(name, invocation_index)] = result
         self._call_log.append(
-            CallRecord(boundary_id, invocation_index, "live", None)
+            CallRecord(name, invocation_index, "live", None)
         )
 
-    def captured_input(self, boundary_id: str, invocation_index: int) -> Input | None:
-        return self._captured_inputs.get((boundary_id, invocation_index))
+    def captured_input(self, name: str, invocation_index: int) -> Input | None:
+        return self._captured_inputs.get((name, invocation_index))
 
-    def captured_result(self, boundary_id: str, invocation_index: int) -> Any:
-        return self._captured_results.get((boundary_id, invocation_index))
+    def captured_result(self, name: str, invocation_index: int) -> Any:
+        return self._captured_results.get((name, invocation_index))
 
-    def invocation_count(self, boundary_id: str) -> int:
-        return sum(1 for c in self._call_log if c.boundary_id == boundary_id)
+    def invocation_count(self, name: str) -> int:
+        return sum(1 for c in self._call_log if c.name == name)
 
     def call_log(self) -> list[CallRecord]:
         return list(self._call_log)

@@ -58,8 +58,8 @@ def test_wrap_llm_invokes_on_crossing_with_kind_llm():
     session.enable_live()
     crossings: list[tuple] = []
 
-    def hook(boundary_id, kind, input, result):
-        crossings.append((boundary_id, kind, input, result))
+    def hook(name, kind, input, result):
+        crossings.append((name, kind, input, result))
 
     session.on_crossing = hook
     traced = wrap_llm("planner.chat", _complete)

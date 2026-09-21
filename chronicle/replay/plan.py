@@ -22,30 +22,30 @@ class ReplayPlan:
     default: BoundaryMode = BoundaryMode.STUB
     _overrides: dict[tuple[str, int | None], BoundaryMode] = field(default_factory=dict)
 
-    def stub(self, boundary_id: str, invocation: int | None = None) -> ReplayPlan:
-        self._overrides[(boundary_id, invocation)] = BoundaryMode.STUB
+    def stub(self, name: str, invocation: int | None = None) -> ReplayPlan:
+        self._overrides[(name, invocation)] = BoundaryMode.STUB
         if invocation is None:
-            self._overrides[(boundary_id, None)] = BoundaryMode.STUB
+            self._overrides[(name, None)] = BoundaryMode.STUB
         return self
 
-    def live(self, boundary_id: str, invocation: int | None = None) -> ReplayPlan:
-        self._overrides[(boundary_id, invocation)] = BoundaryMode.LIVE
+    def live(self, name: str, invocation: int | None = None) -> ReplayPlan:
+        self._overrides[(name, invocation)] = BoundaryMode.LIVE
         if invocation is None:
-            self._overrides[(boundary_id, None)] = BoundaryMode.LIVE
+            self._overrides[(name, None)] = BoundaryMode.LIVE
         return self
 
     def stub_all(self) -> ReplayPlan:
         self.default = BoundaryMode.STUB
         return self
 
-    def mode_for(self, boundary_id: str, invocation_index: int) -> BoundaryMode:
-        specific = self._overrides.get((boundary_id, invocation_index))
+    def mode_for(self, name: str, invocation_index: int) -> BoundaryMode:
+        specific = self._overrides.get((name, invocation_index))
         if specific is not None:
             return specific
-        general = self._overrides.get((boundary_id, None))
+        general = self._overrides.get((name, None))
         if general is not None:
             return general
         return self.default
 
-    def should_stub(self, boundary_id: str, invocation_index: int) -> bool:
-        return self.mode_for(boundary_id, invocation_index) == BoundaryMode.STUB
+    def should_stub(self, name: str, invocation_index: int) -> bool:
+        return self.mode_for(name, invocation_index) == BoundaryMode.STUB

@@ -27,8 +27,8 @@ def test_on_crossing_invoked_in_live_record():
     session.enable_live()
     crossings: list[tuple] = []
 
-    def hook(boundary_id, kind, input, result):
-        crossings.append((boundary_id, kind, input, result))
+    def hook(name, kind, input, result):
+        crossings.append((name, kind, input, result))
 
     session.on_crossing = hook
 

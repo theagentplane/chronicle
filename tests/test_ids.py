@@ -53,7 +53,7 @@ def test_otel_named_fields_and_getters():
     env = _env(attributes={"k": "v"})
     assert env.span_id == env.envelope_id
     assert env.parent_span_id is None
-    assert env.boundary_id == env.name == "agent"
+    assert env.name == env.name == "agent"
     assert env.kind == "custom"
     assert env.start_time is None  # no span was opened
     assert env.end_time is not None

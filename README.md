@@ -466,7 +466,7 @@ example TokenOps) attach an observer that fires after each live crossing:
 
 ```python
 session = reset_session()
-session.on_crossing = my_observer  # (boundary_id, kind, input, result) -> None
+session.on_crossing = my_observer  # (name, kind, input, result) -> None
 ```
 
 It runs after a live envelope record and a live cut-point capture, and does not run on
@@ -576,7 +576,7 @@ feedback to those ids, then to `trace_id`.
 Open the fixture with `replay_trace(fixture, plan)` in a `with` block, run your agent,
 and assert. Two things to read from the session:
 
-- `session.captured_result(boundary_id, invocation_index)` is the return value of a
+- `session.captured_result(name, invocation_index)` is the return value of a
   boundary you ran **live** (your cut-point).
 - `session.call_log()` is every boundary crossing in order, each tagged `record`,
   `stub`, or `live`, so you can assert on control flow (which tools ran, in what order).

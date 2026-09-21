@@ -91,7 +91,7 @@ def instrument(graph: Any, *, kind: str = "custom") -> Any:
     return graph
 
 
-def _instrument_runnable(runnable: Any, boundary_id: str, kind: str) -> None:
+def _instrument_runnable(runnable: Any, name: str, kind: str) -> None:
     """Wrap a langgraph ``RunnableCallable``'s underlying function(s) as a
     Chronicle boundary, in place, so both ``invoke`` and ``ainvoke`` record.
 
@@ -108,14 +108,14 @@ def _instrument_runnable(runnable: Any, boundary_id: str, kind: str) -> None:
     func = getattr(runnable, "func", None)
     afunc = getattr(runnable, "afunc", None)
     if func is not None:
-        wrapped_sync = boundary(boundary_id, kind=kind)(func)
+        wrapped_sync = boundary(name, kind=kind)(func)
         runnable.func = wrapped_sync
         if isinstance(afunc, functools.partial):
             runnable.afunc = _executor_shim(wrapped_sync)
         elif afunc is not None:
-            runnable.afunc = boundary(boundary_id, kind=kind)(afunc)
+            runnable.afunc = boundary(name, kind=kind)(afunc)
     elif afunc is not None:
-        runnable.afunc = boundary(boundary_id, kind=kind)(afunc)
+        runnable.afunc = boundary(name, kind=kind)(afunc)
     runnable._chronicle_instrumented = True
 
 
@@ -141,7 +141,7 @@ def _executor_shim(sync_fn: Callable) -> Callable[..., Any]:
     return _call
 
 
-def wrap(client: Any, *, boundary_id: str = "llm") -> Any:
+def wrap(client: Any, *, name: str = "llm") -> Any:
     """Record every model call an OpenAI- or Anthropic-style client makes.
 
         client = chronicle.wrap(OpenAI())
@@ -159,7 +159,7 @@ def wrap(client: Any, *, boundary_id: str = "llm") -> Any:
             "or an Anthropic-style client (.messages.create). Use wrap_llm for other callables."
         )
     owner, attr, original = target
-    setattr(owner, attr, _wrap_completion(original, boundary_id))
+    setattr(owner, attr, _wrap_completion(original, name))
     return client
 
 
@@ -173,7 +173,7 @@ def _completion_target(client: Any):
     return None
 
 
-def _wrap_completion(create: Callable, boundary_id: str) -> Callable:
+def _wrap_completion(create: Callable, name: str) -> Callable:
     if inspect.iscoroutinefunction(create):
         @functools.wraps(create)
         async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -184,13 +184,13 @@ def _wrap_completion(create: Callable, boundary_id: str) -> Callable:
             else:
                 session = get_session()
             input = _input(kwargs)
-            if session.mode is SessionMode.REPLAY and _should_stub(session, boundary_id):
-                return _stub(session, boundary_id)
+            if session.mode is SessionMode.REPLAY and _should_stub(session, name):
+                return _stub(session, name)
             span_id, parent_id = session.start_span()
             try:
                 result = await create(*args, **kwargs)
                 _observe(
-                    session, boundary_id, input, result, kwargs,
+                    session, name, input, result, kwargs,
                     envelope_id=span_id, parent_envelope_id=parent_id,
                 )
                 return result
@@ -208,13 +208,13 @@ def _wrap_completion(create: Callable, boundary_id: str) -> Callable:
         else:
             session = get_session()
         input = _input(kwargs)
-        if session.mode is SessionMode.REPLAY and _should_stub(session, boundary_id):
-            return _stub(session, boundary_id)
+        if session.mode is SessionMode.REPLAY and _should_stub(session, name):
+            return _stub(session, name)
         span_id, parent_id = session.start_span()
         try:
             result = create(*args, **kwargs)
             _observe(
-                session, boundary_id, input, result, kwargs,
+                session, name, input, result, kwargs,
                 envelope_id=span_id, parent_envelope_id=parent_id,
             )
             return result
@@ -224,13 +224,13 @@ def _wrap_completion(create: Callable, boundary_id: str) -> Callable:
     return wrapper
 
 
-def _should_stub(session, boundary_id: str) -> bool:
-    invocation_index = session._replay_cursor.get(boundary_id, 0) + 1
-    return session.replay_plan.should_stub(boundary_id, invocation_index)
+def _should_stub(session, name: str) -> bool:
+    invocation_index = session._replay_cursor.get(name, 0) + 1
+    return session.replay_plan.should_stub(name, invocation_index)
 
 
 def _observe(
-    session, boundary_id, input, response, request_kwargs,
+    session, name, input, response, request_kwargs,
     *,
     envelope_id: str | None = None,
     parent_envelope_id: str | None = None,
@@ -239,11 +239,11 @@ def _observe(
     response; the caller always gets the real object."""
     completion, model, usage = _extract(response)
     if session.mode is SessionMode.REPLAY:
-        idx = session._replay_cursor.get(boundary_id, 0) + 1
-        session.capture_live_input(boundary_id, idx, input)
-        session.capture_live_result(boundary_id, idx, response)
-        session.next_invocation(boundary_id)
-        session._replay_cursor[boundary_id] = idx
+        idx = session._replay_cursor.get(name, 0) + 1
+        session.capture_live_input(name, idx, input)
+        session.capture_live_result(name, idx, response)
+        session.next_invocation(name)
+        session._replay_cursor[name] = idx
     else:
         output = Output(
             value=_raw(response),
@@ -255,16 +255,16 @@ def _observe(
             tools=tool_schemas_from(request_kwargs) or [],
         )
         session.record_envelope(
-            boundary_id, "llm", input, output,
+            name, "llm", input, output,
             envelope_id=envelope_id, parent_envelope_id=parent_envelope_id,
             attributes=request.to_attributes(),
         )
     if session.on_crossing is not None:
-        session.on_crossing(boundary_id, "llm", input, response)
+        session.on_crossing(name, "llm", input, response)
 
 
-def _stub(session, boundary_id: str) -> Any:
-    envelope = session._fixture_for(boundary_id)
+def _stub(session, name: str) -> Any:
+    envelope = session._fixture_for(name)
     raw = envelope.output.value
     return _Recorded(raw) if raw is not None else (envelope.output.llm or LLMOutput()).text
 

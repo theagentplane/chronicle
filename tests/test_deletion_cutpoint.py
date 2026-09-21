@@ -46,7 +46,7 @@ def test_cutpoint_delete_file_blocks_prod(incident_graph):
     )
 
     # --- upstream fidelity: agent_plan stubbed from incident fixture ---
-    agent_calls = [c for c in session.call_log() if c.boundary_id == "agent"]
+    agent_calls = [c for c in session.call_log() if c.name == "agent"]
     assert len(agent_calls) == 2
     assert agent_calls[0].mode == "stub"
     assert agent_calls[1].mode == "live"

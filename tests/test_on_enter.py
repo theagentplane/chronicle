@@ -30,8 +30,8 @@ def test_on_enter_runs_before_function():
     session = reset_session()
     session.enable_live()
 
-    def on_enter(boundary_id, kind, input):
-        order.append(f"enter:{boundary_id}:{kind}")
+    def on_enter(name, kind, input):
+        order.append(f"enter:{name}:{kind}")
         return None
 
     session.on_enter = on_enter

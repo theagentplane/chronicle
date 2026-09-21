@@ -44,7 +44,7 @@ def main() -> None:
         ("delete_file blocked prod", live_result.get("blocked") is True),
         ("prod data not deleted", result.get("deleted") is False),
         ("agent@1 was stubbed", session.call_log()[0].mode == "stub"),
-        ("delete_file ran live", any(c.mode == "live" and c.boundary_id == "delete_file" for c in session.call_log())),
+        ("delete_file ran live", any(c.mode == "live" and c.name == "delete_file" for c in session.call_log())),
     ]
 
     all_pass = True

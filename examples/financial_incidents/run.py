@@ -168,21 +168,21 @@ def _test(scenario: ModuleType) -> None:
             ("refund blocked", live.get("blocked") is True),
             ("no money refunded", result.get("refunded") is False),
             ("agent@1 stubbed", session.call_log()[0].mode == "stub"),
-            (f"{tool_label} ran live", any(c.mode == "live" and c.boundary_id == tool_label for c in session.call_log())),
+            (f"{tool_label} ran live", any(c.mode == "live" and c.name == tool_label for c in session.call_log())),
         ]
     elif scenario.NAME == "invoice-currency":
         checks = [
             ("invoice blocked", live.get("blocked") is True),
             ("invoice not sent", result.get("invoice_sent") is False),
             ("agent@1 stubbed", session.call_log()[0].mode == "stub"),
-            (f"{tool_label} ran live", any(c.mode == "live" and c.boundary_id == tool_label for c in session.call_log())),
+            (f"{tool_label} ran live", any(c.mode == "live" and c.name == tool_label for c in session.call_log())),
         ]
     else:
         checks = [
             ("order blocked", live.get("blocked") is True),
             ("no shares sold", result.get("filled") is False),
             ("agent@1 stubbed", session.call_log()[0].mode == "stub"),
-            (f"{tool_label} ran live", any(c.mode == "live" and c.boundary_id == tool_label for c in session.call_log())),
+            (f"{tool_label} ran live", any(c.mode == "live" and c.name == tool_label for c in session.call_log())),
         ]
 
     print()
