@@ -12,13 +12,6 @@ from chronicle.envelope.schema import Envelope
 
 
 @dataclass
-class GraphNode:
-    envelope: Envelope
-    fixture_path: str | None = None
-    children: list[str] = field(default_factory=list)
-
-
-@dataclass
 class ExecutionGraph:
     trace_id: str
     nodes: dict[str, GraphNode] = field(default_factory=dict)
@@ -313,3 +306,10 @@ class ExecutionGraph:
             return {}
         first = self.timeline()[0]
         return dict(first.input.arguments)
+
+
+@dataclass
+class GraphNode:
+    envelope: Envelope
+    fixture_path: str | None = None
+    children: list[str] = field(default_factory=list)

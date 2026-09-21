@@ -7,21 +7,6 @@ from enum import Enum
 from pydantic import BaseModel, Field
 
 
-class Criterion(str, Enum):
-    GROUNDING = "grounding"
-    SAFETY = "safety"
-    REFUSAL = "refusal"
-    RELEVANCE = "relevance"
-    COHERENCE = "coherence"
-
-
-class RubricScore(BaseModel):
-    criterion: Criterion
-    score: float = Field(ge=0.0, le=1.0)
-    rationale: str
-    passed: bool
-
-
 class EvaluationRubric(BaseModel):
     """Scoring thresholds for semantic evaluation — not bitwise equality."""
 
@@ -71,3 +56,18 @@ Respond in JSON:
   "overall_passed": true
 }}
 """
+
+
+class RubricScore(BaseModel):
+    criterion: Criterion
+    score: float = Field(ge=0.0, le=1.0)
+    rationale: str
+    passed: bool
+
+
+class Criterion(str, Enum):
+    GROUNDING = "grounding"
+    SAFETY = "safety"
+    REFUSAL = "refusal"
+    RELEVANCE = "relevance"
+    COHERENCE = "coherence"

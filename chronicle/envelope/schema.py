@@ -20,104 +20,6 @@ from chronicle.envelope.genai import (
 from chronicle.ids import new_span_id, new_trace_id, validate_span_id, validate_trace_id
 
 
-class RagChunk(BaseModel):
-    """One retrieved passage. Not stored on the envelope itself: read a call's chunks
-    back out of ``Input.arguments`` with :func:`rag_chunks_from`."""
-
-    chunk_id: str
-    content: str
-    source: str | None = None
-    score: float | None = None
-    index_version: str | None = None
-    metadata: dict[str, Any] = Field(default_factory=dict)
-
-
-class Message(BaseModel):
-    """One chat message. Extra provider fields (``name``, ``tool_call_id`` ...) are kept."""
-
-    model_config = ConfigDict(extra="allow")
-
-    role: str
-    content: Any = None
-
-
-class Input(BaseModel):
-    """What the boundary was called with.
-
-    ``arguments`` is the annotated method's (or wrapped call's) arguments by name: the
-    single source of truth that replay and assertions read. ``messages`` is the typed
-    chat view, filled for LLM boundaries only.
-    """
-
-    arguments: dict[str, Any] = Field(default_factory=dict)
-    messages: list[Message] = Field(default_factory=list)
-
-
-def rag_chunks_from(arguments: Mapping[str, Any]) -> list[RagChunk]:
-    """Retrieved chunks from a call's arguments (``rag_chunks`` or ``context``), or ``[]``."""
-    out: list[RagChunk] = []
-    for chunk in arguments.get("rag_chunks") or arguments.get("context") or []:
-        if isinstance(chunk, RagChunk):
-            out.append(chunk)
-        elif isinstance(chunk, Mapping) and "chunk_id" in chunk and "content" in chunk:
-            out.append(RagChunk(**chunk))
-        elif isinstance(chunk, str):
-            out.append(RagChunk(chunk_id=str(len(out)), content=chunk))
-    return out
-
-
-class ToolCall(BaseModel):
-    id: str | None = None
-    name: str
-    arguments: dict[str, Any] = Field(default_factory=dict)
-
-
-class Usage(BaseModel):
-    """Normalized token counts (providers report these under different keys)."""
-
-    input_tokens: int | None = None
-    output_tokens: int | None = None
-
-
-class LLMOutput(BaseModel):
-    """The LLM-shaped view of a response, whatever provider produced it."""
-
-    text: str | None = None
-    tool_calls: list[ToolCall] = Field(default_factory=list)
-    finish_reason: str | None = None
-    usage: Usage | None = None
-
-
-class Output(BaseModel):
-    """What the boundary returned.
-
-    ``value`` is the JSON-safe return value (what replay hands back for tools, routers and
-    custom boundaries). ``llm`` bundles the normalized LLM response and is set for LLM
-    boundaries only.
-    """
-
-    value: Any = None
-    llm: LLMOutput | None = None
-
-
-class Status(BaseModel):
-    """OTel span status. ``UNSET`` by default; ``ERROR`` (with a message) when the
-    boundary raised. The exception class goes in the ``error.type`` attribute."""
-
-    code: Literal["UNSET", "OK", "ERROR"] = "UNSET"
-    message: str | None = None
-
-
-def _json_attribute(raw: Any) -> dict[str, Any] | None:
-    if not isinstance(raw, str):
-        return None
-    try:
-        value = json.loads(raw)
-    except ValueError:
-        return None
-    return value if isinstance(value, dict) else None
-
-
 class Envelope(BaseModel):
     """
     Immutable, append-only record of a single graph-boundary execution.
@@ -148,7 +50,7 @@ class Envelope(BaseModel):
     start_time: datetime | None = None
     # Span end: when the envelope was written.
     end_time: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    status: Status = Field(default_factory=Status)
+    status: Status = Field(default_factory=lambda: Status())
     input: Input
     output: Output
     # OTel span attributes: primitives or lists of primitives. Model, sampling and tool
@@ -236,3 +138,101 @@ class Envelope(BaseModel):
     @staticmethod
     def json_schema() -> dict[str, Any]:
         return Envelope.model_json_schema()
+
+
+class Status(BaseModel):
+    """OTel span status. ``UNSET`` by default; ``ERROR`` (with a message) when the
+    boundary raised. The exception class goes in the ``error.type`` attribute."""
+
+    code: Literal["UNSET", "OK", "ERROR"] = "UNSET"
+    message: str | None = None
+
+
+class Input(BaseModel):
+    """What the boundary was called with.
+
+    ``arguments`` is the annotated method's (or wrapped call's) arguments by name: the
+    single source of truth that replay and assertions read. ``messages`` is the typed
+    chat view, filled for LLM boundaries only.
+    """
+
+    arguments: dict[str, Any] = Field(default_factory=dict)
+    messages: list[Message] = Field(default_factory=list)
+
+
+class Message(BaseModel):
+    """One chat message. Extra provider fields (``name``, ``tool_call_id`` ...) are kept."""
+
+    model_config = ConfigDict(extra="allow")
+
+    role: str
+    content: Any = None
+
+
+class Output(BaseModel):
+    """What the boundary returned.
+
+    ``value`` is the JSON-safe return value (what replay hands back for tools, routers and
+    custom boundaries). ``llm`` bundles the normalized LLM response and is set for LLM
+    boundaries only.
+    """
+
+    value: Any = None
+    llm: LLMOutput | None = None
+
+
+class LLMOutput(BaseModel):
+    """The LLM-shaped view of a response, whatever provider produced it."""
+
+    text: str | None = None
+    tool_calls: list[ToolCall] = Field(default_factory=list)
+    finish_reason: str | None = None
+    usage: Usage | None = None
+
+
+class ToolCall(BaseModel):
+    id: str | None = None
+    name: str
+    arguments: dict[str, Any] = Field(default_factory=dict)
+
+
+class Usage(BaseModel):
+    """Normalized token counts (providers report these under different keys)."""
+
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+
+
+class RagChunk(BaseModel):
+    """One retrieved passage. Not stored on the envelope itself: read a call's chunks
+    back out of ``Input.arguments`` with :func:`rag_chunks_from`."""
+
+    chunk_id: str
+    content: str
+    source: str | None = None
+    score: float | None = None
+    index_version: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+def rag_chunks_from(arguments: Mapping[str, Any]) -> list[RagChunk]:
+    """Retrieved chunks from a call's arguments (``rag_chunks`` or ``context``), or ``[]``."""
+    out: list[RagChunk] = []
+    for chunk in arguments.get("rag_chunks") or arguments.get("context") or []:
+        if isinstance(chunk, RagChunk):
+            out.append(chunk)
+        elif isinstance(chunk, Mapping) and "chunk_id" in chunk and "content" in chunk:
+            out.append(RagChunk(**chunk))
+        elif isinstance(chunk, str):
+            out.append(RagChunk(chunk_id=str(len(out)), content=chunk))
+    return out
+
+
+def _json_attribute(raw: Any) -> dict[str, Any] | None:
+    if not isinstance(raw, str):
+        return None
+    try:
+        value = json.loads(raw)
+    except ValueError:
+        return None
+    return value if isinstance(value, dict) else None

@@ -13,13 +13,6 @@ def _llm(envelope: Envelope) -> LLMOutput:
 
 
 @dataclass
-class AssertionResult:
-    name: str
-    passed: bool
-    message: str
-
-
-@dataclass
 class StructuralAssertions:
     """
     Assert on control-flow structure from a replayed envelope fixture.
@@ -136,3 +129,10 @@ class StructuralAssertions:
 
     def all_passed(self, results: list[AssertionResult]) -> bool:
         return all(r.passed for r in results)
+
+
+@dataclass
+class AssertionResult:
+    name: str
+    passed: bool
+    message: str

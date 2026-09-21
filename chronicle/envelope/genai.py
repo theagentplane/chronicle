@@ -40,19 +40,29 @@ CHRONICLE_INPUT_SCHEMA = "chronicle.input.schema"
 CHRONICLE_OUTPUT_SCHEMA = "chronicle.output.schema"
 
 
-class SamplingParams(BaseModel):
-    temperature: float | None = None
-    top_p: float | None = None
-    max_tokens: int | None = None
-    seed: int | None = None
+class LLMRequest(BaseModel):
+    """What an LLM call was configured with. Validated at capture time, then stored
+    only as attributes (see :meth:`to_attributes`)."""
 
+    model: str | None = None
+    sampling: SamplingParams = Field(default_factory=lambda: SamplingParams())
+    tools: list[ToolSchema] = Field(default_factory=list)
 
-class ToolSchema(BaseModel):
-    """A tool definition offered to a model (OTel ``FunctionToolDefinition``)."""
-
-    name: str
-    description: str | None = None
-    parameters: dict[str, Any] = Field(default_factory=dict)
+    def to_attributes(self) -> dict[str, AttributeValue]:
+        attributes: dict[str, AttributeValue] = {}
+        if self.model:
+            attributes[GEN_AI_REQUEST_MODEL] = self.model
+        if self.sampling.temperature is not None:
+            attributes[GEN_AI_REQUEST_TEMPERATURE] = self.sampling.temperature
+        if self.sampling.top_p is not None:
+            attributes[GEN_AI_REQUEST_TOP_P] = self.sampling.top_p
+        if self.sampling.max_tokens is not None:
+            attributes[GEN_AI_REQUEST_MAX_TOKENS] = self.sampling.max_tokens
+        if self.sampling.seed is not None:
+            attributes[GEN_AI_REQUEST_SEED] = self.sampling.seed
+        if self.tools:
+            attributes[GEN_AI_TOOL_DEFINITIONS] = _definitions_json(self.tools)
+        return attributes
 
 
 class MethodSchema(BaseModel):
@@ -92,29 +102,19 @@ class MethodSchema(BaseModel):
         return attributes
 
 
-class LLMRequest(BaseModel):
-    """What an LLM call was configured with. Validated at capture time, then stored
-    only as attributes (see :meth:`to_attributes`)."""
+class SamplingParams(BaseModel):
+    temperature: float | None = None
+    top_p: float | None = None
+    max_tokens: int | None = None
+    seed: int | None = None
 
-    model: str | None = None
-    sampling: SamplingParams = Field(default_factory=SamplingParams)
-    tools: list[ToolSchema] = Field(default_factory=list)
 
-    def to_attributes(self) -> dict[str, AttributeValue]:
-        attributes: dict[str, AttributeValue] = {}
-        if self.model:
-            attributes[GEN_AI_REQUEST_MODEL] = self.model
-        if self.sampling.temperature is not None:
-            attributes[GEN_AI_REQUEST_TEMPERATURE] = self.sampling.temperature
-        if self.sampling.top_p is not None:
-            attributes[GEN_AI_REQUEST_TOP_P] = self.sampling.top_p
-        if self.sampling.max_tokens is not None:
-            attributes[GEN_AI_REQUEST_MAX_TOKENS] = self.sampling.max_tokens
-        if self.sampling.seed is not None:
-            attributes[GEN_AI_REQUEST_SEED] = self.sampling.seed
-        if self.tools:
-            attributes[GEN_AI_TOOL_DEFINITIONS] = _definitions_json(self.tools)
-        return attributes
+class ToolSchema(BaseModel):
+    """A tool definition offered to a model (OTel ``FunctionToolDefinition``)."""
+
+    name: str
+    description: str | None = None
+    parameters: dict[str, Any] = Field(default_factory=dict)
 
 
 def _definitions_json(tools: list[ToolSchema]) -> str:
