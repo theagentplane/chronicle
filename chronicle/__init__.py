@@ -29,7 +29,7 @@ from chronicle.replay.plan import BoundaryMode, ReplayPlan
 from chronicle.session import ChronicleSession, SessionMode, get_session, reset_session
 from chronicle.wrap import instrument, instrument_langgraph, wrap
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 
 def __getattr__(name: str):

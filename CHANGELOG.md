@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-09-22
+
+Schema 2.0: an Envelope now maps one-to-one onto an OpenTelemetry span. This release is breaking. Envelopes and fixtures recorded before it no longer load and must be re-recorded (there is no migration converter), and downstream code that imports `InputState`, `ActionResult` or `ContextMetadata`, or passes `boundary_id=` by keyword, must be updated (see below).
+
 ### Changed (breaking)
 - **No tool-schema capture.** `ToolSchema`, `Envelope.tool_schemas`, `gen_ai.tool.*` / `gen_ai.operation.name` attributes and the GenAI *execute tool* span convention are not part of this release: tool definitions are not recorded, and a `kind="tool"` boundary records only `chronicle.input.schema` / `chronicle.output.schema` like any other method boundary. `LLMRequest` carries the model and sampling only.
 - **`boundary_id` is now `name`.** The boundary's name is one concept, matching `Envelope.name`: `@boundary(name, ...)`, `wrap_llm(name, ...)`, `ReplayPlan.stub/live/mode_for/should_stub(name, ...)`, `ChronicleSession` methods and `CallRecord.name`. The `Envelope.boundary_id` getter is removed; use `Envelope.name`. Positional calls and the `on_enter` / `on_leave` / `on_crossing` hooks (called positionally) are unaffected; keyword uses of `boundary_id=` and reads of `.boundary_id` must change.
@@ -211,7 +215,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - OpenInference / Arize Phoenix normalization and optional LangGraph node
   wrapping.
 
-[Unreleased]: https://github.com/theagentplane/chronicle/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/theagentplane/chronicle/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/theagentplane/chronicle/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/theagentplane/chronicle/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/theagentplane/chronicle/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/theagentplane/chronicle/compare/v0.1.3...v0.2.0

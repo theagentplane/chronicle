@@ -17,3 +17,4 @@ htmlcov/
 *.sqlite
 .DS_Store
 **/.DS_Store
+*.whl
