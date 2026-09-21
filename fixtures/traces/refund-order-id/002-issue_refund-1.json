@@ -36,10 +36,6 @@
   "attributes": {
     "chronicle.trace.name": "trace-refund-order-id-001",
     "chronicle.input.schema": "{\"properties\": {\"amount_cents\": {\"type\": \"integer\"}, \"order_id\": {\"type\": \"string\"}}, \"required\": [\"order_id\", \"amount_cents\"], \"type\": \"object\"}",
-    "chronicle.output.schema": "{\"additionalProperties\": true, \"type\": \"object\"}",
-    "gen_ai.operation.name": "execute_tool",
-    "gen_ai.tool.name": "issue_refund",
-    "gen_ai.tool.definitions": "[{\"description\": \"Refund tool \\u2014 gated version enforces a max refund amount.\", \"name\": \"issue_refund\", \"parameters\": {\"properties\": {\"amount_cents\": {\"type\": \"integer\"}, \"order_id\": {\"type\": \"string\"}}, \"required\": [\"order_id\", \"amount_cents\"], \"type\": \"object\"}, \"type\": \"function\"}]",
-    "gen_ai.tool.description": "Refund tool — gated version enforces a max refund amount."
+    "chronicle.output.schema": "{\"additionalProperties\": true, \"type\": \"object\"}"
   }
 }

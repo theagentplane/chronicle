@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed (breaking)
+- **No tool-schema capture.** `ToolSchema`, `Envelope.tool_schemas`, `gen_ai.tool.*` / `gen_ai.operation.name` attributes and the GenAI *execute tool* span convention are not part of this release: tool definitions are not recorded, and a `kind="tool"` boundary records only `chronicle.input.schema` / `chronicle.output.schema` like any other method boundary. `LLMRequest` carries the model and sampling only.
 - **`boundary_id` is now `name`.** The boundary's name is one concept, matching `Envelope.name`: `@boundary(name, ...)`, `wrap_llm(name, ...)`, `ReplayPlan.stub/live/mode_for/should_stub(name, ...)`, `ChronicleSession` methods and `CallRecord.name`. The `Envelope.boundary_id` getter is removed; use `Envelope.name`. Positional calls and the `on_enter` / `on_leave` / `on_crossing` hooks (called positionally) are unaffected; keyword uses of `boundary_id=` and reads of `.boundary_id` must change.
 - **Removed `EnvelopeRecorder`** (`chronicle/envelope/capture.py`), `instrument_graph_nodes` and the LangGraph extractors (`chronicle/instrumentation/langgraph.py`), and `examples/langgraph_demo/agent.py`. Use `chronicle.record()`, `@boundary` and `chronicle.instrument_langgraph(nodes)`. `chronicle init` now points there too.
 - **OpenTelemetry-format ids.** `trace_id` is now an OTel trace id (32 lowercase hex
@@ -51,10 +52,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   its top-level `dims` is now `attributes`. The failure status message is redacted like
   the rest of the envelope. The `@boundary(kind=...)` argument is unchanged.
 
-- **`Envelope.metadata` is gone.** The model, sampling parameters and tool definitions are
+- **`Envelope.metadata` is gone.** The model and sampling parameters are
   span attributes under the OTel GenAI keys (`gen_ai.request.model`,
-  `gen_ai.request.temperature` / `top_p` / `max_tokens` / `seed`, `gen_ai.tool.definitions`),
-  so a backend sees them natively. `Envelope.model` and `Envelope.tool_schemas` read them
+  `gen_ai.request.temperature` / `top_p` / `max_tokens` / `seed`),
+  so a backend sees them natively. `Envelope.model` reads the model
   back. `attributes` values are now OTel-typed (`str`, `bool`, `int`, `float` or lists of
   them), not only strings. `build_id`, `framework`, `extra` and `SamplingParams.extra` are
   removed (with `record(build_id=)`, `session.build_id`, `CHRONICLE_BUILD_ID`, and the
@@ -78,14 +79,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   non-LLM boundary stores `chronicle.input.schema` (JSON schema of the signature; an
   unannotated method still records its parameter names) and `chronicle.output.schema` (the
   return annotation, when there is one), readable as `Envelope.input_schema` /
-  `Envelope.output_schema`. A `kind="tool"` boundary also follows the GenAI *execute tool*
-  span convention: `gen_ai.operation.name=execute_tool`, `gen_ai.tool.name`, `.description`
-  and `.definitions` (each definition now carries the required `"type": "function"`).
-- **LLM boundaries record the tools they were given** (`@boundary(kind="llm")`, `wrap()`): a
-  `tools` / `tool_schemas` argument in OpenAI, Anthropic or plain shape, or those returned by
-  `extract_metadata`, as `gen_ai.tool.definitions`.
-- `chronicle.LLMRequest`, a validated capture-side view (model, sampling, tools) that
-  flattens into attributes with `to_attributes()`; `Envelope.model` / `Envelope.tool_schemas`.
+  `Envelope.output_schema`.
+- `chronicle.LLMRequest`, a validated capture-side view (model, sampling) that
+  flattens into attributes with `to_attributes()`; `Envelope.model`.
 - `chronicle.Status` and `Envelope.status`; `span_id` and
   `parent_span_id` remain as getters.
 - `chronicle.ids`: `new_trace_id`, `new_span_id`, `is_trace_id`, `is_span_id`.

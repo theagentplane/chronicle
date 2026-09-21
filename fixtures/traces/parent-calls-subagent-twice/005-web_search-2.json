@@ -35,9 +35,6 @@
     "scenario": "parent_calls_subagent_twice",
     "chronicle.trace.name": "parent-calls-subagent-twice",
     "chronicle.input.schema": "{\"properties\": {\"query\": {\"type\": \"string\"}}, \"required\": [\"query\"], \"type\": \"object\"}",
-    "chronicle.output.schema": "{\"additionalProperties\": true, \"type\": \"object\"}",
-    "gen_ai.operation.name": "execute_tool",
-    "gen_ai.tool.name": "web_search",
-    "gen_ai.tool.definitions": "[{\"name\": \"web_search\", \"parameters\": {\"properties\": {\"query\": {\"type\": \"string\"}}, \"required\": [\"query\"], \"type\": \"object\"}, \"type\": \"function\"}]"
+    "chronicle.output.schema": "{\"additionalProperties\": true, \"type\": \"object\"}"
   }
 }

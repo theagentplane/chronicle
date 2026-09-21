@@ -29,7 +29,6 @@ from chronicle.envelope.genai import (
     infer_method_schema,
     model_from,
     sampling_params_from,
-    tool_schemas_from,
 )
 from chronicle.envelope.schema import Input, Message, Output, Status
 from chronicle.session import (
@@ -138,7 +137,7 @@ def _bind_boundary(
     static_attributes = (
         None
         if kind == "llm"
-        else infer_method_schema(fn, name).to_attributes(tool=kind == "tool")
+        else infer_method_schema(fn, name).to_attributes()
     )
 
     if inspect.iscoroutinefunction(fn):
@@ -282,7 +281,7 @@ def _record_success(
     """Record the envelope, then notify observers. Never touches the return value."""
     recorded = extract_result(result) if extract_result else result
     output = result_to_output(recorded, kind)
-    attributes = _call_attributes(recorded, kind, extract_metadata, input, static_attributes)
+    attributes = _call_attributes(recorded, kind, extract_metadata, static_attributes)
     session.record_envelope(
         name, kind, input, output,
         envelope_id=envelope_id, parent_envelope_id=parent_envelope_id,
@@ -307,29 +306,24 @@ def _record_failure(
     )
 
 
-def _call_attributes(result, kind, extract_metadata, input, static_attributes):
-    """The GenAI attributes for this crossing: model, sampling params and tool schemas.
+def _call_attributes(result, kind, extract_metadata, static_attributes):
+    """The GenAI attributes for this crossing: model and sampling params.
 
     Model attributes only apply to ``llm`` boundaries, so tool and router results are
     not scraped for a stray ``model`` key. An explicit extract_metadata hook always wins
-    and works for any kind. The tools an LLM was *given* are read from the call's
-    arguments (a ``tools`` / ``tool_schemas`` argument, top-level or inside the state
-    mapping) when the result does not carry them. A tool boundary contributes its own
-    inferred schema (``static_attributes``). Capture is best-effort and never raises.
+    and works for any kind. A method boundary contributes its own inferred schema
+    (``static_attributes``). Capture is best-effort and never raises.
     """
     attributes = dict(static_attributes) if static_attributes else {}
     try:
-        model = sampling = tools = None
+        model = sampling = None
         if extract_metadata is not None:
             source = extract_metadata(result)
-            model, sampling, tools = model_from(source), sampling_params_from(source), tool_schemas_from(source)
+            model, sampling = model_from(source), sampling_params_from(source)
         elif kind == "llm":
-            model, sampling, tools = model_from(result), sampling_params_from(result), tool_schemas_from(result)
-        if tools is None and kind == "llm":
-            arguments = input.arguments
-            tools = tool_schemas_from(arguments) or tool_schemas_from(_io_source(arguments))
-        if model or sampling or tools:
-            request = LLMRequest(model=model, sampling=sampling or SamplingParams(), tools=tools or [])
+            model, sampling = model_from(result), sampling_params_from(result)
+        if model or sampling:
+            request = LLMRequest(model=model, sampling=sampling or SamplingParams())
             attributes.update(request.to_attributes())
     except Exception:
         pass

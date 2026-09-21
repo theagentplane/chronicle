@@ -113,21 +113,3 @@ def test_instrument_langgraph_wraps_every_node():
 def test_wrap_rejects_unknown_client():
     with pytest.raises(TypeError):
         chronicle.wrap(object())
-
-
-@pytest.mark.layer1
-def test_wrap_records_the_tools_offered_to_the_model():
-    client = chronicle.wrap(FakeOpenAI())
-    session = reset_session()
-    session.begin_trace("t")
-    tool = {
-        "type": "function",
-        "function": {"name": "search_docs", "description": "d", "parameters": {"type": "object"}},
-    }
-
-    client.chat.completions.create(
-        model="gpt-4o", messages=[{"role": "user", "content": "hi"}], tools=[tool]
-    )
-
-    schemas = session._recorded_envelopes[-1].tool_schemas
-    assert [s.name for s in schemas] == ["search_docs"]

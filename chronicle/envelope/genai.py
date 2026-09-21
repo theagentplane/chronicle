@@ -1,8 +1,8 @@
 """Typed, checked views of what a boundary was configured with, flattened into OTel
 attributes.
 
-An Envelope does not carry a separate metadata object: the model, sampling
-parameters and tool definitions live in ``Envelope.attributes`` under the OpenTelemetry
+An Envelope does not carry a separate metadata object: the model and sampling
+parameters live in ``Envelope.attributes`` under the OpenTelemetry
 GenAI semantic-convention keys. The conventions live in the
 ``open-telemetry/semantic-conventions-genai`` repository and are Development status, so
 key names can still change; ``tests/test_genai_attributes.py`` pins ours to the released
@@ -29,11 +29,6 @@ GEN_AI_REQUEST_TEMPERATURE = "gen_ai.request.temperature"
 GEN_AI_REQUEST_TOP_P = "gen_ai.request.top_p"
 GEN_AI_REQUEST_MAX_TOKENS = "gen_ai.request.max_tokens"
 GEN_AI_REQUEST_SEED = "gen_ai.request.seed"
-GEN_AI_TOOL_DEFINITIONS = "gen_ai.tool.definitions"
-GEN_AI_TOOL_NAME = "gen_ai.tool.name"
-GEN_AI_TOOL_DESCRIPTION = "gen_ai.tool.description"
-GEN_AI_OPERATION_NAME = "gen_ai.operation.name"
-GEN_AI_OPERATION_EXECUTE_TOOL = "execute_tool"
 
 # Chronicle's own keys: the JSON schema of a boundary method's input and output.
 CHRONICLE_INPUT_SCHEMA = "chronicle.input.schema"
@@ -46,7 +41,6 @@ class LLMRequest(BaseModel):
 
     model: str | None = None
     sampling: SamplingParams = Field(default_factory=lambda: SamplingParams())
-    tools: list[ToolSchema] = Field(default_factory=list)
 
     def to_attributes(self) -> dict[str, AttributeValue]:
         attributes: dict[str, AttributeValue] = {}
@@ -60,8 +54,6 @@ class LLMRequest(BaseModel):
             attributes[GEN_AI_REQUEST_MAX_TOKENS] = self.sampling.max_tokens
         if self.sampling.seed is not None:
             attributes[GEN_AI_REQUEST_SEED] = self.sampling.seed
-        if self.tools:
-            attributes[GEN_AI_TOOL_DEFINITIONS] = _definitions_json(self.tools)
         return attributes
 
 
@@ -79,26 +71,14 @@ class MethodSchema(BaseModel):
     input: dict[str, Any] = Field(default_factory=dict)
     output: dict[str, Any] | None = None
 
-    def to_attributes(self, *, tool: bool = False) -> dict[str, AttributeValue]:
-        """Span attributes for this method.
-
-        Every method records ``chronicle.input.schema`` / ``chronicle.output.schema``. A
-        tool boundary also follows the GenAI *execute tool* span convention
-        (``gen_ai.operation.name``, ``gen_ai.tool.name`` / ``.description`` / ``.definitions``).
-        """
+    def to_attributes(self) -> dict[str, AttributeValue]:
+        """Span attributes for this method: ``chronicle.input.schema`` and, when the return
+        is annotated, ``chronicle.output.schema``."""
         attributes: dict[str, AttributeValue] = {
             CHRONICLE_INPUT_SCHEMA: json.dumps(self.input, sort_keys=True),
         }
         if self.output is not None:
             attributes[CHRONICLE_OUTPUT_SCHEMA] = json.dumps(self.output, sort_keys=True)
-        if tool:
-            attributes[GEN_AI_OPERATION_NAME] = GEN_AI_OPERATION_EXECUTE_TOOL
-            attributes[GEN_AI_TOOL_NAME] = self.name
-            attributes[GEN_AI_TOOL_DEFINITIONS] = _definitions_json(
-                [ToolSchema(name=self.name, description=self.description, parameters=self.input)]
-            )
-            if self.description:
-                attributes[GEN_AI_TOOL_DESCRIPTION] = self.description
         return attributes
 
 
@@ -107,33 +87,6 @@ class SamplingParams(BaseModel):
     top_p: float | None = None
     max_tokens: int | None = None
     seed: int | None = None
-
-
-class ToolSchema(BaseModel):
-    """A tool definition offered to a model (OTel ``FunctionToolDefinition``)."""
-
-    name: str
-    description: str | None = None
-    parameters: dict[str, Any] = Field(default_factory=dict)
-
-
-def _definitions_json(tools: list[ToolSchema]) -> str:
-    """``gen_ai.tool.definitions`` value: each item is a ``FunctionToolDefinition``, which
-    requires ``"type": "function"`` and a ``name``."""
-    return json.dumps(
-        [{"type": "function", **t.model_dump(exclude_none=True)} for t in tools], sort_keys=True
-    )
-
-
-def tool_schemas_from_attributes(attributes: Mapping[str, Any]) -> list[ToolSchema]:
-    """Read the tool definitions back out of an envelope's attributes."""
-    raw = attributes.get(GEN_AI_TOOL_DEFINITIONS)
-    if not isinstance(raw, str):
-        return []
-    try:
-        return [ToolSchema(**item) for item in json.loads(raw)]
-    except (ValueError, TypeError):
-        return []
 
 
 # --------------------------------------------------------------------------- #
@@ -191,41 +144,6 @@ def _return_schema(fn: Callable[..., Any]) -> dict[str, Any] | None:
         return None
     schema.pop("title", None)
     return schema
-
-
-def tool_schemas_from(source: Any) -> list[ToolSchema] | None:
-    """Best-effort extraction of the tool schemas offered to a model.
-
-    Reads ``tool_schemas`` or ``tools`` from a mapping and normalizes the common
-    shapes: OpenAI (``{"type": "function", "function": {...}}``), Anthropic
-    (``{"name", "description", "input_schema"}``) and plain
-    (``{"name", "description", "parameters"}``). Returns ``None`` when there are none.
-    """
-    if not isinstance(source, Mapping):
-        return None
-    tools = source.get("tool_schemas") or source.get("tools")
-    if not isinstance(tools, (list, tuple)):
-        return None
-    schemas: list[ToolSchema] = []
-    for tool in tools:
-        if isinstance(tool, ToolSchema):
-            schemas.append(tool)
-            continue
-        if not isinstance(tool, Mapping):
-            continue
-        spec = tool.get("function") if isinstance(tool.get("function"), Mapping) else tool
-        name = spec.get("name")
-        if not name:
-            continue
-        parameters = spec.get("parameters") or spec.get("input_schema") or {}
-        schemas.append(
-            ToolSchema(
-                name=str(name),
-                description=spec.get("description"),
-                parameters=dict(parameters) if isinstance(parameters, Mapping) else {},
-            )
-        )
-    return schemas or None
 
 
 def sampling_params_from(source: Any) -> SamplingParams | None:

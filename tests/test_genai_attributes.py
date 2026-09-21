@@ -1,4 +1,4 @@
-"""Model, sampling and tool definitions are stored as OTel GenAI span attributes, and
+"""Model and sampling parameters are stored as OTel GenAI span attributes, and
 usage is normalized into one shape regardless of provider."""
 
 from __future__ import annotations
@@ -9,7 +9,7 @@ from pydantic import ValidationError
 import chronicle
 from chronicle import Envelope, Input, LLMOutput, LLMRequest, Message, Output, Usage
 from chronicle.envelope import genai
-from chronicle.envelope.genai import SamplingParams, ToolSchema
+from chronicle.envelope.genai import SamplingParams
 from chronicle.session import usage_from
 
 
@@ -20,9 +20,6 @@ def test_keys_match_the_otel_genai_semantic_conventions():
     assert genai.GEN_AI_REQUEST_TOP_P == attrs.GEN_AI_REQUEST_TOP_P
     assert genai.GEN_AI_REQUEST_MAX_TOKENS == attrs.GEN_AI_REQUEST_MAX_TOKENS
     assert genai.GEN_AI_REQUEST_SEED == attrs.GEN_AI_REQUEST_SEED
-    assert genai.GEN_AI_TOOL_DEFINITIONS == attrs.GEN_AI_TOOL_DEFINITIONS
-    assert genai.GEN_AI_TOOL_NAME == attrs.GEN_AI_TOOL_NAME
-    assert genai.GEN_AI_TOOL_DESCRIPTION == attrs.GEN_AI_TOOL_DESCRIPTION
 
 
 def test_llm_request_flattens_only_what_is_set():
@@ -30,14 +27,12 @@ def test_llm_request_flattens_only_what_is_set():
     request = LLMRequest(
         model="gpt-4o",
         sampling=SamplingParams(temperature=0.0, max_tokens=256),
-        tools=[ToolSchema(name="t")],
     )
     attrs = request.to_attributes()
     assert attrs["gen_ai.request.model"] == "gpt-4o"
     assert attrs["gen_ai.request.temperature"] == 0.0  # falsy but set: kept
     assert attrs["gen_ai.request.max_tokens"] == 256
     assert "gen_ai.request.top_p" not in attrs
-    assert isinstance(attrs["gen_ai.tool.definitions"], str)
 
 
 def test_llm_request_validates_its_fields():

@@ -14,8 +14,6 @@ from chronicle.envelope.genai import (
     CHRONICLE_OUTPUT_SCHEMA,
     GEN_AI_REQUEST_MODEL,
     AttributeValue,
-    ToolSchema,
-    tool_schemas_from_attributes,
 )
 from chronicle.ids import new_span_id, new_trace_id, validate_span_id, validate_trace_id
 
@@ -35,7 +33,7 @@ class Envelope(BaseModel):
     ``start_time`` / ``end_time``, ``status`` and ``attributes`` (trace-level ones are
     copied onto every span at record time, envelope-level ones are span-specific).
     ``span_id`` and ``parent_span_id`` are read-only getters for ``envelope_id`` and
-    ``parent_envelope_id``; ``model`` and ``tool_schemas`` read the GenAI attributes.
+    ``parent_envelope_id``; ``model`` reads the GenAI attributes.
     """
 
     schema_version: str = "2.0"
@@ -72,11 +70,6 @@ class Envelope(BaseModel):
         """The model this call ran with (``gen_ai.request.model``), if recorded."""
         value = self.attributes.get(GEN_AI_REQUEST_MODEL)
         return value if isinstance(value, str) else None
-
-    @property
-    def tool_schemas(self) -> list[ToolSchema]:
-        """Tool definitions recorded on this span (``gen_ai.tool.definitions``)."""
-        return tool_schemas_from_attributes(self.attributes)
 
     @property
     def input_schema(self) -> dict[str, Any] | None:

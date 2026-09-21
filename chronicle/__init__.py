@@ -14,7 +14,7 @@ from chronicle.envelope.schema import (
     ToolCall,
     Usage,
 )
-from chronicle.envelope.genai import LLMRequest, SamplingParams, ToolSchema
+from chronicle.envelope.genai import LLMRequest, SamplingParams
 from chronicle.envelope.backends import (
     BufferedStore,
     JsonlStore,
@@ -65,7 +65,6 @@ __all__ = [
     "Status",
     "Store",
     "ToolCall",
-    "ToolSchema",
     "Usage",
     "apply_redactors",
     "boundary",

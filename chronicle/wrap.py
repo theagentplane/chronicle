@@ -26,7 +26,6 @@ from chronicle.envelope.genai import (
     SamplingParams,
     model_from,
     sampling_params_from,
-    tool_schemas_from,
 )
 from chronicle.envelope.schema import Input, LLMOutput, Output
 from chronicle.session import SessionMode, get_session, peek_session, usage_from
@@ -252,7 +251,6 @@ def _observe(
         request = LLMRequest(
             model=model or model_from(request_kwargs),
             sampling=sampling_params_from(request_kwargs) or SamplingParams(),
-            tools=tool_schemas_from(request_kwargs) or [],
         )
         session.record_envelope(
             name, "llm", input, output,

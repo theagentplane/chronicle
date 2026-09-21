@@ -41,10 +41,6 @@
   "attributes": {
     "chronicle.trace.name": "trace-trade-notional-001",
     "chronicle.input.schema": "{\"properties\": {\"quantity\": {\"type\": \"integer\"}, \"side\": {\"default\": \"sell\", \"type\": \"string\"}, \"symbol\": {\"type\": \"string\"}}, \"required\": [\"symbol\", \"quantity\"], \"type\": \"object\"}",
-    "chronicle.output.schema": "{\"additionalProperties\": true, \"type\": \"object\"}",
-    "gen_ai.operation.name": "execute_tool",
-    "gen_ai.tool.name": "place_order",
-    "gen_ai.tool.definitions": "[{\"description\": \"Order tool \\u2014 gated version enforces a max order notional.\", \"name\": \"place_order\", \"parameters\": {\"properties\": {\"quantity\": {\"type\": \"integer\"}, \"side\": {\"default\": \"sell\", \"type\": \"string\"}, \"symbol\": {\"type\": \"string\"}}, \"required\": [\"symbol\", \"quantity\"], \"type\": \"object\"}, \"type\": \"function\"}]",
-    "gen_ai.tool.description": "Order tool — gated version enforces a max order notional."
+    "chronicle.output.schema": "{\"additionalProperties\": true, \"type\": \"object\"}"
   }
 }

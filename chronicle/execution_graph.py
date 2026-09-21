@@ -7,7 +7,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
-from chronicle.envelope.genai import GEN_AI_TOOL_DEFINITIONS
 from chronicle.envelope.schema import Envelope
 
 
@@ -187,7 +186,7 @@ class ExecutionGraph:
                 span_attrs = {
                     k: v
                     for k, v in env.attributes.items()
-                    if k not in trace_attrs and k != GEN_AI_TOOL_DEFINITIONS
+                    if k not in trace_attrs
                 }
                 if span_attrs:
                     dim_str = " ".join(f"{k}={v}" for k, v in sorted(span_attrs.items()))

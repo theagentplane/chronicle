@@ -39,10 +39,6 @@
   "attributes": {
     "chronicle.trace.name": "trace-invoice-currency-001",
     "chronicle.input.schema": "{\"properties\": {\"amount_cents\": {\"type\": \"integer\"}, \"currency\": {\"type\": \"string\"}, \"customer_id\": {\"type\": \"string\"}}, \"required\": [\"customer_id\", \"amount_cents\", \"currency\"], \"type\": \"object\"}",
-    "chronicle.output.schema": "{\"additionalProperties\": true, \"type\": \"object\"}",
-    "gen_ai.operation.name": "execute_tool",
-    "gen_ai.tool.name": "create_invoice",
-    "gen_ai.tool.definitions": "[{\"description\": \"Invoice tool \\u2014 gated version enforces a max invoice amount.\", \"name\": \"create_invoice\", \"parameters\": {\"properties\": {\"amount_cents\": {\"type\": \"integer\"}, \"currency\": {\"type\": \"string\"}, \"customer_id\": {\"type\": \"string\"}}, \"required\": [\"customer_id\", \"amount_cents\", \"currency\"], \"type\": \"object\"}, \"type\": \"function\"}]",
-    "gen_ai.tool.description": "Invoice tool — gated version enforces a max invoice amount."
+    "chronicle.output.schema": "{\"additionalProperties\": true, \"type\": \"object\"}"
   }
 }

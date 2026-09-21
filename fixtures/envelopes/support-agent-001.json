@@ -85,7 +85,6 @@
     "gen_ai.request.temperature": 0.0,
     "gen_ai.request.top_p": 1.0,
     "gen_ai.request.max_tokens": 1024,
-    "gen_ai.request.seed": 42,
-    "gen_ai.tool.definitions": "[{\"description\": \"Search internal documentation\", \"name\": \"search_docs\", \"parameters\": {\"properties\": {\"query\": {\"type\": \"string\"}}, \"required\": [\"query\"], \"type\": \"object\"}, \"type\": \"function\"}]"
+    "gen_ai.request.seed": 42
   }
 }

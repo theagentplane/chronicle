@@ -33,10 +33,6 @@
   "attributes": {
     "chronicle.trace.name": "trace-deletion-incident-001",
     "chronicle.input.schema": "{\"properties\": {\"environment\": {\"type\": \"string\"}, \"path\": {\"type\": \"string\"}}, \"required\": [\"path\", \"environment\"], \"type\": \"object\"}",
-    "chronicle.output.schema": "{\"additionalProperties\": true, \"type\": \"object\"}",
-    "gen_ai.operation.name": "execute_tool",
-    "gen_ai.tool.name": "delete_file",
-    "gen_ai.tool.definitions": "[{\"description\": \"Annotated tool boundary \\u2014 same ID for record and cut-point replay.\", \"name\": \"delete_file\", \"parameters\": {\"properties\": {\"environment\": {\"type\": \"string\"}, \"path\": {\"type\": \"string\"}}, \"required\": [\"path\", \"environment\"], \"type\": \"object\"}, \"type\": \"function\"}]",
-    "gen_ai.tool.description": "Annotated tool boundary — same ID for record and cut-point replay."
+    "chronicle.output.schema": "{\"additionalProperties\": true, \"type\": \"object\"}"
   }
 }

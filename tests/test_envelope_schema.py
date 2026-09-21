@@ -18,12 +18,11 @@ def test_envelope_round_trip():
     restored = Envelope.from_json(envelope.to_json())
     assert restored.envelope_id == envelope.envelope_id
     assert restored.model == "stub-support-model-1"
-    assert [t.name for t in restored.tool_schemas] == ["search_docs"]
     assert len(rag_chunks_from(restored.input.arguments)) == 1
 
 
 def test_envelope_has_no_metadata_object():
-    """Model, sampling and tool definitions are span attributes, not a nested object."""
+    """Model and sampling parameters are span attributes, not a nested object."""
     assert "metadata" not in Envelope.model_fields
     envelope = Envelope.from_file(str(FIXTURES / "support-agent-001.json"))
     assert envelope.attributes["gen_ai.request.model"] == envelope.model
