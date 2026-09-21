@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import chronicle
 from chronicle import ReplayPlan, boundary
-from chronicle.envelope.capture import EnvelopeRecorder
-from chronicle.envelope.store import EnvelopeStore
 from chronicle.session import reset_session
 
 
@@ -94,16 +92,3 @@ def test_wrap_passthrough_when_disabled(monkeypatch):
     assert resp["choices"][0]["message"]["content"] == "ok"
     assert session._recorded_envelopes == []
 
-
-def test_envelope_recorder_passthrough_when_disabled(monkeypatch, tmp_path):
-    monkeypatch.setenv("CHRONICLE_ENABLED", "0")
-    store = EnvelopeStore(tmp_path / "runs.jsonl")
-    recorder = EnvelopeRecorder(store=store, model="m")
-
-    @recorder.wrap_node("agent")
-    def agent(state: dict) -> dict:
-        return {**state, "completion": "done"}
-
-    result = agent({"messages": []})
-    assert result["completion"] == "done"
-    assert store.read_all() == []

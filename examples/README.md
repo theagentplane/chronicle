@@ -8,7 +8,7 @@ Demos and test benches live here — **not** in the installable `chronicle` pack
 | `financial_incidents/` | Refund / invoice / trade incident demos (+ screenshot assets) |
 | `nested_subagents/` | Orchestrator calling one sub-agent twice: records the nested trace fixture |
 | `sample_envelope/` | Records the single sample LLM envelope used by the schema/replay/judge tests |
-| `langgraph_demo/` | Optional LangGraph node-wrapping example |
+| `langgraph_demo/` | Optional LangGraph routing example (`routing_demo.py`) |
 
 **Core library** (importable): `chronicle/` — `@boundary`, `wrap_llm`, session, envelopes, replay, judge, CLI, visualizer API.
 

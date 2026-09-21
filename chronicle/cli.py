@@ -43,7 +43,7 @@ def record(store: str, phoenix: bool, service: str) -> None:
 
     click.echo(f"Envelope store: {store}")
     click.echo("Set CHRONICLE_BUILD_ID to pin runtime build metadata.")
-    click.echo("Recording ready — instrument your agent nodes with EnvelopeRecorder.")
+    click.echo("Recording ready — wrap your agent with chronicle.record() and @boundary.")
 
 
 @main.command()

@@ -497,34 +497,13 @@ collector/UI). The base install imports no OpenTelemetry.
 </details>
 
 <details>
-<summary><b>Lower-level recorder (<code>EnvelopeRecorder</code>)</b></summary>
-
-<br>
-
-```python
-from chronicle.envelope.capture import EnvelopeRecorder
-from chronicle.envelope.store import EnvelopeStore
-from chronicle.instrumentation import instrument_graph_nodes
-
-recorder = EnvelopeRecorder(
-    store=EnvelopeStore(".chronicle/runs/envelopes.jsonl"),
-    model="gpt-4o-2024-08-06",
-)
-wrapped_nodes = instrument_graph_nodes(recorder, {"agent": agent_node})
-```
-
-See `examples/langgraph_demo/agent.py`.
-
-</details>
-
-<details>
 <summary><b>Environment variables</b></summary>
 
 <br>
 
 | Variable | Purpose |
 |---|---|
-| `CHRONICLE_ENABLED` | Set to `0` / `false` / `off` / `no` to disable LIVE recording (`@boundary`, `wrap`, `record()`, `EnvelopeRecorder` become passthrough). Default on. Replay is unaffected. |
+| `CHRONICLE_ENABLED` | Set to `0` / `false` / `off` / `no` to disable LIVE recording (`@boundary`, `wrap`, `record()` become passthrough). Default on. Replay is unaffected. |
 | `CHRONICLE_STORE` | Default envelope store path |
 | `PHOENIX_COLLECTOR_ENDPOINT` | Phoenix OTLP endpoint (default `http://localhost:4317`) |
 

@@ -47,7 +47,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# LangGraph node instrumentation (chronicle/instrumentation/langgraph.py).
+# LangGraph routing example and OpenInference LangChain instrumentation.
 langgraph = [
     "langgraph>=0.2",
     "langchain-core>=0.3",

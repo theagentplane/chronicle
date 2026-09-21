@@ -13,7 +13,7 @@ def is_enabled() -> bool:
 
     Controlled by ``CHRONICLE_ENABLED`` (default on). Set to ``0``, ``false``,
     ``off``, or ``no`` to make ``@boundary``, ``wrap``, ``wrap_llm``,
-    ``record()``, and ``EnvelopeRecorder`` no-ops for live runs so an agent can
+    and ``record()`` no-ops for live runs so an agent can
     be timed with and without Chronicle. Replay is unaffected so cut-point
     fixtures keep working.
     """

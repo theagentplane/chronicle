@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed (breaking)
+- **Removed `EnvelopeRecorder`** (`chronicle/envelope/capture.py`), `instrument_graph_nodes` and the LangGraph extractors (`chronicle/instrumentation/langgraph.py`), and `examples/langgraph_demo/agent.py`. Use `chronicle.record()`, `@boundary` and `chronicle.instrument_langgraph(nodes)`. `chronicle init` now points there too.
 - **OpenTelemetry-format ids.** `trace_id` is now an OTel trace id (32 lowercase hex
   chars, 16 bytes) and `envelope_id` / `parent_envelope_id` are OTel span ids (16
   lowercase hex chars, 8 bytes). They are validated on `Envelope`, generated from random
