@@ -1,0 +1,1 @@
+{"model": "gpt-4o", "status": "completed", "output": [{"type": "message", "role": "assistant", "content": [{"type": "output_text", "text": "Order A-4471 totals $47.00."}]}], "usage": {"input_tokens": 21, "output_tokens": 9}}

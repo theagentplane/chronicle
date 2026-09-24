@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Per-provider LLM adapters (`chronicle.providers`): `openai` (Chat Completions),
+  `anthropic` (Messages) and `openai_responses` (Responses API) normalize requests
+  and responses into the same `LLMOutput` / `LLMRequest` (text, tool calls,
+  finish reason, usage). `provider=` on `@boundary(kind="llm")`, `wrap_llm()` and
+  `wrap()` (auto-detected from the client class); provider recorded as
+  `gen_ai.provider.name`. `register_provider()` for custom APIs; unknown/malformed
+  payloads fall back to the generic dict adapter and recording never raises. No
+  provider SDK is a required dependency. Conformance fixtures under
+  `tests/fixtures/providers/<provider>/`.
+
 ## [0.5.0] - 2026-09-22
 
 Schema 2.0: an Envelope now maps one-to-one onto an OpenTelemetry span. This release is breaking. Envelopes and fixtures recorded before it no longer load and must be re-recorded (there is no migration converter), and downstream code that imports `InputState`, `ActionResult` or `ContextMetadata`, or passes `boundary_id=` by keyword, must be updated (see below).

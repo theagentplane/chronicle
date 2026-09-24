@@ -25,6 +25,7 @@ AttributeValue = Union[str, bool, int, float, list[str], list[bool], list[int], 
 
 # GenAI semantic-convention keys.
 GEN_AI_REQUEST_MODEL = "gen_ai.request.model"
+GEN_AI_PROVIDER_NAME = "gen_ai.provider.name"
 GEN_AI_REQUEST_TEMPERATURE = "gen_ai.request.temperature"
 GEN_AI_REQUEST_TOP_P = "gen_ai.request.top_p"
 GEN_AI_REQUEST_MAX_TOKENS = "gen_ai.request.max_tokens"
@@ -40,12 +41,15 @@ class LLMRequest(BaseModel):
     only as attributes (see :meth:`to_attributes`)."""
 
     model: str | None = None
+    provider: str | None = None
     sampling: SamplingParams = Field(default_factory=lambda: SamplingParams())
 
     def to_attributes(self) -> dict[str, AttributeValue]:
         attributes: dict[str, AttributeValue] = {}
         if self.model:
             attributes[GEN_AI_REQUEST_MODEL] = self.model
+        if self.provider:
+            attributes[GEN_AI_PROVIDER_NAME] = self.provider
         if self.sampling.temperature is not None:
             attributes[GEN_AI_REQUEST_TEMPERATURE] = self.sampling.temperature
         if self.sampling.top_p is not None:

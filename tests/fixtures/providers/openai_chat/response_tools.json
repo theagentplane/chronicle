@@ -1,0 +1,1 @@
+{"model": "gpt-4o", "choices": [{"message": {"role": "assistant", "content": null, "tool_calls": [{"id": "call_1", "type": "function", "function": {"name": "refund", "arguments": "{\"order_id\": \"A-4471\", \"amount_cents\": 4700}"}}]}, "finish_reason": "tool_calls"}], "usage": {"prompt_tokens": 21, "completion_tokens": 14}}

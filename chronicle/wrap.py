@@ -31,7 +31,9 @@ from chronicle.envelope.schema import Input, LLMOutput, Output
 from chronicle.session import SessionMode, get_session, peek_session, usage_from
 
 
-def instrument_langgraph(nodes: Mapping[str, Callable], *, kind: str = "custom") -> dict[str, Callable]:
+def instrument_langgraph(
+    nodes: Mapping[str, Callable], *, kind: str = "custom"
+) -> dict[str, Callable]:
     """Wrap every LangGraph node as a ``@boundary`` in one call.
 
         graph = StateGraph(State)
@@ -140,7 +142,7 @@ def _executor_shim(sync_fn: Callable) -> Callable[..., Any]:
     return _call
 
 
-def wrap(client: Any, *, name: str = "llm") -> Any:
+def wrap(client: Any, *, name: str = "llm", provider: str | None = None) -> Any:
     """Record every model call an OpenAI- or Anthropic-style client makes.
 
         client = chronicle.wrap(OpenAI())
@@ -150,6 +152,11 @@ def wrap(client: Any, *, name: str = "llm") -> Any:
     transparent in live mode (you get the real response); in replay mode it returns
     the recorded response with attribute/index access (``resp.choices[0].message
     .content``) and makes no API call. For a bare callable, use ``wrap_llm``.
+
+    ``provider`` pins the adapter (``"openai"``, ``"anthropic"``,
+    ``"openai_responses"``); when omitted it is auto-detected from the client
+    class (``.responses.create`` → responses, ``.chat.completions`` → openai,
+    ``.messages`` → anthropic).
     """
     target = _completion_target(client)
     if target is None:
@@ -157,23 +164,29 @@ def wrap(client: Any, *, name: str = "llm") -> Any:
             "chronicle.wrap expected an OpenAI-style client (.chat.completions.create) "
             "or an Anthropic-style client (.messages.create). Use wrap_llm for other callables."
         )
-    owner, attr, original = target
-    setattr(owner, attr, _wrap_completion(original, name))
+    owner, attr, original, detected = target
+    setattr(owner, attr, _wrap_completion(original, name, provider or detected))
     return client
 
 
 def _completion_target(client: Any):
+    # Order matters: a client exposing .responses is a Responses-API client even
+    # if it also exposes .chat (the real OpenAI SDK exposes both).
+    responses = getattr(client, "responses", None)
+    if responses is not None and callable(getattr(responses, "create", None)):
+        return responses, "create", responses.create, "openai_responses"
     completions = getattr(getattr(client, "chat", None), "completions", None)
     if completions is not None and callable(getattr(completions, "create", None)):
-        return completions, "create", completions.create
+        return completions, "create", completions.create, "openai"
     messages = getattr(client, "messages", None)
     if messages is not None and callable(getattr(messages, "create", None)):
-        return messages, "create", messages.create
+        return messages, "create", messages.create, "anthropic"
     return None
 
 
-def _wrap_completion(create: Callable, name: str) -> Callable:
+def _wrap_completion(create: Callable, name: str, provider: str | None = None) -> Callable:
     if inspect.iscoroutinefunction(create):
+
         @functools.wraps(create)
         async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
             if not is_enabled():
@@ -182,15 +195,21 @@ def _wrap_completion(create: Callable, name: str) -> Callable:
                     return await create(*args, **kwargs)
             else:
                 session = get_session()
-            input = _input(kwargs)
+            input = _input(kwargs, provider)
             if session.mode is SessionMode.REPLAY and _should_stub(session, name):
                 return _stub(session, name)
             span_id, parent_id = session.start_span()
             try:
                 result = await create(*args, **kwargs)
                 _observe(
-                    session, name, input, result, kwargs,
-                    envelope_id=span_id, parent_envelope_id=parent_id,
+                    session,
+                    name,
+                    input,
+                    result,
+                    kwargs,
+                    envelope_id=span_id,
+                    parent_envelope_id=parent_id,
+                    provider=provider,
                 )
                 return result
             finally:
@@ -206,15 +225,21 @@ def _wrap_completion(create: Callable, name: str) -> Callable:
                 return create(*args, **kwargs)
         else:
             session = get_session()
-        input = _input(kwargs)
+        input = _input(kwargs, provider)
         if session.mode is SessionMode.REPLAY and _should_stub(session, name):
             return _stub(session, name)
         span_id, parent_id = session.start_span()
         try:
             result = create(*args, **kwargs)
             _observe(
-                session, name, input, result, kwargs,
-                envelope_id=span_id, parent_envelope_id=parent_id,
+                session,
+                name,
+                input,
+                result,
+                kwargs,
+                envelope_id=span_id,
+                parent_envelope_id=parent_id,
+                provider=provider,
             )
             return result
         finally:
@@ -229,14 +254,18 @@ def _should_stub(session, name: str) -> bool:
 
 
 def _observe(
-    session, name, input, response, request_kwargs,
+    session,
+    name,
+    input,
+    response,
+    request_kwargs,
     *,
     envelope_id: str | None = None,
     parent_envelope_id: str | None = None,
+    provider: str | None = None,
 ):
     """Record in LIVE, or capture as a live cut-point in REPLAY. Never mutates the
     response; the caller always gets the real object."""
-    completion, model, usage = _extract(response)
     if session.mode is SessionMode.REPLAY:
         idx = session._replay_cursor.get(name, 0) + 1
         session.capture_live_input(name, idx, input)
@@ -244,21 +273,60 @@ def _observe(
         session.next_invocation(name)
         session._replay_cursor[name] = idx
     else:
+        output, attributes = _normalized_output(response, request_kwargs, provider)
+        session.record_envelope(
+            name,
+            "llm",
+            input,
+            output,
+            envelope_id=envelope_id,
+            parent_envelope_id=parent_envelope_id,
+            attributes=attributes,
+        )
+    if session.on_crossing is not None:
+        session.on_crossing(name, "llm", input, response)
+
+
+def _normalized_output(response: Any, request_kwargs: Mapping[str, Any], provider: str | None):
+    """Build (Output, attributes) via the provider adapter. Never raises."""
+    try:
+        from chronicle.providers import get_provider
+
+        adapter = get_provider(provider)
+        llm, response_model = adapter.parse_response(response)
+        try:
+            request, _ = adapter.parse_request(
+                request_kwargs if isinstance(request_kwargs, Mapping) else {}
+            )
+        except Exception:
+            request = LLMRequest(provider=adapter.name)
+        model = response_model or request.model or model_from(request_kwargs)
+        sampling = (
+            request.sampling
+            if request.sampling
+            else (sampling_params_from(request_kwargs) or SamplingParams())
+        )
+        attrs = LLMRequest(model=model, provider=adapter.name, sampling=sampling).to_attributes()
+        # Fill gaps the adapter missed using the legacy heuristic (text/usage only).
+        if llm.text is None or llm.usage is None or not model:
+            completion, legacy_model, legacy_usage = _extract(response)
+            if llm.text is None:
+                llm.text = completion
+            if llm.usage is None and legacy_usage is not None:
+                llm.usage = usage_from(legacy_usage)
+            if not attrs.get("gen_ai.request.model") and legacy_model:
+                attrs["gen_ai.request.model"] = str(legacy_model)
+        return Output(value=_raw(response), llm=llm), attrs
+    except Exception:
+        completion, model, usage = _extract(response)
         output = Output(
-            value=_raw(response),
-            llm=LLMOutput(text=completion, usage=usage_from(usage)),
+            value=_raw(response), llm=LLMOutput(text=completion, usage=usage_from(usage))
         )
         request = LLMRequest(
             model=model or model_from(request_kwargs),
             sampling=sampling_params_from(request_kwargs) or SamplingParams(),
         )
-        session.record_envelope(
-            name, "llm", input, output,
-            envelope_id=envelope_id, parent_envelope_id=parent_envelope_id,
-            attributes=request.to_attributes(),
-        )
-    if session.on_crossing is not None:
-        session.on_crossing(name, "llm", input, response)
+        return output, request.to_attributes()
 
 
 def _stub(session, name: str) -> Any:
@@ -267,19 +335,31 @@ def _stub(session, name: str) -> Any:
     return _Recorded(raw) if raw is not None else (envelope.output.llm or LLMOutput()).text
 
 
-def _input(kwargs: Mapping[str, Any]) -> Input:
+def _input(kwargs: Mapping[str, Any], provider: str | None = None) -> Input:
     from chronicle.boundary import _json_safe, _message
 
+    arguments = _json_safe(dict(kwargs))
+    # Provider adapter knows where messages live (Anthropic system, Responses
+    # input/instructions, ...). Fall back to legacy messages= lifting.
+    if provider:
+        try:
+            from chronicle.providers import get_provider
+
+            _, messages = get_provider(provider).parse_request(dict(kwargs))
+            if messages:
+                return Input(arguments=arguments, messages=messages)
+        except Exception:
+            pass
     return Input(
-        arguments=_json_safe(dict(kwargs)),
+        arguments=arguments,
         messages=[_message(m) for m in _json_safe(list(kwargs.get("messages", [])))],
     )
 
 
 def _extract(response: Any):
     completion = _first(
-        lambda: response.choices[0].message.content,           # OpenAI chat
-        lambda: response.content[0].text,                      # Anthropic messages
+        lambda: response.choices[0].message.content,  # OpenAI chat
+        lambda: response.content[0].text,  # Anthropic messages
         lambda: response["choices"][0]["message"]["content"],  # dict-shaped
     )
     model = getattr(response, "model", None) or _get(response, "model")

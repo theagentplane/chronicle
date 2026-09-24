@@ -428,8 +428,8 @@ def usage_from(source: Any) -> Usage | None:
                 return int(value)
         return None
 
-    input_tokens = count("input_tokens", "prompt_tokens")
-    output_tokens = count("output_tokens", "completion_tokens")
+    input_tokens = count("input_tokens", "prompt_tokens", "inputTokens", "promptTokenCount")
+    output_tokens = count("output_tokens", "completion_tokens", "outputTokens", "candidatesTokenCount")
     if input_tokens is None and output_tokens is None:
         return None
     return Usage(input_tokens=input_tokens, output_tokens=output_tokens)

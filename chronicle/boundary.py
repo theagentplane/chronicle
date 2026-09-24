@@ -45,6 +45,7 @@ def boundary(
     name: str,
     *,
     kind: str = "custom",
+    provider: str | None = None,
     extract_input: Callable[..., Input] | None = None,
     extract_result: Callable[[Any], Any] | None = None,
     extract_metadata: Callable[[Any], Mapping[str, Any]] | None = None,
@@ -77,6 +78,7 @@ def boundary(
             fn,
             name,
             kind,
+            provider=provider,
             extract_input=extract_input,
             extract_result=extract_result,
             extract_metadata=extract_metadata,
@@ -89,6 +91,7 @@ def wrap_llm(
     name: str,
     dispatch: Callable[..., Any],
     *,
+    provider: str | None = None,
     extract_input: Callable[..., Input] | None = None,
     extract_result: Callable[[Any], Any] | None = None,
     extract_metadata: Callable[[Any], Mapping[str, Any]] | None = None,
@@ -110,6 +113,7 @@ def wrap_llm(
         dispatch,
         name,
         "llm",
+        provider=provider,
         extract_input=extract_input,
         extract_result=extract_result,
         extract_metadata=extract_metadata,
@@ -121,6 +125,7 @@ def _bind_boundary(
     name: str,
     kind: str,
     *,
+    provider: str | None = None,
     extract_input: Callable[..., Input] | None,
     extract_result: Callable[[Any], Any] | None,
     extract_metadata: Callable[[Any], Mapping[str, Any]] | None,
@@ -134,11 +139,7 @@ def _bind_boundary(
         cached_sig = None
     # A method boundary's schema is inferred once from the wrapped method (signature,
     # return annotation, docstring). An LLM boundary has no method shape to infer.
-    static_attributes = (
-        None
-        if kind == "llm"
-        else infer_method_schema(fn, name).to_attributes()
-    )
+    static_attributes = None if kind == "llm" else infer_method_schema(fn, name).to_attributes()
 
     if inspect.iscoroutinefunction(fn):
 
@@ -153,15 +154,33 @@ def _bind_boundary(
                 session = get_session()
             if session.mode == SessionMode.LIVE:
                 return await _record_call_async(
-                    session, fn, name, kind, args, kwargs,
-                    extract_input, extract_result, extract_metadata, cached_sig, static_attributes,
+                    session,
+                    fn,
+                    name,
+                    kind,
+                    args,
+                    kwargs,
+                    extract_input,
+                    extract_result,
+                    extract_metadata,
+                    cached_sig,
+                    static_attributes,
+                    provider=provider,
                 )
             invocation_index = session._replay_cursor.get(name, 0) + 1
             if session.replay_plan.should_stub(name, invocation_index):
                 return session.stub_result(name, kind)
             return await _live_cutpoint_call_async(
-                session, fn, name, kind, args, kwargs,
-                extract_input, invocation_index, cached_sig,
+                session,
+                fn,
+                name,
+                kind,
+                args,
+                kwargs,
+                extract_input,
+                invocation_index,
+                cached_sig,
+                provider=provider,
             )
 
         return async_wrapper
@@ -177,15 +196,33 @@ def _bind_boundary(
             session = get_session()
         if session.mode == SessionMode.LIVE:
             return _record_call(
-                session, fn, name, kind, args, kwargs,
-                extract_input, extract_result, extract_metadata, cached_sig, static_attributes,
+                session,
+                fn,
+                name,
+                kind,
+                args,
+                kwargs,
+                extract_input,
+                extract_result,
+                extract_metadata,
+                cached_sig,
+                static_attributes,
+                provider=provider,
             )
         invocation_index = session._replay_cursor.get(name, 0) + 1
         if session.replay_plan.should_stub(name, invocation_index):
             return session.stub_result(name, kind)
         return _live_cutpoint_call(
-            session, fn, name, kind, args, kwargs,
-            extract_input, invocation_index, cached_sig,
+            session,
+            fn,
+            name,
+            kind,
+            args,
+            kwargs,
+            extract_input,
+            invocation_index,
+            cached_sig,
+            provider=provider,
         )
 
     return wrapper
@@ -194,6 +231,7 @@ def _bind_boundary(
 # --------------------------------------------------------------------------- #
 # Recording (LIVE mode)
 # --------------------------------------------------------------------------- #
+
 
 def _apply_on_enter(session, name, kind, input, kwargs) -> tuple[dict, bool]:
     """Run ``on_enter`` if set. Returns ``(call_kwargs, entered)``.
@@ -217,10 +255,20 @@ def _run_on_leave(session, name, kind, input, entered: bool) -> None:
 
 
 def _record_call(
-    session, fn, name, kind, args, kwargs,
-    extract_input, extract_result, extract_metadata, cached_sig=None, static_attributes=None,
+    session,
+    fn,
+    name,
+    kind,
+    args,
+    kwargs,
+    extract_input,
+    extract_result,
+    extract_metadata,
+    cached_sig=None,
+    static_attributes=None,
+    provider=None,
 ):
-    input = _capture_input(fn, kind, args, kwargs, extract_input, cached_sig)
+    input = _capture_input(fn, kind, args, kwargs, extract_input, cached_sig, provider=provider)
     call_kwargs, entered = _apply_on_enter(session, name, kind, input, kwargs)
     # Open the span before the body so nested boundaries parent here (OTel Context).
     span_id, parent_id = session.start_span()
@@ -229,14 +277,28 @@ def _record_call(
             result = fn(*args, **call_kwargs)
         except Exception as exc:
             _record_failure(
-                session, name, kind, input, exc, static_attributes,
-                envelope_id=span_id, parent_envelope_id=parent_id,
+                session,
+                name,
+                kind,
+                input,
+                exc,
+                static_attributes,
+                envelope_id=span_id,
+                parent_envelope_id=parent_id,
             )
             raise
         _record_success(
-            session, name, kind, input, result, extract_result, extract_metadata,
+            session,
+            name,
+            kind,
+            input,
+            result,
+            extract_result,
+            extract_metadata,
             static_attributes,
-            envelope_id=span_id, parent_envelope_id=parent_id,
+            envelope_id=span_id,
+            parent_envelope_id=parent_id,
+            provider=provider,
         )
         return result
     finally:
@@ -245,10 +307,20 @@ def _record_call(
 
 
 async def _record_call_async(
-    session, fn, name, kind, args, kwargs,
-    extract_input, extract_result, extract_metadata, cached_sig=None, static_attributes=None,
+    session,
+    fn,
+    name,
+    kind,
+    args,
+    kwargs,
+    extract_input,
+    extract_result,
+    extract_metadata,
+    cached_sig=None,
+    static_attributes=None,
+    provider=None,
 ):
-    input = _capture_input(fn, kind, args, kwargs, extract_input, cached_sig)
+    input = _capture_input(fn, kind, args, kwargs, extract_input, cached_sig, provider=provider)
     call_kwargs, entered = _apply_on_enter(session, name, kind, input, kwargs)
     span_id, parent_id = session.start_span()
     try:
@@ -256,14 +328,28 @@ async def _record_call_async(
             result = await fn(*args, **call_kwargs)
         except Exception as exc:
             _record_failure(
-                session, name, kind, input, exc, static_attributes,
-                envelope_id=span_id, parent_envelope_id=parent_id,
+                session,
+                name,
+                kind,
+                input,
+                exc,
+                static_attributes,
+                envelope_id=span_id,
+                parent_envelope_id=parent_id,
             )
             raise
         _record_success(
-            session, name, kind, input, result, extract_result, extract_metadata,
+            session,
+            name,
+            kind,
+            input,
+            result,
+            extract_result,
+            extract_metadata,
             static_attributes,
-            envelope_id=span_id, parent_envelope_id=parent_id,
+            envelope_id=span_id,
+            parent_envelope_id=parent_id,
+            provider=provider,
         )
         return result
     finally:
@@ -272,19 +358,34 @@ async def _record_call_async(
 
 
 def _record_success(
-    session, name, kind, input, result, extract_result, extract_metadata,
+    session,
+    name,
+    kind,
+    input,
+    result,
+    extract_result,
+    extract_metadata,
     static_attributes=None,
     *,
     envelope_id: str | None = None,
     parent_envelope_id: str | None = None,
+    provider: str | None = None,
 ):
     """Record the envelope, then notify observers. Never touches the return value."""
     recorded = extract_result(result) if extract_result else result
-    output = result_to_output(recorded, kind)
-    attributes = _call_attributes(recorded, kind, extract_metadata, static_attributes)
+    output, adapter_attrs = _adapter_output(kind, recorded, input, provider)
+    if output is None:
+        output = result_to_output(recorded, kind)
+    attributes = _call_attributes(
+        recorded, kind, extract_metadata, static_attributes, provider, adapter_attrs
+    )
     session.record_envelope(
-        name, kind, input, output,
-        envelope_id=envelope_id, parent_envelope_id=parent_envelope_id,
+        name,
+        kind,
+        input,
+        output,
+        envelope_id=envelope_id,
+        parent_envelope_id=parent_envelope_id,
         attributes=attributes,
     )
     if session.on_crossing is not None:
@@ -292,21 +393,32 @@ def _record_success(
 
 
 def _record_failure(
-    session, name, kind, input, exc, static_attributes=None,
+    session,
+    name,
+    kind,
+    input,
+    exc,
+    static_attributes=None,
     *,
     envelope_id: str | None = None,
     parent_envelope_id: str | None = None,
 ):
     """Record a failed crossing so incidents that raise are still reproducible."""
     session.record_envelope(
-        name, kind, input, Output(),
-        envelope_id=envelope_id, parent_envelope_id=parent_envelope_id,
+        name,
+        kind,
+        input,
+        Output(),
+        envelope_id=envelope_id,
+        parent_envelope_id=parent_envelope_id,
         status=Status(code="ERROR", message=str(exc)),
         attributes={**(static_attributes or {}), "error.type": type(exc).__name__},
     )
 
 
-def _call_attributes(result, kind, extract_metadata, static_attributes):
+def _call_attributes(
+    result, kind, extract_metadata, static_attributes, provider=None, adapter_attrs=None
+):
     """The GenAI attributes for this crossing: model and sampling params.
 
     Model attributes only apply to ``llm`` boundaries, so tool and router results are
@@ -315,6 +427,15 @@ def _call_attributes(result, kind, extract_metadata, static_attributes):
     (``static_attributes``). Capture is best-effort and never raises.
     """
     attributes = dict(static_attributes) if static_attributes else {}
+    if adapter_attrs:
+        attributes.update(adapter_attrs)
+    if provider and kind == "llm":
+        try:
+            from chronicle.envelope.genai import GEN_AI_PROVIDER_NAME
+
+            attributes.setdefault(GEN_AI_PROVIDER_NAME, provider)
+        except Exception:
+            pass
     try:
         model = sampling = None
         if extract_metadata is not None:
@@ -334,10 +455,20 @@ def _call_attributes(result, kind, extract_metadata, static_attributes):
 # Cut-point (REPLAY mode, live boundary). No envelope; capture for assertions.
 # --------------------------------------------------------------------------- #
 
+
 def _live_cutpoint_call(
-    session, fn, name, kind, args, kwargs, extract_input, invocation_index, cached_sig=None,
+    session,
+    fn,
+    name,
+    kind,
+    args,
+    kwargs,
+    extract_input,
+    invocation_index,
+    cached_sig=None,
+    provider=None,
 ):
-    input = _capture_input(fn, kind, args, kwargs, extract_input, cached_sig)
+    input = _capture_input(fn, kind, args, kwargs, extract_input, cached_sig, provider=provider)
     session.capture_live_input(name, invocation_index, input)
     call_kwargs, entered = _apply_on_enter(session, name, kind, input, kwargs)
     try:
@@ -353,9 +484,18 @@ def _live_cutpoint_call(
 
 
 async def _live_cutpoint_call_async(
-    session, fn, name, kind, args, kwargs, extract_input, invocation_index, cached_sig=None,
+    session,
+    fn,
+    name,
+    kind,
+    args,
+    kwargs,
+    extract_input,
+    invocation_index,
+    cached_sig=None,
+    provider=None,
 ):
-    input = _capture_input(fn, kind, args, kwargs, extract_input, cached_sig)
+    input = _capture_input(fn, kind, args, kwargs, extract_input, cached_sig, provider=provider)
     session.capture_live_input(name, invocation_index, input)
     call_kwargs, entered = _apply_on_enter(session, name, kind, input, kwargs)
     try:
@@ -389,26 +529,86 @@ def _advance_cutpoint(session, name, invocation_index):
 _IO_KEYS = ("messages", "system_prompt", "rag_chunks")
 
 
-def _capture_input(fn, kind, args, kwargs, extract_input, cached_sig=None) -> Input:
+def _capture_input(fn, kind, args, kwargs, extract_input, cached_sig=None, provider=None) -> Input:
     if extract_input is not None:
         return extract_input(*args, **kwargs)
     # The default capture must never break the wrapped call.
     try:
-        return _bind_input(fn, kind, args, kwargs, cached_sig)
+        return _bind_input(fn, kind, args, kwargs, cached_sig, provider=provider)
     except Exception:
         return Input(arguments={"args": _json_safe(list(args)), "kwargs": _json_safe(dict(kwargs))})
 
 
-def _bind_input(fn, kind, args, kwargs, cached_sig=None) -> Input:
+def _bind_input(fn, kind, args, kwargs, cached_sig=None, provider=None) -> Input:
     arguments = _bound_arguments(fn, args, kwargs, cached_sig)
     messages: list[Message] = []
     if kind == "llm":
-        source = _io_source(arguments)
-        rows = source.get("messages") or []
-        if not rows and "user_message" in source:
-            rows = [{"role": "user", "content": source["user_message"]}]
-        messages = [_message(row) for row in rows]
+        # Provider adapter knows where messages live (messages=, system, contents,
+        # input/instructions). Fall back to the legacy messages=/user_message path.
+        if provider:
+            try:
+                from chronicle.providers import get_provider
+
+                _, adapter_messages = get_provider(provider).parse_request(arguments)
+                if adapter_messages:
+                    messages = adapter_messages
+            except Exception:
+                messages = []
+        if not messages:
+            source = _io_source(arguments)
+            rows = source.get("messages") or []
+            if not rows and "user_message" in source:
+                rows = [{"role": "user", "content": source["user_message"]}]
+            messages = [_message(row) for row in rows]
     return Input.model_construct(arguments=arguments, messages=messages)
+
+
+def _adapter_output(kind, recorded, input, provider):
+    """Build (Output, adapter_attrs) via a provider adapter. Never raises.
+
+    Returns (None, {}) when no provider is declared or the adapter yields
+    nothing, so callers fall back to the legacy dict path. The raw response
+    stays in ``Output.value`` so nothing is lost when an adapter misses a field.
+    """
+    if kind != "llm" or not provider:
+        return None, {}
+    try:
+        from chronicle.providers import get_provider
+
+        adapter = get_provider(provider)
+        llm, response_model = adapter.parse_response(recorded)
+        # Request side gives model/sampling fallback when the response omits them.
+        try:
+            request, _ = adapter.parse_request(
+                input.arguments if hasattr(input, "arguments") else {}
+            )
+        except Exception:
+            request = None
+        model = response_model or (request.model if request and request.model else None)
+        sampling = request.sampling if request and request.sampling else SamplingParams()
+        attrs: dict[str, Any] = {}
+        if model or sampling.temperature is not None or sampling.top_p is not None:
+            req = LLMRequest(model=model, provider=adapter.name, sampling=sampling)
+            attrs.update(req.to_attributes())
+        else:
+            from chronicle.envelope.genai import GEN_AI_PROVIDER_NAME
+
+            attrs[GEN_AI_PROVIDER_NAME] = adapter.name
+        raw = _raw_value(recorded)
+        return Output.model_construct(value=raw, llm=llm), attrs
+    except Exception:
+        return None, {}
+
+
+def _raw_value(result: Any) -> Any:
+    if hasattr(result, "model_dump"):
+        try:
+            return result.model_dump()
+        except Exception:
+            pass
+    if isinstance(result, Mapping):
+        return dict(result)
+    return _json_safe(result)
 
 
 def _message(row: Any) -> Message:

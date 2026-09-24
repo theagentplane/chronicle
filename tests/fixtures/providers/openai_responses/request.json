@@ -1,0 +1,1 @@
+{"model": "gpt-4o", "temperature": 0.2, "instructions": "You are a refund guard.", "input": "refund order A-4471", "tools": [{"type": "function", "name": "refund", "description": "Issue a refund", "parameters": {"type": "object", "properties": {"order_id": {"type": "string"}}}}]}

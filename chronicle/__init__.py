@@ -13,7 +13,7 @@ from chronicle.envelope.schema import (
     ToolCall,
     Usage,
 )
-from chronicle.envelope.genai import LLMRequest, SamplingParams
+from chronicle.envelope.genai import GEN_AI_PROVIDER_NAME, LLMRequest, SamplingParams
 from chronicle.envelope.backends import (
     BufferedStore,
     JsonlStore,
@@ -27,6 +27,7 @@ from chronicle.execution_graph import ExecutionGraph
 from chronicle.redaction import apply_redactors, default_redactors, redact_secrets
 from chronicle.replay.plan import BoundaryMode, ReplayPlan
 from chronicle.session import ChronicleSession, SessionMode, get_session, reset_session
+from chronicle.providers import get_provider, provider_names, register_provider
 from chronicle.wrap import instrument, instrument_langgraph, wrap
 
 __version__ = "0.5.0"
@@ -49,6 +50,7 @@ __all__ = [
     "Envelope",
     "EnvelopeStore",
     "ExecutionGraph",
+    "GEN_AI_PROVIDER_NAME",
     "Input",
     "JsonlStore",
     "LLMOutput",
@@ -68,14 +70,17 @@ __all__ = [
     "boundary",
     "default_redactors",
     "envelope_span_attributes",
+    "get_provider",
     "get_session",
     "instrument",
     "instrument_langgraph",
     "instrument_otel",
     "is_enabled",
     "open_store",
+    "provider_names",
     "record",
     "redact_secrets",
+    "register_provider",
     "replay_trace",
     "reset_session",
     "wrap",

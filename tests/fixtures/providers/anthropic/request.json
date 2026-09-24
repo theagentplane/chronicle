@@ -1,0 +1,1 @@
+{"model": "claude-sonnet-4-6", "temperature": 0.2, "system": "You are a refund guard.", "messages": [{"role": "user", "content": "refund order A-4471"}], "tools": [{"name": "refund", "description": "Issue a refund", "input_schema": {"type": "object", "properties": {"order_id": {"type": "string"}}}}]}

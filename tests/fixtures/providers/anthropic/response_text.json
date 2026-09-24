@@ -1,0 +1,1 @@
+{"model": "claude-sonnet-4-6", "content": [{"type": "text", "text": "Order A-4471 totals $47.00."}], "stop_reason": "end_turn", "usage": {"input_tokens": 21, "output_tokens": 9}}
