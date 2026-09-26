@@ -101,3 +101,52 @@ def test_all_fixtures_pass_layer1(fixture_path: Path):
 
     _, _, assertions = injector.replay(agent)
     assert all(a.passed for a in assertions)
+
+@pytest.mark.layer1
+def test_structural_assertions_cover_success_and_failure_paths(sample_envelope: Envelope):
+    from chronicle.replay.assertions import StructuralAssertions
+
+    assertions = StructuralAssertions(
+        sample_envelope,
+        required_result_keys=["answer"],
+        forbid_tool_names=["delete_file"],
+    )
+    good_log = [{
+        "type": "tool_stub",
+        "name": "search_docs",
+        "arguments": {"query": "api key", "limit": 3},
+    }]
+
+    assert assertions.assert_tools_called(good_log).passed
+    assert assertions.assert_tool_argument_keys(good_log).passed
+    assert assertions.assert_result_structure({"answer": "ok"}).passed
+    assert assertions.assert_finish_reason({"finish_reason": "tool_calls"}).passed
+    assert assertions.assert_no_llm_calls(good_log).passed
+
+    missing_tool = assertions.assert_tools_called([])
+    assert not missing_tool.passed
+    assert "Missing tool calls" in missing_tool.message
+
+    bad_args = assertions.assert_tool_argument_keys([
+        {"type": "tool_stub", "name": "search_docs", "arguments": {}}
+    ])
+    assert not bad_args.passed
+    assert "missing keys" in bad_args.message
+
+    forbidden = assertions.assert_tools_called(good_log + [
+        {"type": "tool_stub", "name": "delete_file", "arguments": {}}
+    ])
+    assert not forbidden.passed
+    assert "Forbidden tools called" in forbidden.message
+
+    bad_result = assertions.assert_result_structure({})
+    assert not bad_result.passed
+    assert "Missing result keys" in bad_result.message
+
+    bad_finish = assertions.assert_finish_reason({"finish_reason": "stop"})
+    assert not bad_finish.passed
+    assert "Expected finish_reason" in bad_finish.message
+
+    real_llm = assertions.assert_no_llm_calls([{"type": "llm_api_call"}])
+    assert not real_llm.passed
+    assert "real LLM API call" in real_llm.message
