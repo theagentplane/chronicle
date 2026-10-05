@@ -341,7 +341,7 @@ models, and JSON Schema export (committed, with a CI drift check: a check that f
 - **Release order for a breaking change:** primitives, then control plane (reads both), then Chronicle and TokenOps
   (emit the new one).
 - **Pre-1.0:** consumers pin the exact minor. From 1.0: `>=1.2,<2`.
-- **Safety net:** a **golden corpus** (known-good example payloads used as tests) lives in the primitives repo; every repo's CI validates against it.
+- **Safety net:** consumers import the primitives models instead of writing their own parsers, so they validate against the same code. A shared golden corpus of example payloads is future scope (12.1).
 
 ### 2.9 Enumerations and well-known keys
 
@@ -499,7 +499,7 @@ optional override. Adapters are looked up by `(kind, provider-or-tool id)`; for 
 client type or given explicitly. A new provider is a new adapter with no change to the registry or the strategy.
 
 **Adapter contract.** For `llm` boundaries an adapter must fill the fixed fields from 2.3 (`provider`, `model`,
-`model_source`, exclusive `usage` buckets). Each supported provider has a conformance case in the primitives corpus: a
+`model_source`, exclusive `usage` buckets). Each supported provider has a conformance test in Chronicle's own test suite: a
 golden raw response and its expected canonical form.
 
 **Adapters in this sprint:** OpenAI-style (Chat Completions; also covers LiteLLM, which returns OpenAI-shaped responses)
@@ -583,7 +583,7 @@ store cannot honour (it returns empty results that look like "no data"); the nar
 ### 5.4 Test strategy
 
 Chronicle's own tests use an **in-memory fake** of the repository, kept inside the test suite and not shipped as a
-backend. Contract tests against the primitives golden corpus cover the wire format.
+backend. The wire format is covered by the primitives models themselves, which Chronicle and the control plane both import.
 
 ### 5.5 Consequences accepted
 
@@ -787,7 +787,7 @@ Each list is meant to be applied to that repo independently.
 2. Define Trace, Span, Envelope (with `llm` and `tool` input/output variants), the metadata rules, and the API models.
 3. `traceparent` carrier (parse, format; reserved `to_event` and `from_event`).
 4. Id generation and validation.
-5. Committed JSON Schema with a drift check; golden payload corpus; versioning policy from 2.8.
+5. Committed JSON Schema with a drift check; versioning policy from 2.8.
 
 ### 10.2 control-plane
 
@@ -864,6 +864,8 @@ stores and the `open_store` registry, `examples/control_plane/`, committed `fixt
 - **Layer 2** LLM-as-judge and assertion helpers.
 - **`unfinished` state** with a timeout, and span-derived concurrency counting.
 - **Rebuilding original Python types** from `raw` on replay (7.3).
+- **Golden payload corpus** in the primitives repo: shared known-good and known-bad examples. Not needed while every consumer
+  imports the shared models; worth adding if a consumer parses payloads without them.
 - **Serialization hardening** (the JSON conversion behind `raw`, [2.3](#23-input-and-output-by-kind)). Today the conversion is
   lossy and silent: opaque objects become a `repr` string; dates, UUID, Decimal, Enum and bytes also fall through to
   `repr`; tuples and sets become lists; dict keys become strings; nesting deeper than 6 levels becomes `repr`; `NaN` and
