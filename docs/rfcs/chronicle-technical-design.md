@@ -783,7 +783,7 @@ Each list is meant to be applied to that repo independently.
 ### 10.1 primitives (new repo)
 
 1. Create `theagentplane/primitives` (`agentplane-primitives`).
-2. Define Trace, Span, Envelope (with `llm` and `tool` input/output variants), and the metadata rules. The HTTP request and response wrappers are not part of primitives (decision 21).
+2. Define Trace, Span, Envelope (with `llm` and `tool` input/output variants), and the metadata rules. The HTTP request and response wrappers are not part of primitives (decision 22).
 3. `traceparent` carrier (parse, format; reserved `to_event` and `from_event`).
 4. Id generation and validation.
 5. Committed JSON Schema with a drift check; versioning policy from 2.8.
@@ -861,7 +861,7 @@ folder is excluded from lint, tests and packaging. They are rewritten later (12.
 | 17 | Visualization, OTel export and export features belong to the control plane. | Chronicle is an edge component (P2). |
 | 18 | Streaming, events, fan-in, TestCase, Layer 2, `unfinished` state: Future scope. | Not needed this sprint. |
 | 19 | Fixed homes for LLM cost data: `output.provider`, `output.model`, `output.usage` (exclusive, additive buckets), filled by adapters ([2.3](#23-input-and-output-by-kind)). | TokenOps reads one place whatever the SDK or agent framework; adapters absorb provider differences. |
-| 21 | HTTP request and response wrappers (write result, error body) belong to the control plane, not primitives. Its endpoints reuse primitives entities as bodies; Chronicle imports primitives directly. | Entities are data, not requests; keeps primitives about the data and Chronicle off server code (decision 9). Recorded as primitives ADR 0003 (Proposed). |
+| 22 | HTTP request and response wrappers (write result, error body) belong to the control plane, not primitives. Its endpoints reuse primitives entities as bodies; Chronicle imports primitives directly. | Entities are data, not requests; keeps primitives about the data and Chronicle off server code (decision 9). Recorded as primitives ADR 0003 (Proposed). |
 
 ---
 
