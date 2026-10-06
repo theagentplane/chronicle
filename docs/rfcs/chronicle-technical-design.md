@@ -820,9 +820,21 @@ Each list is meant to be applied to that repo independently.
 
 ### 10.4 chronicle (removals)
 
-`chronicle/cli.py`, `visualizer.py`, `otel.py`, the OpenInference and Phoenix instrumentation, the JSONL and SQLite
-stores and the `open_store` registry, `examples/control_plane/`, committed `fixtures/`, `ReplayInjector` and
-`StructuralAssertions`, and `docs/rfcs/control-plane-api.md`. The judge module stays but is out of scope (deferred).
+**Order of work.** Chronicle moves to the `src` layout first, as its own pure-move pull request (`chronicle/` becomes
+`src/chronicle/`; the import name stays `chronicle`, so user code is unaffected). The removals and rewrites follow in
+separate pull requests, each split against a plan under the 400-line rule.
+
+**Removed:** `chronicle/cli.py`, `visualizer.py`, `otel.py`, the OpenInference and Phoenix instrumentation, the JSONL and
+SQLite stores and the `open_store` registry, `execution_graph.py` (a view; replay gets a small index instead),
+`examples/control_plane/`, committed `fixtures/`, `ReplayInjector` and `StructuralAssertions`, the entity schema modules
+(replaced by the primitives package), and `docs/rfcs/control-plane-api.md`. The judge module stays but is out of scope
+(deferred).
+
+**Moved, not deleted:** the examples (`financial_incidents`, `deletion_agent`, `nested_subagents`, `sample_envelope`,
+`benchmark`, `langgraph_demo`) go to a temporary `_legacy_examples/` folder with a README stating they do not run yet. The
+folder is excluded from lint, tests and packaging. They are rewritten later (12.1).
+
+**Rewritten, not deleted:** the tests that use local stores or fixtures, against an in-memory fake of the client.
 
 ---
 
@@ -864,6 +876,9 @@ stores and the `open_store` registry, `examples/control_plane/`, committed `fixt
 - **Layer 2** LLM-as-judge and assertion helpers.
 - **`unfinished` state** with a timeout, and span-derived concurrency counting.
 - **Rebuilding original Python types** from `raw` on replay (7.3).
+- **Local control-plane scaffold and examples rewrite.** A scaffold that starts a local control plane (replacing the
+  zero-config local quickstart that [5.5](#55-consequences-accepted) removes), and the examples in `_legacy_examples/`
+  rewritten to run against it.
 - **Golden payload corpus** in the primitives repo: shared known-good and known-bad examples. Not needed while every consumer
   imports the shared models; worth adding if a consumer parses payloads without them.
 - **Serialization hardening** (the JSON conversion behind `raw`, [2.3](#23-input-and-output-by-kind)). Today the conversion is
@@ -908,6 +923,8 @@ stores and the `open_store` registry, `examples/control_plane/`, committed `fixt
 - **`run_id` and `trace_id`** relationship for TokenOps (10.3).
 - **Decoupling hooks from `enabled`** (section 9): proposed, not yet confirmed.
 - **Enumerations to confirm (2.9):** the canonical `finish_reason` set, and string-only values for Trace labels.
+- **Method-schema inference.** `genai.py` infers each boundary method's input and output schema and records it as
+  `chronicle.input.schema`. This design does not mention it. Keep it as metadata, or drop it?
 - **Adding hooks that need sync registration for spans** if TokenOps requires it: spans are async for now.
 
 ### 12.3 Migration from 0.5.0
