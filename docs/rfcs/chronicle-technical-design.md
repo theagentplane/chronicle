@@ -826,12 +826,14 @@ separate pull requests, each split against a plan under the 400-line rule.
 **Removed:** `chronicle/cli.py`, `visualizer.py`, `otel.py`, the OpenInference and Phoenix instrumentation, the JSONL and
 SQLite stores and the `open_store` registry, `execution_graph.py` (a view; replay gets a small index instead),
 `examples/control_plane/`, committed `fixtures/`, `ReplayInjector` and `StructuralAssertions`, the entity schema modules
-(replaced by the primitives package), and `docs/rfcs/control-plane-api.md`. The judge module stays but is out of scope
+(replaced by the primitives package), the method-schema inference in `genai.py` (decision 21), and
+`docs/rfcs/control-plane-api.md`. The judge module stays but is out of scope
 (deferred).
 
 **Moved, not deleted:** the examples (`financial_incidents`, `deletion_agent`, `nested_subagents`, `sample_envelope`,
-`benchmark`, `langgraph_demo`) go to a temporary `_legacy_examples/` folder with a README stating they do not run yet. The
-folder is excluded from lint, tests and packaging. They are rewritten later (12.1).
+`benchmark`, `langgraph_demo`), the README demo (`docs/demo.py`, `demo.tape`, `demo.gif`) and `scripts/` go to a temporary
+`_legacy_demos/` folder with a README stating they do not run yet. The folder is excluded from lint, tests and packaging.
+They are rewritten later (12.1).
 
 **Rewritten, not deleted:** the tests that use local stores or fixtures, against an in-memory fake of the client.
 
@@ -851,7 +853,6 @@ folder is excluded from lint, tests and packaging. They are rewritten later (12.
 | 8 | Remote-only; tests use an in-memory fake. | One backend; the control plane owns storage. Consequences listed in 5.5. |
 | 9 | `theagentplane/primitives` and the versioning plan in 2.8. | The control plane owns the schema; Chronicle must not depend on server code. |
 | 10 | JSON outputs only for stub fidelity; per-provider and per-tool adapters are one-way (`to_canonical`). | Rebuilding Python types is later work. |
-| 20 | Raw input and output of the boundaried method are stored as-is for every kind; canonical fields are derived for internal plumbing; no `from_canonical`. | Replay needs no reverse mapping and loses nothing; canonical fields can be re-derived; the roughly doubled payload size is accepted. |
 | 11 | Replay scoped to `trace_id` plus `span_id`; name-plus-count matching with documented limitations. | A span is the service request instance; matching improvements are future work. |
 | 12 | Kinds: `llm` and `tool` only, as a closed enum in primitives; no custom or unregistered kinds. Delegate is a tool. | A router is an LLM call or a function; the delegate link is carried by `traceparent`. |
 | 13 | Config surface in section 9. | One documented place for everything Chronicle honors. |
@@ -861,6 +862,8 @@ folder is excluded from lint, tests and packaging. They are rewritten later (12.
 | 17 | Visualization, OTel export and export features belong to the control plane. | Chronicle is an edge component (P2). |
 | 18 | Streaming, events, fan-in, TestCase, Layer 2, `unfinished` state: Future scope. | Not needed this sprint. |
 | 19 | Fixed homes for LLM cost data: `output.provider`, `output.model`, `output.usage` (exclusive, additive buckets), filled by adapters ([2.3](#23-input-and-output-by-kind)). | TokenOps reads one place whatever the SDK or agent framework; adapters absorb provider differences. |
+| 20 | Raw input and output of the boundaried method are stored as-is for every kind; canonical fields are derived for internal plumbing; no `from_canonical`. | Replay needs no reverse mapping and loses nothing; canonical fields can be re-derived; the roughly doubled payload size is accepted. |
+| 21 | Method-schema inference (`chronicle.input.schema`, `chronicle.output.schema`) is dropped. | Nothing reads it: TokenOps and the control plane do not reference it, and inside Chronicle only its own test does. It repeated a schema on every envelope. It can return later, recorded once per span or service. |
 | 22 | HTTP request and response wrappers (write result, error body) belong to the control plane, not primitives. Its endpoints reuse primitives entities as bodies; Chronicle imports primitives directly. | Entities are data, not requests; keeps primitives about the data and Chronicle off server code (decision 9). Recorded as primitives ADR 0003 (Proposed). |
 
 ---
@@ -877,8 +880,10 @@ folder is excluded from lint, tests and packaging. They are rewritten later (12.
 - **`unfinished` state** with a timeout, and span-derived concurrency counting.
 - **Rebuilding original Python types** from `raw` on replay (7.3).
 - **Local control-plane scaffold and examples rewrite.** A scaffold that starts a local control plane (replacing the
-  zero-config local quickstart that [5.5](#55-consequences-accepted) removes), and the examples in `_legacy_examples/`
+  zero-config local quickstart that [5.5](#55-consequences-accepted) removes), and the examples, demo and scripts in `_legacy_demos/`
   rewritten to run against it.
+- **Tool and method schemas.** If a tool catalog is ever wanted, record each tool's schema once per span or service,
+  not on every envelope (decision 21).
 - **Golden payload corpus** in the primitives repo: shared known-good and known-bad examples. Not needed while every consumer
   imports the shared models; worth adding if a consumer parses payloads without them.
 - **Serialization hardening** (the JSON conversion behind `raw`, [2.3](#23-input-and-output-by-kind)). Today the conversion is
@@ -923,8 +928,6 @@ folder is excluded from lint, tests and packaging. They are rewritten later (12.
 - **`run_id` and `trace_id`** relationship for TokenOps (10.3).
 - **Decoupling hooks from `enabled`** (section 9): proposed, not yet confirmed.
 - **Enumerations to confirm (2.9):** the canonical `finish_reason` set, and string-only values for Trace labels.
-- **Method-schema inference.** `genai.py` infers each boundary method's input and output schema and records it as
-  `chronicle.input.schema`. This design does not mention it. Keep it as metadata, or drop it?
 - **Adding hooks that need sync registration for spans** if TokenOps requires it: spans are async for now.
 
 ### 12.3 Migration from 0.5.0
