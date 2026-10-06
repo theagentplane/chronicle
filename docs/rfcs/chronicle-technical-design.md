@@ -24,7 +24,7 @@ Three repositories have to work together at the end of this sprint:
 
 | Repo | Role |
 |---|---|
-| `primitives` (new) | The shared schemas (entities defined in [section 2](#2-primitives)): Trace, Span, Envelope, API models, and the `traceparent` carrier (the helper for the W3C trace-context header, [section 3.2](#32-propagation-traceparent)). No I/O (no network or disk). |
+| `primitives` (new) | The shared schemas (entities defined in [section 2](#2-primitives)): Trace, Span, Envelope, and the `traceparent` carrier (the helper for the W3C trace-context header, [section 3.2](#32-propagation-traceparent)). No I/O (no network or disk). |
 | `chronicle` | Edge SDK: record, save, replay. Depends on `primitives`. |
 | `control-plane` | Owns storage, query, visualization, export. Depends on `primitives`. |
 | `tokenops` | Governance (budgets and spend policies for agent runs). Consumes Chronicle [hooks](#44-hooks). Side effects listed in [section 10](#10-cross-repo-side-effects). |
@@ -43,7 +43,7 @@ Each layer depends only on the ones above it in this list.
 
 | Layer | Contains | Rule |
 |---|---|---|
-| **Primitives** | Trace, Span, Envelope and the API models | Data only. No I/O, no behaviour, no OTel. Owned by the primitives repo. |
+| **Primitives** | Trace, Span, Envelope | Data only. No I/O, no behaviour, no OTel. Owned by the primitives repo. |
 | **Framework** | [Interceptor](#41-boundary-and-the-interceptor), [kind registry](#42-kind-registry), [adapters](#43-provider-and-tool-adapters), [hooks](#44-hooks), [redaction](#45-redaction), [context](#46-context-and-the-recording-session) | In-process machinery. No network. |
 | **Repositories** | How entities are saved to and read from the control plane | The only layer that does I/O. |
 | **Capabilities** | Record, Replay | Workflows built from the layers above. Own their logical (in-memory) objects. |
@@ -324,8 +324,7 @@ an entity either: it was a trace exported to a directory, and fixtures in code a
 ### 2.8 Versioning and the primitives repo
 
 **Repo.** `theagentplane/primitives`. PyPI `agentplane-primitives`. Import `agentplane_primitives`. Contents: the
-models above, id generation and validation, the `traceparent` carrier (the helper that parses and writes the header, [3.2](#32-propagation-traceparent)), the API request and response
-models, and JSON Schema export (committed, with a CI drift check: a check that fails if the committed schema differs from what the models generate). Dependencies: pydantic only. No I/O. Python 3.10+.
+models above, id generation and validation, the `traceparent` carrier (the helper that parses and writes the header, [3.2](#32-propagation-traceparent)), and JSON Schema export (committed, with a CI drift check: a check that fails if the committed schema differs from what the models generate). Dependencies: pydantic only. No I/O. Python 3.10+.
 
 **Two versions.**
 
@@ -784,7 +783,7 @@ Each list is meant to be applied to that repo independently.
 ### 10.1 primitives (new repo)
 
 1. Create `theagentplane/primitives` (`agentplane-primitives`).
-2. Define Trace, Span, Envelope (with `llm` and `tool` input/output variants), the metadata rules, and the API models.
+2. Define Trace, Span, Envelope (with `llm` and `tool` input/output variants), and the metadata rules. The HTTP request and response wrappers are not part of primitives (decision 22).
 3. `traceparent` carrier (parse, format; reserved `to_event` and `from_event`).
 4. Id generation and validation.
 5. Committed JSON Schema with a drift check; versioning policy from 2.8.
@@ -862,6 +861,7 @@ folder is excluded from lint, tests and packaging. They are rewritten later (12.
 | 17 | Visualization, OTel export and export features belong to the control plane. | Chronicle is an edge component (P2). |
 | 18 | Streaming, events, fan-in, TestCase, Layer 2, `unfinished` state: Future scope. | Not needed this sprint. |
 | 19 | Fixed homes for LLM cost data: `output.provider`, `output.model`, `output.usage` (exclusive, additive buckets), filled by adapters ([2.3](#23-input-and-output-by-kind)). | TokenOps reads one place whatever the SDK or agent framework; adapters absorb provider differences. |
+| 22 | HTTP request and response wrappers (write result, error body) belong to the control plane, not primitives. Its endpoints reuse primitives entities as bodies; Chronicle imports primitives directly. | Entities are data, not requests; keeps primitives about the data and Chronicle off server code (decision 9). Recorded as primitives ADR 0003 (Proposed). |
 
 ---
 
