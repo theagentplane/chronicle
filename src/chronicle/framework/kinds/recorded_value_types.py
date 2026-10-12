@@ -18,6 +18,21 @@ class RecordedDict(dict[str, Any]):
         except KeyError:
             raise AttributeError(name) from None
 
+    def model_dump(self, **_: Any) -> dict[str, Any]:
+        """Plain data, so code written for SDK (pydantic) responses keeps working on replay."""
+        return _plain(self)  # type: ignore[no-any-return]
+
+    def to_dict(self) -> dict[str, Any]:
+        return _plain(self)  # type: ignore[no-any-return]
+
 
 class RecordedList(list[Any]):
     """A list that stands for a recorded JSON array."""
+
+
+def _plain(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {key: _plain(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_plain(item) for item in value]
+    return value

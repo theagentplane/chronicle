@@ -134,7 +134,7 @@ exclude = ["_legacy_demos"]
 
 [[tool.mypy.overrides]]
 # Optional third-party integrations are imported lazily and are not all typed.
-module = ["langgraph.*", "langchain_core.*", "langchain_openai.*", "a2a.*", "uvicorn.*"]
+module = ["langgraph.*", "langchain_core.*", "langchain_openai.*", "a2a.*", "uvicorn.*", "control_plane.*"]
 ignore_missing_imports = true
 
 [tool.pydantic-mypy]

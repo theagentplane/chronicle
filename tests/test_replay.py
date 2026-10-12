@@ -1,5 +1,7 @@
 """Replay: scoped to a span; STUB returns raw, RUN executes real code (design section 7)."""
 
+from typing import Any
+
 import pytest
 
 import chronicle
@@ -124,3 +126,15 @@ def test_run_advances_the_cursor_even_if_the_call_raises(
     ):
         flaky()
     assert run.invocation_count("flaky") == 1
+
+
+def test_a_stub_supports_model_dump_like_an_sdk_response(
+    control_plane: InMemoryControlPlane,
+) -> None:
+    trace_id, span_id = _record_incident(control_plane)
+    with chronicle.replay_trace(trace_id, span_id, client=control_plane):
+        found: Any = search("x")
+    dumped = found.model_dump()
+    assert type(dumped) is dict
+    assert dumped["hits"][0] == {"title": "a"}
+    assert type(dumped["hits"][0]) is dict

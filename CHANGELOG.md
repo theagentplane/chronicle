@@ -87,11 +87,20 @@ introduced; TokenOps and any other consumer key on `trace_id` (decision 28, ADR 
 - The examples, the README demo and the scripts moved to `_legacy_demos/` (not run, linted or
   packaged) until they are rewritten against a local control plane.
 
+### Verified against the real control plane
+- `tests/e2e/test_real_control_plane.py` runs the control-plane service (with an API key and SQLite)
+  and checks, over HTTP: a chain saved and read back with valid primitives envelopes and the
+  parent link intact, replay by `trace_id` plus `span_id` (stub and cut-point), `emit_open` leaving
+  one record per envelope, write-once trace labels, and a wrong key failing open and strict. It
+  needs the control-plane branch that adds the Chronicle 1.0 entities (control-plane PR, see
+  docs/migration).
+- A STUB result now has `model_dump()` and `to_dict()` (plain data), so code written for SDK
+  responses keeps working on replay. Rebuilding the original types is still future scope.
+
 ### Known gaps (not regressions)
 - Streaming is not supported (`stream=True` passes through unrecorded).
-- The control-plane HTTP endpoints for trace and span upsert and for reading a span's envelopes are
-  coded against a `ControlPlaneClient` interface; the paths are in one module
-  (`repositories/http_endpoints.py`) and are confirmed against the control plane in its own repository.
+- The control-plane paths are in one module (`repositories/http_endpoints.py`) and are now
+  implemented by the control plane (docs/chronicle-api.md in that repository).
 
 
 ## [0.5.0] - 2026-09-22
