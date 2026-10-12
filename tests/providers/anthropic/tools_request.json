@@ -1,0 +1,59 @@
+{
+  "model": "claude-sonnet-4-5",
+  "system": "You are a weather bot.",
+  "max_tokens": 256,
+  "temperature": 0.2,
+  "stop_sequences": [
+    "END"
+  ],
+  "messages": [
+    {
+      "role": "user",
+      "content": "Weather in Paris?"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Checking."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01",
+          "name": "get_weather",
+          "input": {
+            "city": "Paris"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01",
+          "content": "18C and sunny"
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "name": "get_weather",
+      "description": "Current weather",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ],
+  "tool_choice": {
+    "type": "any"
+  }
+}

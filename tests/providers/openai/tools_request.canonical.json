@@ -1,0 +1,63 @@
+{
+  "model": "gpt-4o",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a weather bot.",
+      "tool_call_id": null
+    },
+    {
+      "role": "user",
+      "content": "Weather in Paris?",
+      "tool_call_id": null
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_call",
+          "id": "call_abc123",
+          "name": "get_weather",
+          "arguments": {
+            "city": "Paris",
+            "unit": "c"
+          }
+        }
+      ],
+      "tool_call_id": null
+    },
+    {
+      "role": "tool",
+      "content": "18C and sunny",
+      "tool_call_id": "call_abc123"
+    }
+  ],
+  "system": null,
+  "tools": [
+    {
+      "name": "get_weather",
+      "description": "Current weather",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ],
+  "tool_choice": {
+    "name": "get_weather"
+  },
+  "response_format": null,
+  "params": {
+    "temperature": 0.2,
+    "top_p": null,
+    "max_tokens": 100,
+    "seed": 7,
+    "stop": [
+      "END"
+    ]
+  }
+}

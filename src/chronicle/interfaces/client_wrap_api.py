@@ -74,7 +74,7 @@ def _completion_target(client: Any) -> tuple[Any, str, Callable[..., Any]] | Non
 
 
 def _wrapped(create: Callable[..., Any], spec: Any) -> Callable[..., Any]:
-    if inspect.iscoroutinefunction(create):
+    if _is_async(create):
 
         @functools.wraps(create)
         async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
@@ -93,6 +93,20 @@ def _wrapped(create: Callable[..., Any], spec: Any) -> Callable[..., Any]:
 
     setattr(wrapper, _FLAG, True)
     return wrapper
+
+
+def _is_async(create: Callable[..., Any]) -> bool:
+    """True if ``create`` is a coroutine function, also through ``functools.wraps`` layers.
+
+    SDK methods are decorated (argument checks, overloads), so the outermost callable may look
+    synchronous while the function it wraps is ``async def``.
+    """
+    if inspect.iscoroutinefunction(create):
+        return True
+    try:
+        return inspect.iscoroutinefunction(inspect.unwrap(create))
+    except ValueError:  # a cycle in __wrapped__
+        return False
 
 
 def _client_metadata(client: Any) -> dict[str, JsonValue]:

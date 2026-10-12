@@ -1,0 +1,26 @@
+{
+  "content": [
+    {
+      "type": "reasoning",
+      "text": "The user asks for 6 times 7."
+    },
+    {
+      "type": "text",
+      "text": "42"
+    }
+  ],
+  "finish_reason": "stop",
+  "provider": "anthropic",
+  "model": "claude-sonnet-4-5-20250929",
+  "model_source": "served",
+  "usage": {
+    "input": 30,
+    "cached_read": 0,
+    "cache_write": 0,
+    "output": 120,
+    "reasoning": 0
+  },
+  "response_id": "msg_r1",
+  "deployment_id": null,
+  "error": null
+}

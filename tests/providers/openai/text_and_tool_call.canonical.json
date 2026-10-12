@@ -1,0 +1,31 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Let me look that up."
+    },
+    {
+      "type": "tool_call",
+      "id": "call_abc123",
+      "name": "get_weather",
+      "arguments": {
+        "city": "Paris",
+        "unit": "c"
+      }
+    }
+  ],
+  "finish_reason": "tool_calls",
+  "provider": "openai",
+  "model": "gpt-4o-2024-08-06",
+  "model_source": "served",
+  "usage": {
+    "input": 52,
+    "cached_read": 0,
+    "cache_write": 0,
+    "output": 21,
+    "reasoning": 0
+  },
+  "response_id": "chatcmpl-9x1",
+  "deployment_id": null,
+  "error": null
+}

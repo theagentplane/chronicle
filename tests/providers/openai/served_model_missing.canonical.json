@@ -1,0 +1,22 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "ok"
+    }
+  ],
+  "finish_reason": "stop",
+  "provider": "openai",
+  "model": "gpt-4o",
+  "model_source": "requested",
+  "usage": {
+    "input": 5,
+    "cached_read": 0,
+    "cache_write": 0,
+    "output": 1,
+    "reasoning": 0
+  },
+  "response_id": "chatcmpl-m1",
+  "deployment_id": null,
+  "error": null
+}

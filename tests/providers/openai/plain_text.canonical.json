@@ -1,0 +1,22 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Paris is the capital of France."
+    }
+  ],
+  "finish_reason": "stop",
+  "provider": "openai",
+  "model": "gpt-4o-2024-08-06",
+  "model_source": "served",
+  "usage": {
+    "input": 14,
+    "cached_read": 0,
+    "cache_write": 0,
+    "output": 8,
+    "reasoning": 0
+  },
+  "response_id": "chatcmpl-9x1",
+  "deployment_id": null,
+  "error": null
+}

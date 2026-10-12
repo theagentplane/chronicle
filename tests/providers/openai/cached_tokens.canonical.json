@@ -1,0 +1,22 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Done."
+    }
+  ],
+  "finish_reason": "stop",
+  "provider": "openai",
+  "model": "gpt-4o-2024-08-06",
+  "model_source": "served",
+  "usage": {
+    "input": 86,
+    "cached_read": 1920,
+    "cache_write": 0,
+    "output": 50,
+    "reasoning": 0
+  },
+  "response_id": "chatcmpl-c1",
+  "deployment_id": null,
+  "error": null
+}

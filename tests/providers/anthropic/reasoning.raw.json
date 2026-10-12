@@ -1,0 +1,25 @@
+{
+  "id": "msg_r1",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "thinking",
+      "thinking": "The user asks for 6 times 7.",
+      "signature": "sig"
+    },
+    {
+      "type": "text",
+      "text": "42"
+    }
+  ],
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "usage": {
+    "input_tokens": 30,
+    "output_tokens": 120,
+    "cache_read_input_tokens": 0,
+    "cache_creation_input_tokens": 0
+  },
+  "model": "claude-sonnet-4-5-20250929"
+}

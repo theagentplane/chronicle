@@ -1,0 +1,22 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Done."
+    }
+  ],
+  "finish_reason": "stop",
+  "provider": "anthropic",
+  "model": "claude-sonnet-4-5-20250929",
+  "model_source": "served",
+  "usage": {
+    "input": 86,
+    "cached_read": 1920,
+    "cache_write": 300,
+    "output": 50,
+    "reasoning": 0
+  },
+  "response_id": "msg_c1",
+  "deployment_id": null,
+  "error": null
+}

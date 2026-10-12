@@ -8,29 +8,41 @@ parent-id, so the downstream span's ``parent_envelope_id`` is that envelope. Req
 other host (the LLM provider, say) are neither recorded nor given the header: that is what stops
 trace ids leaking to third parties and the LLM call being recorded twice.
 
-Mechanism: ``httpx.Client.send`` and ``httpx.AsyncClient.send`` are patched once. A2A and other
-protocols built on ``httpx`` are covered with no protocol-specific code.
+Mechanism: ``Client.send`` and ``AsyncClient.send`` are patched once. A2A and other protocols
+built on ``httpx`` are covered with no protocol-specific code.
+
+**``httpx`` and ``httpx2``.** Recent LLM SDKs (``openai`` 3, ``anthropic`` 1) moved to
+``httpx2``, a separate, API-compatible package. Both are patched when installed, so a peer
+called through either is covered. The LLM SDKs' own traffic is to hosts that are not on the
+allow-list in any case.
 
 The recorded input is ``{method, url, headers, body}`` and the output is ``{status_code,
 headers, body}``. Credentials in headers (``authorization``, ``cookie``, ``x-api-key``, ...)
 are never stored. A response that is streamed is recorded with ``body = null``. In a REPLAY
-STUB the recorded response is rebuilt as an ``httpx.Response``.
+STUB the recorded response is rebuilt as a response object.
 """
 
+import importlib
+import importlib.util
 import json
 from collections.abc import Mapping
+from types import ModuleType
 from typing import Any
 
-import httpx
 from agentplane_primitives.enums import Kind
+from agentplane_primitives.models import TraceContext
+from agentplane_primitives.utils import format_traceparent
 from pydantic import JsonValue
 
+from chronicle.framework.boundary_spec_types import BoundarySpec
 from chronicle.framework.context.session_context_utils import current_envelope_id, current_session
 from chronicle.framework.redaction.redactor_types import REDACTED
 from chronicle.interfaces.boundary_api import make_spec
 from chronicle.interfaces.propagation_api import TRACEPARENT, is_allowed_host
 from chronicle.interfaces.runtime_utils import get_settings, interceptor
 from chronicle.repositories.http_control_plane_client import INTERNAL_EXTENSION
+
+SUPPORTED_MODULES = ("httpx", "httpx2")
 
 _SENSITIVE_HEADERS = {
     "authorization",
@@ -43,79 +55,76 @@ _SENSITIVE_HEADERS = {
 }
 _DROPPED_ON_REBUILD = {"content-length", "content-encoding", "transfer-encoding"}
 
-_original_send: Any = None
-_original_asend: Any = None
+# module name -> (original Client.send, original AsyncClient.send)
+_patched: dict[str, tuple[Any, Any]] = {}
 
 
 def instrument_httpx() -> None:
-    """Patch ``httpx`` once so allow-listed outbound calls are recorded and given the header."""
-    global _original_send, _original_asend
-    if _original_send is not None:
-        return
-    _original_send = httpx.Client.send
-    _original_asend = httpx.AsyncClient.send
-
-    def send(self: httpx.Client, request: httpx.Request, **kwargs: Any) -> httpx.Response:
-        if not _applies(request):
-            return _original_send(self, request, **kwargs)  # type: ignore[no-any-return]
-        spec = _spec(request)
-
-        def perform(req: httpx.Request) -> httpx.Response:
-            _inject_header(req)
-            return _original_send(self, req, **kwargs)  # type: ignore[no-any-return]
-
-        result = interceptor.call(spec, perform, (request,), {})
-        return _as_response(result, request)
-
-    async def asend(
-        self: httpx.AsyncClient, request: httpx.Request, **kwargs: Any
-    ) -> httpx.Response:
-        if not _applies(request):
-            return await _original_asend(self, request, **kwargs)  # type: ignore[no-any-return]
-        spec = _spec(request)
-
-        async def perform(req: httpx.Request) -> httpx.Response:
-            _inject_header(req)
-            return await _original_asend(self, req, **kwargs)  # type: ignore[no-any-return]
-
-        result = await interceptor.acall(spec, perform, (request,), {})
-        return _as_response(result, request)
-
-    httpx.Client.send = send  # type: ignore[method-assign]
-    httpx.AsyncClient.send = asend  # type: ignore[method-assign]
+    """Patch ``httpx`` (and ``httpx2`` if installed) once; idempotent."""
+    for name in SUPPORTED_MODULES:
+        if name in _patched or importlib.util.find_spec(name) is None:
+            continue
+        _patch(importlib.import_module(name))
 
 
 def uninstrument_httpx() -> None:
-    """Restore the original ``httpx`` methods."""
-    global _original_send, _original_asend
-    if _original_send is None:
-        return
-    httpx.Client.send = _original_send  # type: ignore[method-assign]
-    httpx.AsyncClient.send = _original_asend  # type: ignore[method-assign]
-    _original_send = None
-    _original_asend = None
+    """Restore the original methods."""
+    for name, (original_send, original_asend) in list(_patched.items()):
+        module = importlib.import_module(name)
+        module.Client.send = original_send
+        module.AsyncClient.send = original_asend
+        del _patched[name]
 
 
-def _applies(request: httpx.Request) -> bool:
+def _patch(module: ModuleType) -> None:
+    original_send = module.Client.send
+    original_asend = module.AsyncClient.send
+
+    def send(self: Any, request: Any, **kwargs: Any) -> Any:
+        if not _applies(request):
+            return original_send(self, request, **kwargs)
+        spec = _spec(request)
+
+        def perform(req: Any) -> Any:
+            _inject_header(req)
+            return original_send(self, req, **kwargs)
+
+        result = interceptor.call(spec, perform, (request,), {})
+        return _as_response(module, result, request)
+
+    async def asend(self: Any, request: Any, **kwargs: Any) -> Any:
+        if not _applies(request):
+            return await original_asend(self, request, **kwargs)
+        spec = _spec(request)
+
+        async def perform(req: Any) -> Any:
+            _inject_header(req)
+            return await original_asend(self, req, **kwargs)
+
+        result = await interceptor.acall(spec, perform, (request,), {})
+        return _as_response(module, result, request)
+
+    module.Client.send = send
+    module.AsyncClient.send = asend
+    _patched[module.__name__] = (original_send, original_asend)
+
+
+def _applies(request: Any) -> bool:
     if request.extensions.get(INTERNAL_EXTENSION):
         return False  # Chronicle's own traffic
-    settings = get_settings()
-    return is_allowed_host(str(request.url), settings.inject_hosts)
+    return is_allowed_host(str(request.url), get_settings().inject_hosts)
 
 
-def _inject_header(request: httpx.Request) -> None:
+def _inject_header(request: Any) -> None:
     session = current_session()
     envelope_id = current_envelope_id()
-    if session is None or envelope_id is None or not get_settings().inject:
+    if session is None or envelope_id is None or session.is_replay or not get_settings().inject:
         return
-    from agentplane_primitives.models import TraceContext
-    from agentplane_primitives.utils import format_traceparent
-
     context = TraceContext(trace_id=session.trace_id, parent_envelope_id=envelope_id)
     request.headers[TRACEPARENT] = format_traceparent(context)
 
 
-def _spec(request: httpx.Request) -> Any:
+def _spec(request: Any) -> BoundarySpec:
     url = request.url
     name = f"http {request.method} {url.host}{url.path}"
     return make_spec(
@@ -127,7 +136,7 @@ def _spec(request: httpx.Request) -> Any:
     )
 
 
-def _describe_request(request: httpx.Request) -> None:  # signature only; never called
+def _describe_request(request: Any) -> None:  # signature only; never called
     return None
 
 
@@ -153,10 +162,10 @@ def _body_value(content: bytes) -> JsonValue:
         return text
 
 
-def _request_input(request: httpx.Request) -> dict[str, JsonValue]:
+def _request_input(request: Any) -> dict[str, JsonValue]:
     try:
         content = request.content
-    except httpx.RequestNotRead:
+    except Exception:  # a streaming request body that has not been read
         content = b""
     return {
         "method": request.method,
@@ -167,11 +176,11 @@ def _request_input(request: httpx.Request) -> dict[str, JsonValue]:
 
 
 def _response_output(response: Any) -> JsonValue:
-    if not isinstance(response, httpx.Response):
+    if not hasattr(response, "status_code"):
         return None
     try:
         body = _body_value(response.content)
-    except httpx.ResponseNotRead:
+    except Exception:  # a streamed response that has not been read
         body = None
     return {
         "status_code": response.status_code,
@@ -180,9 +189,9 @@ def _response_output(response: Any) -> JsonValue:
     }
 
 
-def _as_response(result: Any, request: httpx.Request) -> httpx.Response:
+def _as_response(module: ModuleType, result: Any, request: Any) -> Any:
     """The real response passes through; a stub (recorded dict) is rebuilt as a response."""
-    if isinstance(result, httpx.Response):
+    if isinstance(result, module.Response):
         return result
     data = result if isinstance(result, dict) else {}
     body = data.get("body")
@@ -191,9 +200,12 @@ def _as_response(result: Any, request: httpx.Request) -> httpx.Response:
         for key, value in (data.get("headers") or {}).items()
         if key.lower() not in _DROPPED_ON_REBUILD
     }
-    content = body.encode("utf-8") if isinstance(body, str) else json.dumps(body).encode("utf-8")
     if body is None:
         content = b""
-    return httpx.Response(
+    elif isinstance(body, str):
+        content = body.encode("utf-8")
+    else:
+        content = json.dumps(body).encode("utf-8")
+    return module.Response(
         int(data.get("status_code") or 200), headers=headers, content=content, request=request
     )

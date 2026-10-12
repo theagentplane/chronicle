@@ -1,0 +1,20 @@
+{
+  "id": "msg_f1",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "text",
+      "text": "I can't help with that."
+    }
+  ],
+  "stop_reason": "refusal",
+  "stop_sequence": null,
+  "usage": {
+    "input_tokens": 20,
+    "output_tokens": 9,
+    "cache_read_input_tokens": 0,
+    "cache_creation_input_tokens": 0
+  },
+  "model": "claude-sonnet-4-5-20250929"
+}
