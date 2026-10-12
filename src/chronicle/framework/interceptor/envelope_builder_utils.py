@@ -5,8 +5,9 @@ raw form, derive the canonical fields from the redacted raw, then store. So no s
 redactor masks can reappear in a canonical field.
 """
 
+import logging
 import re
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from datetime import datetime
 from typing import Any
 
@@ -28,6 +29,7 @@ from chronicle.framework.serialization.json_utils import to_json
 from chronicle.framework.serialization.truncation_utils import truncate_json
 from chronicle.timing_utils import utc_now
 
+_log = logging.getLogger("chronicle")
 _METADATA_KEY = re.compile(r"^[a-z0-9_]+(\.[a-z0-9_]+)*$")
 SEQUENCE_KEY = "chronicle.sequence"
 INVOCATION_KEY = "chronicle.invocation_index"
@@ -50,14 +52,36 @@ def prepare_output(
     """Return the canonical output (derived from redacted raw), extra metadata, truncation."""
     settings = crossing.session.settings
     spec = crossing.spec
-    shaped = spec.extract_result(result) if spec.extract_result is not None else result
+    shaped = _shape_result(spec.name, spec.extract_result, result)
     raw: JsonValue = to_json(shaped) if settings.capture_output else None
     raw = redact_json(raw, settings.redactors)
     raw, truncated = truncate_json(raw, settings.max_payload_bytes)
-    extra: Mapping[str, Any] = {}
-    if spec.extract_metadata is not None:
-        extra = spec.extract_metadata(result) or {}
+    extra = _result_metadata(spec.name, spec.extract_metadata, result)
     return crossing.strategy.build_output(spec, raw_input, raw), extra, truncated
+
+
+def _shape_result(name: str, extract: Callable[[Any], Any] | None, result: Any) -> Any:
+    """Apply the developer's ``extract_result``; a failure there falls back to the real result."""
+    if extract is None:
+        return result
+    try:
+        return extract(result)
+    except Exception:
+        _log.warning("chronicle extract_result failed for %r", name, exc_info=True)
+        return result
+
+
+def _result_metadata(
+    name: str, extract: Callable[[Any], Mapping[str, Any]] | None, result: Any
+) -> Mapping[str, Any]:
+    """Apply the developer's ``extract_metadata``; a failure there adds no metadata."""
+    if extract is None:
+        return {}
+    try:
+        return extract(result) or {}
+    except Exception:
+        _log.warning("chronicle extract_metadata failed for %r", name, exc_info=True)
+        return {}
 
 
 def error_output(crossing: Crossing, exc: BaseException) -> OutputError:

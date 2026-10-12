@@ -1,6 +1,7 @@
 """Topology 1 and 2: a chain of two agents over A2A and over plain HTTP, per framework."""
 
 import pytest
+from agentplane_primitives.models import LlmOutput
 
 from tests.e2e.agents.factory import ANTHROPIC_WIRE, FRAMEWORKS
 from tests.e2e.assertions import (
@@ -62,3 +63,28 @@ def test_chain_of_two_agents(system: System, framework: str, transport: str) -> 
     # nothing leaks to the provider; the peer received the header (it joined the trace above)
     assert_no_traceparent_sent_to_provider(orchestrator.llm, specialist.llm)
     assert framework in ANTHROPIC_WIRE or llm_a.input.raw["model"] == "gpt-4o"
+
+
+@pytest.mark.parametrize("framework", FRAMEWORKS)
+def test_cached_tokens_are_bucketed_the_same_for_every_framework(
+    system: System, framework: str
+) -> None:
+    """OpenAI counts cached tokens inside the prompt, Anthropic reports them separately; the
+    adapters convert both into the same exclusive, additive buckets."""
+    if framework in ANTHROPIC_WIRE:
+        reply = final(framework, "done", input_tokens=24, output_tokens=5, cache_read=16)
+    else:
+        reply = final(framework, "done", prompt=40, completion=5, cached=16)
+    system.add("solo", framework, [reply])
+    system.configure()
+
+    assert system.call("solo", "hi").json() == {"answer": "done"}
+
+    (llm,) = llm_envelopes(system, "solo")
+    assert isinstance(llm.output, LlmOutput)
+    assert llm.output.usage is not None
+    assert (llm.output.usage.input, llm.output.usage.cached_read, llm.output.usage.output) == (
+        24,
+        16,
+        5,
+    )

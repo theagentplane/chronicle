@@ -12,12 +12,13 @@ back ``output.raw``.
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
+from typing import Any
 
 from agentplane_primitives.models import Envelope
 from agentplane_primitives.utils import new_span_id
 
 from chronicle.capabilities.replay.replay_plan_types import ReplayPlan
-from chronicle.capabilities.replay.replay_state import ReplayState
+from chronicle.capabilities.replay.replay_state import CallRecord, ReplayState
 from chronicle.framework.boundary_enums import SessionMode
 from chronicle.framework.context.recording_session import RecordingSession
 from chronicle.framework.context.session_context_utils import use_session
@@ -37,19 +38,20 @@ class ReplayRun:
     def trace_id(self) -> str:
         return self.session.trace_id
 
-    def captured_input(self, name: str, invocation_index: int) -> object:
+    def captured_input(self, name: str, invocation_index: int) -> Any:
         """The arguments the ``RUN`` call of ``name`` received."""
         return self.state.captured_input(name, invocation_index)
 
-    def captured_result(self, name: str, invocation_index: int) -> object:
+    def captured_result(self, name: str, invocation_index: int) -> Any:
         """What the ``RUN`` call of ``name`` returned."""
         return self.state.captured_result(name, invocation_index)
 
     def invocation_count(self, name: str) -> int:
         return self.state.invocation_count(name)
 
-    def call_log(self) -> list[object]:
-        return list(self.state.call_log())
+    def call_log(self) -> list[CallRecord]:
+        """Every crossing seen, in order, with the mode it ran in."""
+        return self.state.call_log()
 
 
 def load_recording(client: ControlPlaneClient, trace_id: str, span_id: str) -> list[Envelope]:
