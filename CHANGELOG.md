@@ -7,14 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.6.0] - unreleased
+## [1.0.0] - unreleased
 
 A clean break from 0.5.0 (design decision 14): Chronicle is rebuilt on `agentplane-primitives`,
 saves to the control plane over HTTP and replays a span by id. **Every entry below is classified.**
-The migration each consumer needs is in [docs/migration-0.5-to-0.6.md](docs/migration-0.5-to-0.6.md).
+The migration each consumer needs is in [docs/migration-0.5-to-1.0.md](docs/migration-0.5-to-1.0.md).
 
-Version number: **0.6.0**, not 1.0. The control-plane endpoints are not final (design 10.2) and
-`agentplane-primitives` is pre-1.0, so the API is not yet stable (see [docs/versioning.md](docs/versioning.md)).
+Version number: **1.0.0** (maintainer decision). From here the Chronicle API follows SemVer (see
+[docs/versioning.md](docs/versioning.md)). `agentplane-primitives` is still pre-1.0, so it stays pinned
+at the exact minor (`==0.1.*`).
+
+Identity: **`trace_id` is the only run identifier.** There is no `run_id` in Chronicle and none is
+introduced; TokenOps and any other consumer key on `trace_id` (decision 28, ADR 0009).
 
 ### Changed (breaking)
 - **Entities come from `agentplane-primitives==0.1.*`.** `Envelope`, `Input`, `Output`, `LLMOutput`,

@@ -1,7 +1,7 @@
 # Roadmap
 
-Chronicle is early (0.x). The API, the configuration and the wire format may change between minor
-versions; pin the exact minor. Nothing here is a dated commitment. The design's list of what is
+Chronicle is at 1.0: the API, the configuration and the wire behaviour are stable within a major
+version (see [docs/versioning.md](docs/versioning.md)); new work is additive. Nothing here is a dated commitment. The design's list of what is
 deliberately not built yet is
 [section 12.1 of the technical design](docs/rfcs/chronicle-technical-design.md); priorities are shaped
 in [Discussions](https://github.com/theagentplane/chronicle/discussions) and tracked in
@@ -19,7 +19,7 @@ OpenAI Responses API (issue #61), Azure OpenAI deployment names, Gemini, Bedrock
 returns no served model). Tool adapters for HTTP, MCP and A2A calls.
 
 ### Local control-plane scaffold and the demos
-A scaffold that starts a local control plane (replacing the zero-config quickstart that 0.6
+A scaffold that starts a local control plane (replacing the zero-config quickstart that 1.0
 removes), and the examples, demo and scripts in `_legacy_demos/` rewritten to run against it.
 
 ## Later
@@ -36,11 +36,10 @@ removes), and the examples, demo and scripts in `_legacy_demos/` rewritten to ru
 - **Hook security review:** what hooks may see and do.
 - **More instrumenters:** WSGI, `requests`, `aiohttp`, gRPC, MCP.
 - **Lazy trace registration**, once the latency at the trace root has been measured.
-- **Toward a stable 1.0:** when the control-plane endpoints and primitives are settled.
 
 ## Recently shipped
 
-See [CHANGELOG.md](CHANGELOG.md). 0.6.0 is a rebuild on `agentplane-primitives` with a remote-only
+See [CHANGELOG.md](CHANGELOG.md). 1.0.0 is a rebuild on `agentplane-primitives` with a remote-only
 repository client, an interceptor shared by every entry point, provider conformance tests and an
 end-to-end suite of multi-agent systems over A2A and HTTP.
 

@@ -3,8 +3,8 @@
 A step-by-step guide. By the end you will have recorded a request to the control plane, followed a
 call to a second agent, and replayed the request without the LLM.
 
-> This guide is for 0.6. If you are coming from 0.5, read the
-> [migration note](migration-0.5-to-0.6.md) first.
+> This guide is for 1.0. If you are coming from 0.5, read the
+> [migration note](migration-0.5-to-1.0.md) first.
 
 ## 0. The one idea
 

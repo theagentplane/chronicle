@@ -48,6 +48,7 @@ Do not write one for routine changes: a bug fix, a rename, a small refactor.
 | [0006](0006-single-mutable-envelope-record.md) | Keep one envelope record, mutable until closed | Proposed |
 | [0007](0007-synchronous-trace-registration.md) | Register the trace synchronously at the root | Proposed |
 | [0008](0008-rewrite-delivered-as-one-change.md) | Deliver the primitives rewrite as one large pull request | Proposed |
+| [0009](0009-trace-id-is-the-run-identifier.md) | Use `trace_id` as the only run identifier; there is no `run_id` | Accepted |
 
 Related repositories: [chronicle](https://github.com/theagentplane/chronicle), [primitives](https://github.com/theagentplane/primitives),
 [control-plane](https://github.com/theagentplane/control-plane), [tokenops](https://github.com/theagentplane/tokenops).

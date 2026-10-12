@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | Implemented in Chronicle 0.6.0 (issue #67); deviations and decisions taken are in 11 and 12.2 |
+| Status | Implemented in Chronicle 1.0.0 (issue #67); deviations and decisions taken are in 11 and 12.2 |
 | Baseline | chronicle 0.5.0, control-plane 0.2.x, tokenops (read from source) |
 | Scope | Chronicle, the shared primitives package, and the side effects on control-plane and TokenOps |
 | Supersedes | `docs/rfcs/control-plane-api.md` (moved to the control-plane repo, see section 10; removed here) |
@@ -773,7 +773,7 @@ Every setting a developer can set in their agent that Chronicle honors. **Preced
 | Intent capture | `emit_open` | Send an open write for each envelope (default off); see [2.4](#24-lifecycle-one-record-mutable-until-closed) and [6.3](#63-intent-capture) |
 
 Interaction: with `enabled = false`, **0.5** boundaries became plain passthroughs and skipped hooks, so turning
-recording off also turned off governance. **0.6 decouples them** (decision 23): `enabled = false` switches recording
+recording off also turned off governance. **1.0 decouples them** (decision 23): `enabled = false` switches recording
 off (no envelopes, no trace registration, no writes) and hooks keep running, so a governor registered as a hook keeps
 working. A `record` hook has nothing to fire on while recording is off.
 
@@ -810,7 +810,7 @@ Each list is meant to be applied to that repo independently.
 1. Remove `delegate` from `NodeType` (TokenOps' list of observation kinds; now `llm | tool`); delegates become ordinary tool observations. Drop the
    `rolled_up_cost_micros` handling and the delegate branch in `ledger.py`. Spend is already booked once, in the child's
    LLM calls, so totals are unaffected.
-2. Replace `X-TokenOps-Run-Id` and `X-TokenOps-Parent-Span-Id` with Chronicle's `traceparent`. How `run_id` relates to
+2. Replace `X-TokenOps-Run-Id` and `X-TokenOps-Parent-Span-Id` with Chronicle's `traceparent`. There is no `run_id`: `trace_id` is the run identifier (decision 28). Previously: how `run_id` relates to
    `trace_id` (equal, or a Trace label) is still to be decided.
 3. Read `output.provider`, the served `output.model` and `output.usage` (`input`, `cached_read`, `cache_write`, `output`,
    `reasoning`; see [2.3](#23-input-and-output-by-kind)) from the envelope, rather than from the live result object.
@@ -877,6 +877,7 @@ They are rewritten later (12.1).
 | 25 | The `httpx` instrumenter patches `httpx` and, if installed, `httpx2`. | `openai` 3 and `anthropic` 1 moved to `httpx2`, an API-compatible package; a peer called through either must be covered. |
 | 26 | The primitives rewrite is delivered as one large pull request, reviewable commit by commit. | The maintainer's decision (issue #67, ADR 0008); supersedes the ordering in 10.4. |
 | 27 | A STUB replay of a recorded failure re-raises (`RecordedCallError`). | A failing crossing is recorded so the incident is reproducible; returning a placeholder hid it (issue #34). |
+| 28 | `trace_id` is the only run identifier; there is no `run_id`. | One id for one request across services; a second id would need a mapping that nothing needs (maintainer decision, [ADR 0009](../adr/0009-trace-id-is-the-run-identifier.md)). |
 
 ---
 
@@ -936,10 +937,10 @@ They are rewritten later (12.1).
 
 ### 12.2 Open items
 
-- **Version number** of the clean break: **decided, 0.6.0** (not 1.0): the control-plane endpoints are not final and
+- **Version number** of the clean break: **decided, 1.0.0** (maintainer decision). The control-plane endpoints are not final and
   primitives is pre-1.0 (`docs/versioning.md`).
-- **`run_id` and `trace_id`** relationship for TokenOps (10.3): **deferred.** It is a TokenOps decision and needs no
-  Chronicle change either way; `trace_id` is the only id Chronicle emits.
+- **`run_id` and `trace_id`** relationship for TokenOps (10.3): **decided, `trace_id` only** (decision 28). There is no
+  `run_id`; TokenOps keys its runs on `trace_id`.
 - **Decoupling hooks from `enabled`** (section 9): **decided, decoupled** (decision 23).
 - **Enumerations to confirm (2.9):** the canonical `finish_reason` set is implemented as proposed
   (`stop`, `length`, `tool_calls`, `content_filter`, `other`); the Anthropic `stop_reason = refusal` mapping to

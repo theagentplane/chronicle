@@ -21,10 +21,10 @@
 
 </div>
 
-> **0.6 is a clean break from 0.5.** Chronicle now records onto the shared
+> **1.0 is a clean break from 0.5.** Chronicle now records onto the shared
 > [`agentplane-primitives`](https://github.com/theagentplane/primitives) schema and saves to the
 > control plane over HTTP. Local stores, fixtures, the CLI and the visualizer are gone. Read the
-> [migration note](docs/migration-0.5-to-0.6.md) before upgrading.
+> [migration note](docs/migration-0.5-to-1.0.md) before upgrading.
 
 ## What it is
 
@@ -235,10 +235,10 @@ under `args` and keyword arguments are top-level keys.
 
 ## Versioning
 
-Chronicle is pre-1.0. The Python API, the configuration and the wire format may change between
-minor versions; every change is classified **compatible** or **breaking** in the
+Chronicle follows SemVer from 1.0: the Python API, the configuration and the documented wire
+behaviour change only in a new major version. Every change is classified **compatible** or **breaking** in the
 [changelog](CHANGELOG.md) with the migration each consumer needs. The policy is in
-[docs/versioning.md](docs/versioning.md). Pin the exact minor (`agent-chronicle==0.6.*`).
+[docs/versioning.md](docs/versioning.md). Pin `agent-chronicle>=1.0,<2`.
 
 The entity schema is versioned by `agentplane-primitives`, which Chronicle pins at the exact minor
 (`==0.1.*`).
@@ -297,7 +297,7 @@ _legacy_demos/               # 0.5 examples, parked until rewritten; not run, li
 
 - [Technical design](docs/rfcs/chronicle-technical-design.md)
 - [Architecture decision records](docs/adr/README.md)
-- [Migration from 0.5](docs/migration-0.5-to-0.6.md)
+- [Migration from 0.5](docs/migration-0.5-to-1.0.md)
 - [Versioning policy](docs/versioning.md)
 - [Onboarding](docs/onboarding.md)
 - [Changelog](CHANGELOG.md) - [Contributing](CONTRIBUTING.md) - [Releasing](RELEASING.md) - [Security](SECURITY.md)

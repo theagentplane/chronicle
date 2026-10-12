@@ -1,13 +1,13 @@
-# Migrating from Chronicle 0.5 to 0.6
+# Migrating from Chronicle 0.5 to 1.0
 
-0.6 is a clean break (design decision 14). The change cannot be additive: the envelope shape, the
+1.0 is a clean break (design decision 14). The change cannot be additive: the envelope shape, the
 storage model and the replay unit all changed. This note lists what to do, in the order you will
 hit it. Every item is also classified in the [changelog](../CHANGELOG.md).
 
 ## 1. Install
 
 ```bash
-pip install "agent-chronicle==0.6.*"      # pulls agentplane-primitives==0.1.*
+pip install "agent-chronicle>=1.0,<2"      # pulls agentplane-primitives==0.1.*
 ```
 
 Chronicle now needs a **control plane** to save to and to replay from. The zero-config local
@@ -22,7 +22,7 @@ chronicle.configure(
 # or CHRONICLE_CONTROL_PLANE_URL, CHRONICLE_API_KEY, CHRONICLE_SERVICE_NAME
 ```
 
-| 0.5 | 0.6 |
+| 0.5 | 1.0 |
 |---|---|
 | `record(store=..., export=..., retain_envelopes=...)` | `configure(control_plane_url=...)`; no export, no local copy |
 | `record(name, attributes={...})` | `record(name, labels={...})` (labels are trace-level, string values, written once) |
@@ -43,7 +43,7 @@ chronicle.configure(
 
 Import the models from primitives and read the sections:
 
-| 0.5 (`chronicle.Envelope`) | 0.6 (`agentplane_primitives.models.Envelope`) |
+| 0.5 (`chronicle.Envelope`) | 1.0 (`agentplane_primitives.models.Envelope`) |
 |---|---|
 | `envelope.input.arguments` | `envelope.input.raw` |
 | `envelope.input.messages` | `envelope.input.messages` (LLM) |
@@ -65,7 +65,7 @@ the **non-cached** part and `cached_read` is separate. The sum of the buckets is
 session.on_enter = lambda name, kind, input: ...
 
 
-# 0.6
+# 1.0
 class Governor(chronicle.Hook):
     def enter(self, call): ...  # may return kwargs to merge, or raise AbortCall
 
@@ -84,7 +84,7 @@ Events are `enter`, `leave`, `crossing` and `record`, run in registration order.
 chronicle.replay_trace(
     "fixtures/traces/incident-001/", ReplayPlan().stub("agent", 1).live("delete_file", 1)
 )
-# 0.6: from the control plane, by span
+# 1.0: from the control plane, by span
 chronicle.replay_trace(trace_id, span_id, ReplayPlan().run("delete_file", 1))
 ```
 

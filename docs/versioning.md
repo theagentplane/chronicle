@@ -18,11 +18,15 @@ Chronicle pins `agentplane-primitives` at the **exact minor** while primitives i
 
 ## Rules
 
-- **Pre-1.0 (now).** The API may change in a minor release. Every change is classified in the
-  [changelog](../CHANGELOG.md) as **compatible** or **breaking**, with the migration each consumer
-  needs. Pin the exact minor: `agent-chronicle==0.6.*`.
-- **From 1.0.** Breaking changes need a new major. Within a major: new optional parameters, new
-  settings with a safe default, new adapters and new instrumenters are additive.
+- **SemVer from 1.0 (now).** Breaking changes need a new major. Within a major: new optional
+  parameters, new settings with a safe default, new adapters and new instrumenters are additive.
+  Every change is classified in the [changelog](../CHANGELOG.md) as **compatible** or **breaking**,
+  with the migration each consumer needs. Pin `agent-chronicle>=1.0,<2`.
+- **Primitives is pre-1.0**, so Chronicle pins it at the exact minor (`==0.1.*`). A primitives
+  schema change therefore ships as a Chronicle release that moves the pin, classified like any
+  other change.
+- **Identity.** `trace_id` is the only run identifier. There is no `run_id`, and none is added;
+  consumers key on `trace_id` (ADR 0009).
 - **What counts as the public API:** the names in `chronicle.__all__`, the `CHRONICLE_*` settings and
   their defaults, the `traceparent` behaviour, and the envelope content Chronicle writes (which
   fields are filled, how `usage` buckets are computed, the reserved `chronicle.*` metadata keys).
@@ -39,15 +43,17 @@ Chronicle pins `agentplane-primitives` at the **exact minor** while primitives i
 
 ## Deciding the version of a change
 
-| Change | Pre-1.0 | From 1.0 |
-|---|---|---|
-| Rename or remove a public name, change a default that alters what is recorded, change what a documented field holds | minor, breaking | major |
-| New optional parameter, setting, adapter or instrumenter | patch or minor, compatible | minor |
-| Bug fix with no documented behaviour change | patch | patch |
-| New envelope `metadata` key under `chronicle.` | minor, compatible | minor |
+| Change | Version |
+|---|---|
+| Rename or remove a public name, change a default that alters what is recorded, change what a documented field holds | major, breaking |
+| New optional parameter, setting, adapter or instrumenter | minor, compatible |
+| New envelope `metadata` key under `chronicle.` | minor, compatible |
+| Bug fix with no documented behaviour change | patch |
 
-## Why 0.6 and not 1.0
+## Why 1.0
 
-The 0.5 to 0.6 change is a clean break, but it is not a stable API: the control-plane HTTP endpoints
-for span upsert and span reads are not final and primitives is 0.1. 1.0 follows when both are
-settled and the end-to-end suite has run against the real control plane.
+The 0.5 to 1.0 change is the clean break (design decision 14), and the maintainer decided to call the
+result 1.0: the public API, the configuration and the documented behaviour are what this version
+commits to. Two things are open and are tracked rather than hidden: the control-plane endpoint paths
+(confined to `chronicle.repositories.http_endpoints`, so a change there is a patch to that module)
+and the `agentplane-primitives` pin, which stays at the exact minor until primitives reaches 1.0.
