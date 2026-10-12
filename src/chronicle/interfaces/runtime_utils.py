@@ -165,7 +165,8 @@ def _client_and_sink(
         if _state.sink is not None and _state.sink_key == key:
             return _state.client, _state.sink
         if _state.sink is not None:
-            _state.sink.flush_quietly()
+            # Stop the old delivery thread; an injected client belongs to the caller.
+            _state.sink.close(close_client=_state.client_override is None)
             _state.sink = None
         if client is None:
             assert settings.control_plane_url is not None

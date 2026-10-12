@@ -91,7 +91,7 @@ def test_extractors_shape_the_record_not_the_return_value(
 
 
 def test_a_recording_failure_never_breaks_the_call(control_plane: InMemoryControlPlane) -> None:
-    @chronicle.boundary("odd", extract_input=lambda *a, **k: 1 / 0)  # type: ignore[arg-type,return-value]
+    @chronicle.boundary("odd", extract_input=lambda *a, **k: 1 / 0)  # type: ignore[arg-type]
     def odd() -> str:
         return "still works"
 

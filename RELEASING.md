@@ -1,51 +1,34 @@
 # Releasing
 
-Chronicle publishes to PyPI as **`agent-chronicle`** using GitHub Actions with
-**Trusted Publishing (OIDC)**, so no API tokens are stored anywhere.
+Chronicle publishes to PyPI as **`agent-chronicle`**. Releases are published by the `Release`
+workflow when a `v*` tag is pushed. It uses PyPI Trusted Publishing (OIDC), so no API token is
+stored anywhere.
 
 ## One-time setup
 
-1. Create the project on PyPI by configuring a **pending publisher**:
-   PyPI → *Your projects* → *Publishing* → add a GitHub Actions publisher with:
-   - PyPI project name: `agent-chronicle`
-   - Owner: `theagentplane`
-   - Repository: `chronicle`
-   - Workflow filename: `release.yml`
-   - Environment name: `pypi`
-2. In the GitHub repo, create an **Environment** named `pypi`
-   (Settings → Environments). Optionally add required reviewers.
-3. (Recommended) Do a dry run against **TestPyPI** first:
+1. On PyPI, add a **publisher** for the project `agent-chronicle`:
+   owner `theagentplane`, repository `chronicle`, workflow `release.yml`, environment `pypi`.
+2. In the GitHub repository settings, create an environment named `pypi` and add **required
+   reviewers** so a human approves each publish.
+3. (Recommended) Do a dry run against TestPyPI the first time:
    ```bash
-   python -m build
-   twine upload --repository testpypi dist/*
-   pip install --index-url https://test.pypi.org/simple/ agent-chronicle
+   uv build
+   uv run twine upload --repository testpypi dist/*
    ```
 
 ## Cutting a release
 
-1. Move the `CHANGELOG.md` `[Unreleased]` items under a new version heading with
-   today's date; start a fresh empty `[Unreleased]`.
-2. Bump the version in **both** places (they must match, or the CLI reports the
-   wrong version and the release tag-guard fails):
-   - `version` in `pyproject.toml`
-   - `__version__` in `chronicle/__init__.py`
+1. Bump `__version__` in `src/chronicle/_version.py`. This is the only place the version lives.
+2. Move the `[Unreleased]` entries in `CHANGELOG.md` under the new version and date. Each entry is
+   classified **compatible** or **breaking** and names the migration each consumer needs.
+3. Merge that change to `main` through a pull request.
+4. Tag and push: `git tag v<version> && git push origin v<version>`.
+5. Approve the `pypi` environment deployment when prompted.
 
-   Follow SemVer (`0.1.0` -> `0.1.1` patch, `0.2.0` minor, `1.0.0` first stable API).
-3. Commit and tag:
-   ```bash
-   git commit -am "Release vX.Y.Z"
-   git tag vX.Y.Z
-   git push && git push --tags
-   ```
-4. Create a **GitHub Release** from the tag. Publishing the release triggers
-   `release.yml`, which builds and uploads to PyPI automatically.
-5. Verify:
-   ```bash
-   pip install agent-chronicle==X.Y.Z
-   ```
+The workflow refuses to publish if the tag does not match `_version.py`.
 
-## Versioning notes
+## Version choice
 
-- Stay in `0.x` while the Envelope schema may still change; signal instability.
-- Any change to the Envelope schema is at least a **minor** bump and must ship
-  with a fixture migration path (see `CONTRIBUTING.md`).
+Follow [docs/versioning.md](docs/versioning.md). While pre-1.0, a breaking change is a new minor
+version and consumers pin the exact minor. Check that the `agentplane-primitives` pin in
+`pyproject.toml` is the minor you tested against.

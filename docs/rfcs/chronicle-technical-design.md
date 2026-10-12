@@ -2,10 +2,10 @@
 
 | Field | Value |
 |---|---|
-| Status | Draft for review (not implemented) |
+| Status | Implemented in Chronicle 0.6.0 (issue #67); deviations and decisions taken are in 11 and 12.2 |
 | Baseline | chronicle 0.5.0, control-plane 0.2.x, tokenops (read from source) |
 | Scope | Chronicle, the shared primitives package, and the side effects on control-plane and TokenOps |
-| Supersedes | `docs/rfcs/control-plane-api.md` (moves to the control-plane repo, see section 10) |
+| Supersedes | `docs/rfcs/control-plane-api.md` (moved to the control-plane repo, see section 10; removed here) |
 
 Sections that describe what exists today are marked **Today**. Everything else is the design.
 Items deliberately not designed yet are marked **Future scope** and collected in section 12.
@@ -730,6 +730,8 @@ MCP over stdio has no headers; the later design uses the JSON-RPC `_meta` field.
 **Propagation allow-list (security default).** LLM SDKs use `httpx` internally. Without a filter the header would be sent
 to third parties such as `api.openai.com`, leaking trace ids and double-recording the call. Injection happens **only
 to configured hosts**; the default is deny.
+The instrumenter patches `httpx` and, if installed, `httpx2` (the package `openai` 3 and `anthropic` 1 now use,
+decision 25).
 
 ### 8.4 What the developer sees versus what is automatic
 
@@ -770,9 +772,10 @@ Every setting a developer can set in their agent that Chronicle honors. **Preced
 | | `registration_fail_open` | Behaviour when the control plane is unreachable |
 | Intent capture | `emit_open` | Send an open write for each envelope (default off); see [2.4](#24-lifecycle-one-record-mutable-until-closed) and [6.3](#63-intent-capture) |
 
-Interaction to document with the code: with `enabled = false`, **today** boundaries become plain passthroughs and skip
-hooks, so turning recording off also turns off governance. The design decouples hooks from the recording switch (open
-question in section 12).
+Interaction: with `enabled = false`, **0.5** boundaries became plain passthroughs and skipped hooks, so turning
+recording off also turned off governance. **0.6 decouples them** (decision 23): `enabled = false` switches recording
+off (no envelopes, no trace registration, no writes) and hooks keep running, so a governor registered as a hook keeps
+working. A `record` hook has nothing to fire on while recording is off.
 
 ---
 
@@ -819,9 +822,13 @@ Each list is meant to be applied to that repo independently.
 
 ### 10.4 chronicle (removals)
 
-**Order of work.** Chronicle moves to the `src` layout first, as its own pure-move pull request (`chronicle/` becomes
-`src/chronicle/`; the import name stays `chronicle`, so user code is unaffected). The removals and rewrites follow in
-separate pull requests, each split against a plan under the 400-line rule.
+**Order of work.** The original plan was a pure-move pull request for the `src` layout first
+(`chronicle/` becomes `src/chronicle/`; the import name stays `chronicle`), then the removals and
+rewrites in separate pull requests, each split against a plan under the 400-line rule.
+**Superseded:** the maintainer decided to deliver the rewrite as one large pull request (issue #67,
+[ADR 0008](../adr/0008-rewrite-delivered-as-one-change.md)). The pull request is kept reviewable
+commit by commit: tooling and conventions, pure move, primitives dependency, framework, repository
+client and propagation, record and replay, provider conformance tests, end-to-end suite, docs.
 
 **Removed:** `chronicle/cli.py`, `visualizer.py`, `otel.py`, the OpenInference and Phoenix instrumentation, the JSONL and
 SQLite stores and the `open_store` registry, `execution_graph.py` (a view; replay gets a small index instead),
@@ -865,6 +872,11 @@ They are rewritten later (12.1).
 | 20 | Raw input and output of the boundaried method are stored as-is for every kind; canonical fields are derived for internal plumbing; no `from_canonical`. | Replay needs no reverse mapping and loses nothing; canonical fields can be re-derived; the roughly doubled payload size is accepted. |
 | 21 | Method-schema inference (`chronicle.input.schema`, `chronicle.output.schema`) is dropped. | Nothing reads it: TokenOps and the control plane do not reference it, and inside Chronicle only its own test does. It repeated a schema on every envelope. It can return later, recorded once per span or service. |
 | 22 | HTTP request and response wrappers (write result, error body) belong to the control plane, not primitives. Its endpoints reuse primitives entities as bodies; Chronicle imports primitives directly. | Entities are data, not requests; keeps primitives about the data and Chronicle off server code (decision 9). Recorded as primitives ADR 0003 (Proposed). |
+| 23 | Hooks are decoupled from `enabled`: `enabled = false` switches recording off and hooks keep running. | Turning recording off must not turn governance off (issue #60). |
+| 24 | Span-local `sequence` and `invocation_index` are stored as the reserved envelope metadata keys `chronicle.sequence` and `chronicle.invocation_index`. | The primitives envelope has no field for them and replay needs the call order; a gap to raise in primitives. |
+| 25 | The `httpx` instrumenter patches `httpx` and, if installed, `httpx2`. | `openai` 3 and `anthropic` 1 moved to `httpx2`, an API-compatible package; a peer called through either must be covered. |
+| 26 | The primitives rewrite is delivered as one large pull request, reviewable commit by commit. | The maintainer's decision (issue #67, ADR 0008); supersedes the ordering in 10.4. |
+| 27 | A STUB replay of a recorded failure re-raises (`RecordedCallError`). | A failing crossing is recorded so the incident is reproducible; returning a placeholder hid it (issue #34). |
 
 ---
 
@@ -924,11 +936,23 @@ They are rewritten later (12.1).
 
 ### 12.2 Open items
 
-- **Version number** of the clean break: 0.6 or 1.0.
-- **`run_id` and `trace_id`** relationship for TokenOps (10.3).
-- **Decoupling hooks from `enabled`** (section 9): proposed, not yet confirmed.
-- **Enumerations to confirm (2.9):** the canonical `finish_reason` set, and string-only values for Trace labels.
+- **Version number** of the clean break: **decided, 0.6.0** (not 1.0): the control-plane endpoints are not final and
+  primitives is pre-1.0 (`docs/versioning.md`).
+- **`run_id` and `trace_id`** relationship for TokenOps (10.3): **deferred.** It is a TokenOps decision and needs no
+  Chronicle change either way; `trace_id` is the only id Chronicle emits.
+- **Decoupling hooks from `enabled`** (section 9): **decided, decoupled** (decision 23).
+- **Enumerations to confirm (2.9):** the canonical `finish_reason` set is implemented as proposed
+  (`stop`, `length`, `tool_calls`, `content_filter`, `other`); the Anthropic `stop_reason = refusal` mapping to
+  `content_filter` (with the text emitted as `refusal` blocks) is still **to be confirmed in review**. Trace labels are
+  string-valued, enforced by primitives.
 - **Adding hooks that need sync registration for spans** if TokenOps requires it: spans are async for now.
+- **Control-plane endpoints:** Chronicle codes against a `ControlPlaneClient` interface and keeps the paths in
+  `repositories/http_endpoints.py`. Trace upsert, span upsert and the span read are to be agreed in the control-plane
+  repository (10.2); a contract test pins what Chronicle reads from the write result and error body (primitives ADR 0003).
+- **Primitives gaps found while implementing** (raise in the primitives repository, not worked around): the envelope has
+  no fields for span-local `sequence` and `invocation_index` (stored as `chronicle.sequence` and
+  `chronicle.invocation_index` metadata, decision 24); `LlmInput.tools` and `tool_choice` are loose JSON (Chronicle
+  follows the documented convention).
 
 ### 12.3 Migration from 0.5.0
 

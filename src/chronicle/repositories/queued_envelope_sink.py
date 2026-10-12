@@ -71,14 +71,15 @@ class QueuedEnvelopeSink:
         if errors and not self._policy.fail_open:
             raise DeliveryError(f"{len(errors)} write(s) failed: {errors[0]}")
 
-    def close(self) -> None:
-        """Flush and stop the background thread."""
+    def close(self, *, close_client: bool = True) -> None:
+        """Flush and stop the background thread; also close the client unless told not to."""
         self.flush_quietly()
         self._closed = True
         if self._thread is not None:
             self._queue.put(None)
             self._thread.join(timeout=5)
-        self._client.close()
+        if close_client:
+            self._client.close()
 
     @property
     def dropped(self) -> int:
