@@ -28,7 +28,8 @@ class EvaluationRubric(BaseModel):
     ) -> str:
         chunks_text = "\n".join(f"- {c}" for c in (rag_chunks or []))
         criteria_list = ", ".join(c.value for c in self.criteria)
-        return f"""You are an evaluation judge for agent outputs. Assess the completion on meaning, not exact wording.
+        return f"""You are an evaluation judge for agent outputs.
+Assess the completion on meaning, not exact wording.
 
 ## Retrieved Context
 {chunks_text or "(none)"}

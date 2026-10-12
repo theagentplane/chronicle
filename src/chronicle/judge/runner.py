@@ -6,7 +6,8 @@ import json
 from dataclasses import dataclass
 from typing import Any, Protocol
 
-from chronicle.envelope.schema import Envelope
+from agentplane_primitives.models import Envelope, LlmInput, LlmOutput, TextBlock
+
 from chronicle.judge.rubric import Criterion, EvaluationRubric, RubricScore
 
 
@@ -14,7 +15,9 @@ def _chunk_texts(arguments: dict[str, Any]) -> list[str]:
     """Text of the retrieved chunks in a call's arguments (``rag_chunks`` or ``context``):
     a chunk is a string or a mapping with ``content``."""
     chunks = arguments.get("rag_chunks") or arguments.get("context") or []
-    texts = [c if isinstance(c, str) else c.get("content") for c in chunks if isinstance(c, (str, dict))]
+    texts = [
+        c if isinstance(c, str) else c.get("content") for c in chunks if isinstance(c, (str, dict))
+    ]
     return [t for t in texts if isinstance(t, str)]
 
 
@@ -47,10 +50,17 @@ class JudgeRunner:
         self.rubric = rubric or EvaluationRubric()
 
     def evaluate(self, envelope: Envelope) -> EvaluationResult:
-        messages = [m.model_dump() for m in envelope.input.messages]
-        input_text = json.dumps(messages or envelope.input.arguments, indent=2, default=str)
-        completion = (envelope.output.llm.text if envelope.output.llm else None) or ""
-        rag_chunks = _chunk_texts(envelope.input.arguments)
+        arguments = dict(envelope.input.raw) if envelope.input is not None else {}
+        messages: list[Any] = []
+        if isinstance(envelope.input, LlmInput):
+            messages = [m.model_dump(mode="json") for m in envelope.input.messages]
+        input_text = json.dumps(messages or arguments, indent=2, default=str)
+        completion = ""
+        if isinstance(envelope.output, LlmOutput):
+            completion = "".join(
+                block.text for block in envelope.output.content if isinstance(block, TextBlock)
+            )
+        rag_chunks = _chunk_texts(arguments)
 
         prompt = self.rubric.judge_prompt(
             input_context=input_text,

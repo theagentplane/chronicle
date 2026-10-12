@@ -1,15 +1,11 @@
-# Requires a recent build backend that understands SPDX license expressions
-# (hatchling >= 1.27). If your tooling is older, replace the `license` line with
-# license = { text = "MIT" } and add the MIT classifier below.
-
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
 name = "agent-chronicle"
-version = "0.5.0"
-description = "Record-and-replay for agent decision graphs: reproduce a prod agent failure as a committed regression test — and re-run your fix without live LLM calls."
+dynamic = ["version"]
+description = "Record-and-replay for agent decision graphs: capture what an agent did, save it to the control plane, and replay a request with the downstream calls stubbed."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
@@ -25,59 +21,38 @@ keywords = [
     "record-replay",
     "testing",
     "regression",
-    "opentelemetry",
-    "openinference",
+    "tracing",
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Testing",
     "Topic :: Software Development :: Quality Assurance",
+    "Typing :: Typed",
 ]
-# Core runtime is intentionally lean: the envelope schema, @boundary recorder,
-# replay engine, and CLI only need pydantic + click. Tracing/framework/judge
-# integrations live in optional extras so a plain install stays small.
+# Pre-1.0 rule (docs/versioning.md in primitives): pin the exact minor of primitives.
 dependencies = [
-    "pydantic>=2",
-    "click>=8",
+    "agentplane-primitives==0.1.*",
+    "pydantic>=2.6,<3",
+    "httpx>=0.27,<1",
 ]
 
 [project.optional-dependencies]
-# LangGraph routing example and OpenInference LangChain instrumentation.
+# LangGraph instrumentation (chronicle.instrument).
 langgraph = [
     "langgraph>=0.2",
     "langchain-core>=0.3",
-    "openinference-instrumentation-langchain>=0.1",
 ]
-# OpenTelemetry + OpenInference (chronicle.instrument_otel, tests). No Phoenix server.
-otel = [
-    "opentelemetry-api>=1.44",
-    "opentelemetry-sdk>=1.44",
-    "opentelemetry-exporter-otlp>=1.44",
-    # GenAI attribute keys are pinned against this package in tests (Development status upstream).
-    "opentelemetry-semantic-conventions>=0.65b0",
-    "openinference-instrumentation>=0.1.65",
-    "openinference-semantic-conventions>=0.1.38",
-]
-# Phoenix UI/collector on top of otel. Kept out of [dev]: recent arize-phoenix
-# releases register a pytest plugin that can crash collection (seen on 3.11).
-phoenix = [
-    "agent-chronicle[otel]",
-    "arize-phoenix>=4",
-]
-# Layer 2 LLM-as-judge (chronicle/judge/runner.py OpenAIJudgeClient).
+# LLM-as-judge client (chronicle.judge). The judge itself is out of scope for the rewrite.
 judge = [
     "openai>=1",
-]
-dev = [
-    "pytest>=8",
-    "ruff==0.15.22",
-    "build>=1.2",
-    "agent-chronicle[langgraph,otel,judge]",
 ]
 
 [project.urls]
@@ -86,24 +61,102 @@ Repository = "https://github.com/theagentplane/chronicle"
 Issues = "https://github.com/theagentplane/chronicle/issues"
 Changelog = "https://github.com/theagentplane/chronicle/blob/main/CHANGELOG.md"
 
-# Keeps the CLI command `chronicle` even though the PyPI package is `agent-chronicle`.
-[project.scripts]
-chronicle = "chronicle.cli:main"
+# PEP 735 dependency groups: development-only, never part of the published metadata.
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-cov>=5",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "build>=1.2",
+    "twine>=5",
+    "pre-commit>=4",
+    # Provider SDKs and agent frameworks used by the conformance and end-to-end suites.
+    "openai>=1",
+    "anthropic>=0.40",
+    "langchain-core>=0.3",
+    "langchain-openai>=0.2",
+    "langgraph>=0.2",
+    "a2a-sdk>=0.2",
+    # Local test servers.
+    "starlette>=0.40",
+    "uvicorn>=0.30",
+]
 
-# The installable import package stays `chronicle/`.
+[tool.hatch.version]
+path = "src/chronicle/_version.py"
+
 [tool.hatch.build.targets.wheel]
-packages = ["chronicle"]
+packages = ["src/chronicle"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/chronicle",
+    "docs",
+    "tests",
+    "CHANGELOG.md",
+    "LICENSE.txt",
+    "README.md",
+]
 
 [tool.ruff]
 line-length = 100
+src = ["src", "tests"]
+target-version = "py310"
+extend-exclude = ["_legacy_demos"]
 
 [tool.ruff.lint]
-# Tests and examples intentionally tweak sys.path and keep illustrative unused
-# bindings, so scope those relaxations rather than loosening rules everywhere.
-per-file-ignores = { "tests/**" = ["E402", "F401", "F841"], "examples/**" = ["E402", "F401", "F841", "F541"] }
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # bugbear
+    "UP",  # pyupgrade
+    "SIM", # simplify
+    "C4",  # comprehensions
+    "PT",  # pytest style
+    "RUF", # ruff-specific
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["chronicle"]
+
+[tool.ruff.lint.per-file-ignores]
+# Test doubles intentionally catch broad exceptions and bind sockets on all interfaces.
+"tests/**" = ["B011"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["src", "tests"]
+exclude = ["_legacy_demos"]
+
+[[tool.mypy.overrides]]
+# Optional third-party integrations are imported lazily and are not all typed.
+module = ["langgraph.*", "langchain_core.*", "langchain_openai.*", "a2a.*", "uvicorn.*"]
+ignore_missing_imports = true
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
 
 [tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+norecursedirs = ["_legacy_demos"]
+addopts = ["-ra", "--strict-markers", "--strict-config"]
 markers = [
-    "layer1: deterministic structural replay (never calls the LLM)",
-    "layer2: LLM-as-judge evaluation (uses a mock judge in CI, no live API)",
+    "e2e: multi-agent systems over A2A and HTTP, run against local servers only",
+    "live: calls the real OpenAI and Anthropic APIs; needs keys, never run by default or in CI",
 ]
+
+[tool.coverage.run]
+source = ["chronicle"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
