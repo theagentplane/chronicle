@@ -7,6 +7,7 @@ request is recorded with its headers so tests can assert what did and did not cr
 """
 
 import json
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -120,6 +121,8 @@ class FakeLlmServer:
     openai_script: list[Scripted] = field(default_factory=list)
     anthropic_script: list[Scripted] = field(default_factory=list)
     requests: list[ReceivedRequest] = field(default_factory=list)
+    responder: Callable[[dict[str, Any]], Scripted] | None = None
+    """If set, computes each reply from the request body (for concurrent, stateless tests)."""
 
     @property
     def app(self) -> Starlette:
@@ -141,7 +144,11 @@ class FakeLlmServer:
                 body=body,
             )
         )
-        item: Scripted = script.pop(0) if script else default
+        item: Scripted
+        if self.responder is not None:
+            item = self.responder(body)
+        else:
+            item = script.pop(0) if script else default
         if isinstance(item, ErrorResponse):
             return JSONResponse(item.body, status_code=item.status)
         return JSONResponse(item)

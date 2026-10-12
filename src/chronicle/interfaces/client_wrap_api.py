@@ -44,8 +44,9 @@ def wrap(
     target = _completion_target(client)
     if target is None:
         raise TypeError(
-            "chronicle.wrap expected an OpenAI-style client (.chat.completions.create) or an "
-            "Anthropic-style client (.messages.create). Use wrap_llm for other callables."
+            "chronicle.wrap expected an OpenAI-style client (.chat.completions.create), an "
+            "Anthropic-style client (.messages.create) or a completions resource (.create). "
+            "Use wrap_llm for other callables."
         )
     owner, attr, original = target
     if getattr(original, _FLAG, False):
@@ -70,6 +71,10 @@ def _completion_target(client: Any) -> tuple[Any, str, Callable[..., Any]] | Non
     messages = getattr(client, "messages", None)
     if messages is not None and callable(getattr(messages, "create", None)):
         return messages, "create", messages.create
+    # A resource object that already is the completions or messages endpoint, for example the
+    # ``client`` and ``async_client`` attributes of LangChain's ChatOpenAI.
+    if callable(getattr(client, "create", None)):
+        return client, "create", client.create
     return None
 
 

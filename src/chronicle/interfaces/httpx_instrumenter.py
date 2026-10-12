@@ -126,7 +126,8 @@ def _inject_header(request: Any) -> None:
 
 def _spec(request: Any) -> BoundarySpec:
     url = request.url
-    name = f"http {request.method} {url.host}{url.path}"
+    host = f"{url.host}:{url.port}" if url.port else str(url.host)
+    name = f"http {request.method} {host}{url.path}"
     return make_spec(
         _describe_request,
         name,

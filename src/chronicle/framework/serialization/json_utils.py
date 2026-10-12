@@ -8,6 +8,7 @@ total: it never raises, so recording can never break the call.
 """
 
 import dataclasses
+import inspect
 import math
 from collections.abc import Mapping
 from datetime import date, datetime, time
@@ -51,7 +52,32 @@ def _convert(value: Any, depth: int) -> JsonValue:
             field.name: _convert(getattr(value, field.name), depth + 1)
             for field in dataclasses.fields(value)
         }
+    parsed = _parsed_raw_response(value)
+    if parsed is not _NOT_A_RAW_RESPONSE:
+        return _convert(parsed, depth + 1)
     model_dump = getattr(value, "model_dump", None)
     if callable(model_dump):
         return _convert(model_dump(mode="json"), depth + 1)
     return repr(value)
+
+
+_NOT_A_RAW_RESPONSE = object()
+
+
+def _parsed_raw_response(value: Any) -> Any:
+    """Unwrap an SDK raw-response object (``with_raw_response``) to its parsed model.
+
+    The ``openai`` and ``anthropic`` SDKs return such an object when a framework such as
+    LangChain asks for response headers. It exposes ``http_response`` and a ``parse()`` that is
+    cached, so the caller's own later ``parse()`` is unaffected. An async ``parse`` cannot be
+    awaited here, so that case is left to ``repr``.
+    """
+    parse = getattr(value, "parse", None)
+    if not callable(parse) or not hasattr(value, "http_response"):
+        return _NOT_A_RAW_RESPONSE
+    parsed = parse()
+    if inspect.isawaitable(parsed):
+        if inspect.iscoroutine(parsed):
+            parsed.close()
+        return _NOT_A_RAW_RESPONSE
+    return parsed

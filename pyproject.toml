@@ -77,7 +77,7 @@ dev = [
     "langchain-core>=0.3",
     "langchain-openai>=0.2",
     "langgraph>=0.2",
-    "a2a-sdk>=0.2",
+    "a2a-sdk[http-server]>=1.2",
     # Local test servers.
     "starlette>=0.40",
     "uvicorn>=0.30",
@@ -105,6 +105,9 @@ src = ["src", "tests"]
 target-version = "py310"
 extend-exclude = ["_legacy_demos"]
 
+[tool.ruff.format]
+line-ending = "lf"
+
 [tool.ruff.lint]
 select = [
     "E",   # pycodestyle errors
@@ -121,10 +124,6 @@ select = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["chronicle"]
-
-[tool.ruff.lint.per-file-ignores]
-# Test doubles intentionally catch broad exceptions and bind sockets on all interfaces.
-"tests/**" = ["B011"]
 
 [tool.mypy]
 python_version = "3.10"
