@@ -1,0 +1,27 @@
+name: API or schema change proposal
+description: Propose a change to the public Python API, the configuration, or the wire format Chronicle uses.
+labels: ["api"]
+body:
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should change, and why?
+    validations:
+      required: true
+  - type: dropdown
+    id: compat
+    attributes:
+      label: Compatibility
+      options:
+        - Compatible (additive only)
+        - Breaking (needs a minor bump pre-1.0 or a new major)
+    validations:
+      required: true
+  - type: textarea
+    id: consumers
+    attributes:
+      label: Affected consumers and migration
+      description: Which of SDK users, the control plane, TokenOps and primitives are affected, and what must each do?
+    validations:
+      required: true
