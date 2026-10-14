@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.0.0] - unreleased
+## [1.0.0] - 2026-10-15
 
 A clean break from 0.5.0 (design decision 14): Chronicle is rebuilt on `agentplane-primitives`,
 saves to the control plane over HTTP and replays a span by id. **Every entry below is classified.**
