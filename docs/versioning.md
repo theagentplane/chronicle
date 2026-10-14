@@ -14,7 +14,7 @@ public Python names, the configuration and the behaviour documented in the READM
 | The entity schema | `schema_version` (`major.minor`) on every payload | primitives |
 
 Chronicle pins `agentplane-primitives` at the **exact minor** while primitives is pre-1.0
-(`==0.1.*`), and moves to `>=1.2,<2` from primitives 1.0.
+(`==0.2.*`), and moves to `>=1.2,<2` from primitives 1.0.
 
 ## Rules
 
@@ -22,7 +22,7 @@ Chronicle pins `agentplane-primitives` at the **exact minor** while primitives i
   parameters, new settings with a safe default, new adapters and new instrumenters are additive.
   Every change is classified in the [changelog](../CHANGELOG.md) as **compatible** or **breaking**,
   with the migration each consumer needs. Pin `agent-chronicle>=1.0,<2`.
-- **Primitives is pre-1.0**, so Chronicle pins it at the exact minor (`==0.1.*`). A primitives
+- **Primitives is pre-1.0**, so Chronicle pins it at the exact minor (`==0.2.*`). A primitives
   schema change therefore ships as a Chronicle release that moves the pin, classified like any
   other change.
 - **Identity.** `trace_id` is the only run identifier. There is no `run_id`, and none is added;

@@ -241,7 +241,7 @@ behaviour change only in a new major version. Every change is classified **compa
 [docs/versioning.md](docs/versioning.md). Pin `agent-chronicle>=1.0,<2`.
 
 The entity schema is versioned by `agentplane-primitives`, which Chronicle pins at the exact minor
-(`==0.1.*`).
+(`==0.2.*`).
 
 ## Development
 

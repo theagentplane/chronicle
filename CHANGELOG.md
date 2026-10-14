@@ -15,13 +15,13 @@ The migration each consumer needs is in [docs/migration-0.5-to-1.0.md](docs/migr
 
 Version number: **1.0.0** (maintainer decision). From here the Chronicle API follows SemVer (see
 [docs/versioning.md](docs/versioning.md)). `agentplane-primitives` is still pre-1.0, so it stays pinned
-at the exact minor (`==0.1.*`).
+at the exact minor (`==0.2.*`).
 
 Identity: **`trace_id` is the only run identifier.** There is no `run_id` in Chronicle and none is
 introduced; TokenOps and any other consumer key on `trace_id` (decision 28, ADR 0009).
 
 ### Changed (breaking)
-- **Entities come from `agentplane-primitives==0.1.*`.** `Envelope`, `Input`, `Output`, `LLMOutput`,
+- **Entities come from `agentplane-primitives==0.2.*`.** `Envelope`, `Input`, `Output`, `LLMOutput`,
   `Message`, `ToolCall`, `Usage`, `Status` and the schema modules are removed; import `Trace`, `Span`,
   `Envelope`, ids and enums from `agentplane_primitives`. Chronicle defines no copy of them.
   *Consumers:* change imports; read cost data from `output.provider`, `output.model`,

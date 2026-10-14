@@ -39,7 +39,7 @@ classifiers = [
 ]
 # Pre-1.0 rule (docs/versioning.md in primitives): pin the exact minor of primitives.
 dependencies = [
-    "agentplane-primitives==0.1.*",
+    "agentplane-primitives==0.2.*",
     "pydantic>=2.6,<3",
     "httpx>=0.27,<1",
 ]

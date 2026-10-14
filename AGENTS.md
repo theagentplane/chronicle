@@ -13,7 +13,7 @@ may find it useful too.
 - The design is [`docs/rfcs/chronicle-technical-design.md`](docs/rfcs/chronicle-technical-design.md).
   If the code and the design disagree, stop and ask; do not pick one silently.
 - The entities (`Trace`, `Span`, `Envelope`, ids, enums, `TraceContext`) come from
-  [`agentplane-primitives`](https://github.com/theagentplane/primitives) (pinned `==0.1.*`).
+  [`agentplane-primitives`](https://github.com/theagentplane/primitives) (pinned `==0.2.*`).
   **Never define a local copy of an entity** (design principle P5). A gap in primitives is an
   issue in the primitives repository, not a workaround here.
 - The HTTP request and response wrappers belong to the control plane (primitives ADR 0003);

@@ -74,7 +74,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "agentplane-primitives", specifier = "==0.1.*" },
+    { name = "agentplane-primitives", specifier = "==0.2.*" },
     { name = "httpx", specifier = ">=0.27,<1" },
     { name = "langchain-core", marker = "extra == 'langgraph'", specifier = ">=0.3" },
     { name = "langgraph", marker = "extra == 'langgraph'", specifier = ">=0.2" },
@@ -104,14 +104,14 @@ dev = [
 
 [[package]]
 name = "agentplane-primitives"
-version = "0.1.0"
+version = "0.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/14/77/f8858f219254e2bc0e9fa368ffba53e084dc30b458159481871e0d56e1db/agentplane_primitives-0.1.0.tar.gz", hash = "sha256:bf80c7284dae068834895b9b811c9f1ec8b19f0bc5d6d7920c8e5f4f9c309678", size = 36407, upload-time = "2026-10-12T18:20:21.924Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/85/8a/28c8efb2f9cf4bfef120cf36c163fadc72120f5e09ab4ae657429843107c/agentplane_primitives-0.2.0.tar.gz", hash = "sha256:cecfdad69c3b7785c06345b5850ce4070267f62afb78ea5b60acfe2292d6d6ec", size = 39048, upload-time = "2026-10-14T19:26:06.107Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6e/ee/2011270b3b952ee17ba1efd5872abd5e769ce077ace89713e8bedcf30c24/agentplane_primitives-0.1.0-py3-none-any.whl", hash = "sha256:0fca8a97e24113fc7ee1d07c0cea261615b1aa37d5fe1de962810a04c3193ee1", size = 39853, upload-time = "2026-10-12T18:20:20.463Z" },
+    { url = "https://files.pythonhosted.org/packages/27/24/aece7da1118316b734cd32084c4e6315832da94bb22dab8493773e1ad916/agentplane_primitives-0.2.0-py3-none-any.whl", hash = "sha256:7ac9c00482260aac52f9960f2dbef3d9061f0712fcc34a5535397152751a9d2b", size = 40622, upload-time = "2026-10-14T19:26:04.763Z" },
 ]
 
 [[package]]

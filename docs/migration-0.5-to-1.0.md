@@ -7,7 +7,7 @@ hit it. Every item is also classified in the [changelog](../CHANGELOG.md).
 ## 1. Install
 
 ```bash
-pip install "agent-chronicle>=1.0,<2"      # pulls agentplane-primitives==0.1.*
+pip install "agent-chronicle>=1.0,<2"      # pulls agentplane-primitives==0.2.*
 ```
 
 Chronicle now needs a **control plane** to save to and to replay from. The zero-config local
