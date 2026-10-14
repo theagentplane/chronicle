@@ -33,10 +33,8 @@ from tests.support.local_server import LocalServer
 
 pytest.importorskip("control_plane", reason="install the control-plane package to run these")
 
-from control_plane.app import create_app
-from control_plane.envelope_store import EnvelopeStore
+from control_plane.api import create_app
 from control_plane.settings import Settings
-from control_plane.store import SqliteStore
 
 API_KEY = "chronicle-e2e-key"
 HEADERS = {"Authorization": f"Bearer {API_KEY}"}
@@ -47,15 +45,11 @@ class RealPlane:
 
     def __init__(self) -> None:
         self._dir = tempfile.mkdtemp()
-        db = str(Path(self._dir) / "plane.db")
-        self._store = SqliteStore(db, auto_seed=False)
-        self._envelopes = EnvelopeStore(db)
-        app = create_app(
-            store=self._store,
-            envelopes=self._envelopes,
-            settings=Settings(db_path=db, api_keys=f"{API_KEY}:acme:ingest+read"),
+        url = f"sqlite:///{(Path(self._dir) / 'plane.db').as_posix()}"
+        self._app = create_app(
+            Settings(database_url=url, api_keys=f"{API_KEY}:acme:ingest+read", seed_on_start=False)
         )
-        self.server = LocalServer(app).start()
+        self.server = LocalServer(self._app).start()
         self.url = self.server.url
 
     def get(self, path: str, **params: Any) -> Any:
@@ -89,8 +83,7 @@ class RealPlane:
 
     def close(self) -> None:
         self.server.stop()
-        self._store.close()
-        self._envelopes.close()
+        self._app.state.cp.engine.dispose()
         gc.collect()
         shutil.rmtree(self._dir, ignore_errors=True)
 
