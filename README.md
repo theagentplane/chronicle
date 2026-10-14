@@ -134,6 +134,53 @@ written during replay.
 | Call a peer from your own client | `chronicle.inject(headers)` inside a boundary |
 | Know what may change between releases | [Versioning](docs/versioning.md) |
 
+### Integrating with your framework
+
+Chronicle hooks in at two places: the **model call** (wrap the client) and your **tools** (mark them
+with `@boundary`). The saved model call has the same canonical fields whichever framework made it.
+Runnable versions of all of these are in [`examples/frameworks.py`](examples/frameworks.py).
+
+| You use | Wrap the model call with | Tools |
+|---|---|---|
+| OpenAI SDK | `chronicle.wrap(openai.OpenAI())` | `@chronicle.boundary` |
+| Anthropic SDK | `chronicle.wrap(anthropic.Anthropic())` | `@chronicle.boundary` |
+| LangChain | `chronicle.wrap(chat.client)` (the SDK resource under `ChatOpenAI`) | `@chronicle.boundary` |
+| LangGraph | `chronicle.wrap(openai.OpenAI())` in the model node | `chronicle.instrument(graph)` |
+| Your own HTTP calls | `chronicle.wrap_llm("llm.chat", call_provider, provider="openai")` | `@chronicle.boundary` |
+
+```python
+import chronicle
+
+# OpenAI SDK, and the same for anthropic.Anthropic()
+client = chronicle.wrap(openai.OpenAI())
+reply = client.chat.completions.create(model="gpt-4o-mini", messages=messages, tools=tools)
+
+# LangChain: wrap the SDK client LangChain holds, then use the chat model as usual
+chat = ChatOpenAI(model="gpt-4o-mini", use_responses_api=False)
+chronicle.wrap(chat.client)
+model = chat.bind_tools(tools)
+
+# LangGraph: wrap the model client, then instrument the graph (every node and the router)
+graph = StateGraph(State)
+graph.add_node("agent", agent_node)
+graph.add_node("tools", tools_node)
+app = chronicle.instrument(graph).compile()
+
+# No SDK: wrap the function that calls the provider
+chat = chronicle.wrap_llm("llm.chat", call_provider, provider="openai")
+
+
+# Any framework: a tool is a decision point
+@chronicle.boundary("get_weather", kind="tool")
+def get_weather(city: str) -> dict: ...
+```
+
+Then open one span per request (`chronicle.record(...)`, or the ASGI middleware) so the calls are
+saved as one trace. The [`examples/`](examples/README.md) run against a live model and a real
+control plane: [`record_and_replay.py`](examples/record_and_replay.py) (record an incident, prove
+the fix by replay), [`multi_agent.py`](examples/multi_agent.py) (one trace across two services),
+[`frameworks.py`](examples/frameworks.py) and [`incidents.py`](examples/incidents.py).
+
 ## How it fits
 
 ```mermaid
