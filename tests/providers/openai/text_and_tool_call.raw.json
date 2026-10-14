@@ -1,0 +1,43 @@
+{
+  "id": "chatcmpl-9x1",
+  "object": "chat.completion",
+  "created": 1730000000,
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "Let me look that up.",
+        "refusal": null,
+        "tool_calls": [
+          {
+            "id": "call_abc123",
+            "type": "function",
+            "function": {
+              "name": "get_weather",
+              "arguments": "{\"city\": \"Paris\", \"unit\": \"c\"}"
+            }
+          }
+        ],
+        "annotations": []
+      },
+      "finish_reason": "tool_calls",
+      "logprobs": null
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 52,
+    "completion_tokens": 21,
+    "total_tokens": 73,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "system_fingerprint": "fp_test",
+  "model": "gpt-4o-2024-08-06"
+}

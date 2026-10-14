@@ -1,104 +1,100 @@
-"""Redaction keeps envelope structure while masking secrets before storage."""
+"""Redaction: applied to the JSON form before anything is sent (design section 4.5)."""
 
-from __future__ import annotations
+import contextlib
 
-import pytest
+from agentplane_primitives.models import ToolInput, ToolOutput
+from pydantic import JsonValue
 
-from chronicle import boundary, default_redactors, redact_secrets, reset_session
-from chronicle.envelope.store import EnvelopeStore
+import chronicle
+from chronicle.framework.redaction import REDACTED, default_redactors, redact_json
+from tests.support.in_memory_control_plane import InMemoryControlPlane
 
-SECRET_KEY = "sk-ABCD1234efgh5678IJKL"
-JWT = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.abcDEF123456"
-
-
-@pytest.mark.layer1
-def test_redact_secrets_masks_known_shapes_and_keeps_text():
-    r = redact_secrets()
-    assert SECRET_KEY not in r(f"my key is {SECRET_KEY} ok")
-    assert "[REDACTED]" in r(f"my key is {SECRET_KEY} ok")
-    assert r("delete the production database record 4471") == (
-        "delete the production database record 4471"
-    )  # ordinary text is untouched
+SECRET = "sk-" + "a1b2c3d4e5f6g7h8i9j0"
 
 
-@pytest.mark.layer1
-def test_llm_boundary_redacts_prompt_and_completion():
-    @boundary("agent", kind="llm")
-    def agent(state: dict) -> dict:
-        return {"completion": f"sure, using {SECRET_KEY}", "finish_reason": "stop"}
-
-    session = reset_session()
-    session.redactors = default_redactors()
-    session.begin_trace("t-redact")
-    agent({"messages": [{"role": "user", "content": f"here is my token {SECRET_KEY}"}]})
-
-    env = session._recorded_envelopes[-1]
-    # Secret is gone from both input and output...
-    assert SECRET_KEY not in env.model_dump_json()
-    # ...but structure is intact: role preserved, finish_reason preserved.
-    assert env.input.messages[0].role == "user"
-    assert env.output.llm.finish_reason == "stop"
+def test_redact_json_scrubs_values_not_keys() -> None:
+    value: JsonValue = {
+        "sk-keyname-should-stay-12345": [SECRET, {"nested": f"use {SECRET} now"}],
+        "n": 3,
+    }
+    redacted = redact_json(value, default_redactors())
+    assert redacted == {
+        "sk-keyname-should-stay-12345": [REDACTED, {"nested": f"use {REDACTED} now"}],
+        "n": 3,
+    }
 
 
-@pytest.mark.layer1
-def test_tool_arguments_are_redacted():
-    @boundary("call_api", kind="tool")
-    def call_api(payload: dict) -> dict:
-        return {"status": "ok", "tool_calls": [
-            {"name": "call_api", "arguments": {"authorization": f"Bearer {JWT}"}}
-        ]}
+def test_redaction_is_off_by_default(control_plane: InMemoryControlPlane) -> None:
+    @chronicle.boundary("echo")
+    def echo(text: str) -> str:
+        return text
 
-    session = reset_session()
-    session.redactors = default_redactors()
-    session.begin_trace("t-redact-tool")
-    call_api({"authorization": f"Bearer {JWT}"})
-
-    dumped = session._recorded_envelopes[-1].model_dump_json()
-    assert JWT not in dumped
-    assert "[REDACTED]" in dumped
+    with chronicle.record("job"):
+        echo(SECRET)
+    chronicle.flush()
+    (envelope,) = control_plane.envelopes_named("echo")
+    assert isinstance(envelope.input, ToolInput)
+    assert envelope.input.raw == {"text": SECRET}
 
 
-@pytest.mark.layer1
-def test_no_redactors_is_a_passthrough():
-    @boundary("agent", kind="llm")
-    def agent(state: dict) -> dict:
-        return {"completion": f"token {SECRET_KEY}"}
+def test_default_redactors_mask_input_output_and_error(
+    control_plane: InMemoryControlPlane,
+) -> None:
+    chronicle.configure(default_redactors=True)
 
-    session = reset_session()  # no redactors set
-    session.begin_trace("t-none")
-    agent({"messages": []})
+    @chronicle.boundary("echo")
+    def echo(text: str) -> str:
+        return f"got {text}"
 
-    assert SECRET_KEY in session._recorded_envelopes[-1].model_dump_json()
+    @chronicle.boundary("leak")
+    def leak(text: str) -> None:
+        raise RuntimeError(f"bad key {text}")
+
+    with chronicle.record("job"):
+        assert echo(SECRET) == f"got {SECRET}"  # the caller still gets the real value
+        with contextlib.suppress(RuntimeError):
+            leak(SECRET)
+    chronicle.flush()
+
+    (ok,) = control_plane.envelopes_named("echo")
+    assert isinstance(ok.input, ToolInput)
+    assert isinstance(ok.output, ToolOutput)
+    assert ok.input.raw == {"text": REDACTED}
+    assert ok.output.raw == f"got {REDACTED}"
+    (failed,) = control_plane.envelopes_named("leak")
+    assert isinstance(failed.output, ToolOutput)
+    assert failed.output.error is not None
+    assert SECRET not in failed.output.error.message
+    assert SECRET not in "".join(e.model_dump_json() for e in control_plane.all_envelopes())
 
 
-@pytest.mark.layer1
-def test_stored_file_is_redacted(tmp_path):
-    @boundary("agent", kind="llm")
-    def agent(state: dict) -> dict:
-        return {"completion": f"key {SECRET_KEY}", "finish_reason": "stop"}
+def test_custom_redactors_run_after_the_defaults(control_plane: InMemoryControlPlane) -> None:
+    chronicle.configure(redactors=[lambda s: s.replace("alice", "<user>")])
 
-    store_path = tmp_path / "runs.jsonl"
-    session = reset_session()
-    session.redactors = default_redactors()
-    session.store = EnvelopeStore(store_path)
-    session.begin_trace("t-file")
-    agent({"messages": []})
+    @chronicle.boundary("echo")
+    def echo(text: str) -> str:
+        return text
 
-    on_disk = store_path.read_text(encoding="utf-8")
-    assert SECRET_KEY not in on_disk
-    assert "[REDACTED]" in on_disk
+    with chronicle.record("job"):
+        echo("hi alice")
+    chronicle.flush()
+    (envelope,) = control_plane.envelopes_named("echo")
+    assert isinstance(envelope.output, ToolOutput)
+    assert envelope.output.raw == "hi <user>"
 
 
-def test_error_status_message_is_redacted():
-    @boundary("boom", kind="tool")
-    def boom():
-        raise RuntimeError("upstream rejected key sk-abcdefghijklmnopqrstuvwxyz123456")
+def test_long_strings_are_truncated(control_plane: InMemoryControlPlane) -> None:
+    chronicle.configure(max_payload_bytes=10)
 
-    session = reset_session()
-    session.redactors = default_redactors()
-    session.begin_trace("t-redact-error")
-    with pytest.raises(RuntimeError):
-        boom()
-    (env,) = session._recorded_envelopes
-    assert env.status.code == "ERROR"
-    assert "sk-abcdefghijklmnopqrstuvwxyz123456" not in (env.status.message or "")
+    @chronicle.boundary("echo")
+    def echo(text: str) -> str:
+        return text
+
+    with chronicle.record("job"):
+        echo("x" * 100)
+    chronicle.flush()
+    (envelope,) = control_plane.envelopes_named("echo")
+    assert isinstance(envelope.input, ToolInput)
+    assert str(envelope.input.raw["text"]).startswith("x" * 10)
+    assert len(str(envelope.input.raw["text"])) < 100
+    assert envelope.metadata["chronicle.truncated"] is True

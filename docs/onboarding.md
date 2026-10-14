@@ -1,252 +1,111 @@
 # Onboarding: record and replay your agent
 
-A step-by-step guide, no assumptions. By the end you will have recorded a run,
-replayed it with no LLM call, tested a fix against the real incident, and turned
-it into a permanent test.
+A step-by-step guide. By the end you will have recorded a request to the control plane, followed a
+call to a second agent, and replayed the request without the LLM.
+
+> This guide is for 1.0. If you are coming from 0.5, read the
+> [migration note](migration-0.5-to-1.0.md) first.
 
 ## 0. The one idea
 
-An agent (or a multi-agent system) is a series of **decisions**:
+An agent is a series of **decisions**: an **LLM call** (the model decides what to do) and a **tool
+call** (`search`, `query_db`, `refund`, a call to another agent). Chronicle calls each one a
+**boundary** and records what crossed it. One service's handling of a request is a **span**; a
+request across services is a **trace**.
 
-- an **LLM call** (the model decides what to do),
-- a **tool call** (`search`, `query_db`, `refund`, ...),
-- a **routing / hand-off** (which agent or node runs next).
+Your only job is to tell Chronicle which calls are boundaries and where to save.
 
-Chronicle calls each decision a **boundary** and records what crossed it (the
-input and the output). A whole run is a **trace** (the ordered boundaries).
-
-**Your only job is to tell Chronicle which functions are boundaries.** That is the
-setup. Everything else is record and replay on top.
-
----
-
-## Step 1: Install
+## 1. Install and point at a control plane
 
 ```bash
 pip install agent-chronicle
 ```
+
+You need a running control plane (see the
+[control-plane repository](https://github.com/theagentplane/control-plane)). Then:
+
 ```python
 import chronicle
+
+chronicle.configure(
+    control_plane_url="http://localhost:8000",
+    api_key="dev-key",
+    service_name="my-agent",
+)
 ```
-Requires Python 3.10+. Nothing else to configure.
 
----
+The same settings can come from `CHRONICLE_CONTROL_PLANE_URL`, `CHRONICLE_API_KEY` and
+`CHRONICLE_SERVICE_NAME`.
 
-## Step 2: Mark your boundaries
-
-You mark boundaries because only you know which functions are the meaningful
-**decision nodes**. Mark those — not the whole `run_agent` process. There are
-three ways; use whichever fits your code.
-
-| Your setup | Do you mark manually? | How |
-|---|---|---|
-| The **LLM call** (any framework) | No | `client = chronicle.wrap(OpenAI())` |
-| Your **tool / step functions** (plain Python) | Yes, one decorator each | `@boundary("refund", kind="tool")` |
-| **LangGraph** nodes | No | `chronicle.instrument_langgraph(nodes)` |
-| Top-level `run_agent(...)` | **No** | Leave orchestration unmarked |
-
-Nested LLM/tool calls inside a graph-node boundary parent to that node
-automatically (OTel-style `parent_span_id`).
-
-**a) The LLM call: wrap the client where you create it.** No decorators:
+## 2. Mark the boundaries
 
 ```python
 from openai import OpenAI
-import chronicle
 
-client = chronicle.wrap(OpenAI())   # do this once, where you build the client
-# every client.chat.completions.create(...) is now recorded
+client = chronicle.wrap(OpenAI())  # every model call, with provider, model and usage
+
+
+@chronicle.boundary("search", kind="tool")
+def search(query: str) -> dict: ...
 ```
 
-**b) Your tool / step functions: one decorator on the definition:**
+Put `@boundary` on decision nodes, not on the whole agent runner. Inputs and outputs should be
+JSON-serializable, because replay hands the recorded JSON back.
+
+## 3. Record a request
 
 ```python
-from chronicle import boundary
+with chronicle.record("first-run", labels={"session_id": "s1"}) as session:
+    answer = run_agent("what is the refund policy?")
 
-@boundary("refund", kind="tool")            # name it; kind is "llm" | "tool" | "custom"
-def refund(order_id: str, amount_cents: int) -> dict:
-    ...
+print(session.trace_id, session.span_id)  # the ids you replay with
 ```
 
-**c) LangGraph: one call wraps every node:**
+In a web service use the middleware instead, so each request is its own span:
 
 ```python
-import chronicle
-
-nodes = chronicle.instrument_langgraph({"agent": agent_node, "tools": tool_node})
-for name, fn in nodes.items():
-    graph.add_node(name, fn)
+app.add_middleware(chronicle.ChronicleMiddleware, service="my-agent")
 ```
 
-`@boundary` never changes what your function returns or raises, and it works on
-`async def` too, so this is safe to leave on in production.
-
----
-
-## First, three things people ask here
-
-**1. What is `run_agent(...)`?** It is **your** function that runs your agent one
-time. Chronicle does not provide it; it is a stand-in for however you already
-invoke your agent. For the example above it might be:
+## 4. Follow a call to another agent
 
 ```python
-def run_agent(question):
-    decision = agent({"messages": [{"role": "user", "content": question}]})
-    args = decision["tool_calls"][0]["arguments"]
-    return refund(args["order_id"], args["amount_cents"])
+chronicle.configure(inject_hosts=["billing-agent.internal"])
+chronicle.instrument_httpx()
 ```
 
-`run_agent("refund order A-4471")` runs the whole flow. Because `agent` and
-`refund` are boundaries, each call is captured. **The same `run_agent` is used for
-record and for replay** - you never write two versions. Chronicle just switches
-behavior based on the mode.
+Calls to `billing-agent.internal` are recorded as tool envelopes and carry the `traceparent` header.
+The other agent (with the middleware) joins the same trace, and its span's `parent_envelope_id` is
+your outbound call. Nothing else is sent to the LLM provider or any other host.
 
-**2. Where does this code live? Inside your own repo.** Chronicle is a library you
-`pip install`; everything here is your code:
-
-- **Record** runs wherever you run your agent: a small script (e.g.
-  `scripts/record_incident.py`), your app, or a notebook. You record once, to
-  capture an incident.
-- **Replay and cut-point tests** live in your **test suite** (`tests/`) and run
-  under `pytest` on every commit.
-- The **boundaries** are your own functions; the **fixtures** (`fixtures/traces/`)
-  are committed in your repo. Nothing runs "outside" - Chronicle just wraps your
-  functions.
-
-**3. When is an envelope created?** One envelope, per boundary call, the instant
-that call finishes:
-
-```
-you call agent(state)
-   -> Chronicle captures the INPUT (the arguments)
-   -> your function runs and returns (or raises)
-   -> Chronicle builds the ENVELOPE (input + output + metadata)   <-- formed here
-   -> appends it to the trace, and returns your real result
-```
-
-Call `agent` once and `refund` once -> 2 envelopes. A boundary called 3 times in a
-loop -> 3 envelopes (invocation 1, 2, 3). An envelope is the input and output of
-one crossing plus context; it does not capture the inside of your function.
-
----
-
-## Step 3: Record a run
-
-Wrap the run you want to capture. Pass product ids as flat `attributes` when you have
-them (one trace ≈ one message turn; Chronicle does not own chat history):
-
-```python
-with chronicle.record(
-    "incident-001",
-    store=".chronicle/runs/incident.jsonl",        # raw log (optional)
-    export="fixtures/traces/incident-001/",         # the committed fixture
-    attributes={
-        "session_id": "sess_abc",
-        "message_id": "msg_042",
-    },
-):
-    run_agent(...)                                   # runs normally, and is recorded
-```
-
-- `store=` writes the raw run as it happens (survives a crash). Optional.
-- `export=` writes the trace you keep and commit. This is what makes a test.
-- `attributes=` are copied onto every envelope so a dashboard can resolve
-  session/message → trace later.
-
----
-
-## Step 4: Replay to reproduce
-
-Load the trace and run again. **No LLM call**: each boundary returns its recorded
-output:
-
-```python
-with chronicle.replay_trace("fixtures/traces/incident-001/") as session:
-    run_agent(...)     # deterministic reproduction; the model never runs
-```
-
----
-
-## Step 5: Fix, then cut-point test
-
-Change the boundary you are fixing (e.g. cap the refund). Now prove the fix
-against the real incident: freeze everything upstream, run your new code live,
-assert:
+## 5. Replay it
 
 ```python
 from chronicle import ReplayPlan
 
-with chronicle.replay_trace(
-    "fixtures/traces/incident-001/",
-    ReplayPlan()
-    .stub("agent", 1)          # freeze the model's exact decision from the incident
-    .live("refund", 1),        # run your NEW refund() live, on those exact inputs
-) as session:
-    run_agent(...)
-    assert session.captured_result("refund", 1)["blocked"] is True
+with chronicle.replay_trace(trace_id, span_id) as run:  # everything stubbed
+    answer = run_agent("what is the refund policy?")
+
+plan = ReplayPlan().run("search", 1)  # one boundary live (a cut-point)
+with chronicle.replay_trace(trace_id, span_id, plan) as run:
+    run_agent("what is the refund policy?")
+    assert run.captured_result("search", 1)["hits"]
 ```
 
-`stub` = use the recorded output. `live` = actually run your code. Your fix sees
-the exact inputs that caused the incident, deterministically, with no LLM cost.
+A stubbed boundary returns the recorded `output.raw` and makes no call; nothing is written during
+replay. Matching is by boundary **name plus call count**, so a fix that calls a boundary more often
+than the recording has raises `ReplayMismatchError`.
 
----
-
-## Step 6: Commit it as a test
-
-Put Step 5 in `tests/` and commit the `fixtures/traces/` folder:
+## 6. Make it safe for production
 
 ```python
-# tests/test_refund_incident.py
-def test_refund_is_capped():
-    with chronicle.replay_trace(
-        "fixtures/traces/incident-001/",
-        ReplayPlan().stub("agent", 1).live("refund", 1),
-    ) as session:
-        run_agent(...)
-        assert session.captured_result("refund", 1)["blocked"] is True
+chronicle.configure(default_redactors=True)  # mask API keys, tokens, JWTs before sending
 ```
 
-`pytest` runs it on every commit. If the guard ever breaks again, CI turns red on
-the pull request, not on a customer.
+Add your own redactors for personal data, and read [SECURITY.md](../SECURITY.md).
 
----
+## Where to go next
 
-## Where outputs are stored
-
-| Stage | Written to | Notes |
-|---|---|---|
-| **Record** | `fixtures/traces/<name>/` (committed) and `.chronicle/runs/*.jsonl` (gitignored) | The fixture is `graph.json` + one JSON file per boundary. The `.jsonl` is the raw scratch log. |
-| **Replay** | nothing new on disk | Results live in the session: `session.captured_result(id, n)`, `session.call_log()`. |
-| **Verify** | test result / scores | Layer 1 is a `pytest` pass/fail; Layer 2 (judge) returns scores in memory. Optional HTML view: `chronicle show-graph <trace> --html out.html`. |
-
-`.chronicle/runs/` is gitignored by default (scratch); `fixtures/` is committed
-(the incidents you keep). Redact before committing production traffic:
-`session.redactors = chronicle.default_redactors()`.
-
----
-
-## When is the LLM-as-judge needed?
-
-Steps 4-5 (Layer 1 replay) check **structure**: right tool, right arguments, was
-the dangerous action blocked. That is exact and free. If your fix is a **prompt or
-model change**, the new output is text that should be *as good*, not identical, so
-equality assertions do not work. That is Layer 2:
-
-```python
-from chronicle.judge import JudgeRunner, OpenAIJudgeClient
-
-result = JudgeRunner(OpenAIJudgeClient(model="gpt-4o-mini")).evaluate(envelope)
-assert result.overall_passed
-```
-
-Layer 1 proves the machinery; Layer 2 proves the words. Layer 2 does call a model
-(the judge), so use it only when structure cannot answer the question.
-
----
-
-## The loop, in one line
-
-**Install → Mark boundaries → Record → Replay → Cut-point test → Commit.**
-
-More questions? See the [FAQ](https://github.com/theagentplane/chronicle#faq) or
-open a [Discussion](https://github.com/theagentplane/chronicle/discussions).
+- [README](../README.md) for the configuration table, hooks and limitations
+- [Technical design](rfcs/chronicle-technical-design.md) for why it is built this way
+- [Architecture decisions](adr/README.md)

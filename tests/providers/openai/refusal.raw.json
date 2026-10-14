@@ -1,0 +1,34 @@
+{
+  "id": "chatcmpl-f1",
+  "object": "chat.completion",
+  "created": 1730000000,
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "refusal": "I can't help with that.",
+        "tool_calls": null,
+        "annotations": []
+      },
+      "finish_reason": "stop",
+      "logprobs": null
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 20,
+    "completion_tokens": 9,
+    "total_tokens": 29,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "audio_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 0,
+      "audio_tokens": 0
+    }
+  },
+  "system_fingerprint": "fp_test",
+  "model": "gpt-4o-2024-08-06"
+}

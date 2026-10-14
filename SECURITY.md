@@ -2,50 +2,59 @@
 
 ## Supported versions
 
-Chronicle is pre-1.0. Security fixes are applied to the latest released version
-on the `main` branch.
+Chronicle is pre-1.0. Security fixes are applied to the latest released version on the `main`
+branch.
 
 ## Reporting a vulnerability
 
-Please report security issues **privately** — do not open a public issue.
+Please report security issues **privately**. Do not open a public issue.
 
-- Preferred: open a private [GitHub Security Advisory](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing-information-about-vulnerabilities/privately-reporting-a-security-vulnerability)
+- Preferred: open a private
+  [GitHub Security Advisory](https://github.com/theagentplane/chronicle/security/advisories/new)
   for this repository.
-- Or email the maintainers at **[INSERT SECURITY CONTACT EMAIL]**.
 
-We aim to acknowledge reports within 3 business days and to provide a remediation
-timeline after triage. Please give us a reasonable window to fix the issue before
-public disclosure.
+We aim to acknowledge reports within 3 business days and to share a remediation plan after triage.
+Please give us a reasonable window to fix the issue before public disclosure.
 
 ## Data-handling posture (read this before recording production traffic)
 
-Chronicle captures the **execution DNA** of your agents. By design, an Envelope
-can contain the most sensitive data in your system:
+Chronicle captures what your agents did. By design an envelope can contain the most sensitive data
+in your system:
 
-- the **full assembled prompt**,
-- **graph / agent state**,
-- **retrieved context chunks** (RAG results), and
-- **tool inputs and outputs**.
+- the **full prompt** and the model's response (including tool-call arguments),
+- **tool inputs and outputs**, and
+- the **raw** input and output exactly as they crossed the boundary.
 
-Fixtures are **committed to your git repository** as regression tests. That means
-un-redacted captures can leak **PII, secrets, credentials, and customer data**
-into source control, where they are hard to fully remove.
+Chronicle sends these to the control plane you configure. There is no local copy, but the control
+plane stores them for its retention period, so treat it as a store of production data.
 
-**Rules of the road:**
+**What Chronicle does for you**
 
-1. **Never commit un-redacted production data.** Treat every captured Envelope as
-   potentially containing secrets until proven otherwise.
-2. **Redact before you extract.** Run scrubbers on Envelopes *before* they are
-   written to a store, and definitely before `chronicle extract` moves them into
-   `fixtures/`. (A pluggable redaction hook is on the roadmap — until then, scrub
-   in your own capture wrapper.)
-3. **Prefer synthetic or minimized fixtures.** Reduce each committed fixture to
-   the smallest input that reproduces the incident.
-4. **Treat captured inputs as untrusted.** Recorded prompts may contain
-   prompt-injection payloads. Do not replay them in an environment where a live
-   downstream boundary could act on them without sandboxing.
-5. **Rotate any secret that lands in a fixture.** If a credential is captured and
-   committed, rotate it — scrubbing git history is not a guarantee.
+1. **Redaction before send (opt in).** `configure(default_redactors=True)` masks common secret shapes
+   (API keys, bearer tokens, JWTs, private keys) in every string of the input, output, `raw` and
+   error messages, on the JSON form, before anything leaves the process. Add your own redactors for
+   PII. Pattern-based redaction is a baseline, not a guarantee. Metadata (for example a
+   `client.base_url`) is not scrubbed; credentials embedded in a base URL are stripped.
+2. **Credentials in HTTP headers are not stored.** The `httpx` instrumenter never records
+   `authorization`, `cookie`, `x-api-key` and similar headers.
+3. **The trace header goes only where you allow it.** `traceparent` is injected only to hosts in
+   `inject_hosts`; the default is deny, so trace ids are not sent to your LLM provider or any
+   third party.
+4. **Payload limits.** `max_payload_bytes` caps any one string.
 
-If you discover sensitive data already committed in fixtures, report it via the
-private channel above so we can coordinate removal and rotation.
+**What you must do**
+
+1. **Turn redaction on** in production, and add redactors for the personal data in your prompts.
+2. **Protect the API key** (`api_key` / `CHRONICLE_API_KEY`) like any credential; it is sent as a
+   bearer token to the control plane.
+3. **Turn `extract` off on internet-facing services.** A well-formed inbound `traceparent` proves
+   neither that the trace exists nor that the sender is legitimate; a spoofed header attaches your
+   spans to someone else's trace id. Trust and tenant scoping are future work (design 12.1).
+4. **Treat hooks as trusted code.** Hooks see the arguments before redaction and the live result
+   object and can change arguments. A security review of what hooks may see and do is future scope.
+5. **Treat recorded inputs as untrusted.** A recorded prompt may contain a prompt-injection payload.
+   Do not replay with `RUN` boundaries that act on the world without a sandbox.
+6. **Rotate any secret that reaches the control plane.** If a credential is recorded, rotate it.
+
+If you discover sensitive data that Chronicle sent where it should not have, report it through the
+private channel above.

@@ -1,0 +1,22 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Paris is the capital of France."
+    }
+  ],
+  "finish_reason": "stop",
+  "provider": "anthropic",
+  "model": "claude-sonnet-4-5-20250929",
+  "model_source": "served",
+  "usage": {
+    "input": 14,
+    "cached_read": 0,
+    "cache_write": 0,
+    "output": 9,
+    "reasoning": 0
+  },
+  "response_id": "msg_01A",
+  "deployment_id": null,
+  "error": null
+}

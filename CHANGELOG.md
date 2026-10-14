@@ -7,6 +7,105 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - unreleased
+
+A clean break from 0.5.0 (design decision 14): Chronicle is rebuilt on `agentplane-primitives`,
+saves to the control plane over HTTP and replays a span by id. **Every entry below is classified.**
+The migration each consumer needs is in [docs/migration-0.5-to-1.0.md](docs/migration-0.5-to-1.0.md).
+
+Version number: **1.0.0** (maintainer decision). From here the Chronicle API follows SemVer (see
+[docs/versioning.md](docs/versioning.md)). `agentplane-primitives` is still pre-1.0, so it stays pinned
+at the exact minor (`==0.2.*`).
+
+Identity: **`trace_id` is the only run identifier.** There is no `run_id` in Chronicle and none is
+introduced; TokenOps and any other consumer key on `trace_id` (decision 28, ADR 0009).
+
+### Changed (breaking)
+- **Entities come from `agentplane-primitives==0.2.*`.** `Envelope`, `Input`, `Output`, `LLMOutput`,
+  `Message`, `ToolCall`, `Usage`, `Status` and the schema modules are removed; import `Trace`, `Span`,
+  `Envelope`, ids and enums from `agentplane_primitives`. Chronicle defines no copy of them.
+  *Consumers:* change imports; read cost data from `output.provider`, `output.model`,
+  `output.usage` (exclusive, additive buckets: `input`, `cached_read`, `cache_write`, `output`,
+  `reasoning`).
+- **Envelope shape.** Flat fields become sections (`envelope_status`, `input`, `output`, `metadata`);
+  `attributes` becomes `metadata`; `start_time`/`end_time` become `envelope_status.started_at` /
+  `ended_at`; failure is `envelope_status.status = failure` with `output.error`. Trace-level labels
+  live once on the `Trace`, not on every envelope. `sequence` and `invocation_index` are span-local
+  and stored as the reserved metadata keys `chronicle.sequence` and `chronicle.invocation_index`.
+- **Kinds are `llm` and `tool` only.** `router` and `custom` become `tool`; declaring any other kind
+  raises `ValueError` at declaration time. `@boundary` now defaults to `kind="tool"`.
+- **Remote only.** Recording goes to the control plane (`control_plane_url`). With no URL nothing is
+  delivered. `record(store=...)`, `export=`, `retain_envelopes=` and `attributes=` are replaced by
+  `configure(...)`, `record(labels=...)` and the span API.
+- **Replay is scoped to `trace_id` plus `span_id`** and reads the span from the control plane.
+  `BoundaryMode.LIVE` is `RUN`; `ReplayPlan.live(...)` is `run(...)`. A STUB returns `output.raw`
+  (JSON, with attribute access), not a rebuilt state dict. Fixtures from 0.5 are not replayable:
+  re-record against the control plane.
+- **Hooks.** The single-slot callbacks (`on_enter`, `on_crossing`, `on_leave`, `on_record`) are
+  replaced by `Hook` objects with ordered `enter`, `leave`, `crossing` and `record` events,
+  registered on a session or in `default_hooks`. `AbortCall` always propagates.
+  `hooks_fail_call_on_error` (default false) decides whether any other hook failure fails the call.
+- **`wrap` now runs hooks and records failures** (it skipped both before) and no longer reads the
+  session's private replay cursor.
+- **A STUB replay of a recorded failure re-raises** (`RecordedCallError`) instead of returning a
+  placeholder (issue #34).
+- **Redaction runs on the JSON form before the canonical fields are derived**, and is applied to
+  `raw`, status messages and error messages. It is opt-in: `configure(default_redactors=True)`.
+- **`enabled = false` no longer disables hooks** (decision for issue #60): it switches recording off,
+  and a governor registered as a hook keeps working.
+- **Method-schema inference is dropped** (`chronicle.input.schema` / `chronicle.output.schema`,
+  design decision 21).
+- **Trace propagation uses an allow-list.** `traceparent` is injected only to hosts in
+  `inject_hosts`; the default is deny.
+- **Build and tooling:** `src` layout (import name unchanged), hatch version in
+  `src/chronicle/_version.py`, `uv` and PEP 735 dependency groups (the `[dev]` extra is gone), the
+  `otel`, `phoenix` and `langgraph` extras are reduced to `langgraph` and `judge`.
+
+### Added (compatible: new surface)
+- **Demos** in `examples/`: `record_and_replay.py`, `multi_agent.py`, `frameworks.py` and
+  `incidents.py`. They call a live model and save to a real control plane they start themselves,
+  and `tests/e2e/test_examples.py` runs each against a scripted model. Not part of the package.
+- **Interceptor**: one crossing lifecycle for `@boundary`, `wrap`, `wrap_llm` and the instrumenters.
+- **Kind registry** and **adapters**: one-way `to_canonical` for OpenAI-style (Chat Completions;
+  Azure OpenAI and LiteLLM) and Anthropic-style, with `register_adapter` for more.
+- **Repository client**: upsert trace (synchronous at the root), upsert span, batched non-blocking
+  append, read a span's envelopes; delivery policy (`batch_size`, `max_queue`, `on_overflow`,
+  `timeout`, `fail_open`).
+- **Propagation**: ASGI middleware (`ChronicleMiddleware`), `httpx` and `httpx2` instrumenter,
+  `extract`, `inject`, `span(parent=...)`. A2A and any `httpx` based protocol are covered with no
+  protocol-specific code.
+- `attempt(n, of=...)` for declared retries (`attempt` and a `retry_of` link), `emit_open` intent
+  capture, `max_payload_bytes`, `capture_input` / `capture_output`.
+- Configuration from code, `CHRONICLE_*` environment variables and a JSON or TOML file.
+- Provider conformance suite (golden and client layers) and an end-to-end suite of multi-agent
+  systems over A2A and plain HTTP, built with five frameworks.
+- Repository conventions: `AGENTS.md`, ADRs (`docs/adr`), CI pinned by SHA, zizmor, Dependabot with a
+  cooldown, a notification-only PR size check, `CODEOWNERS`, issue and PR templates.
+
+### Removed (breaking)
+- The CLI (`chronicle` command), `visualizer`, the OTel exporter (`instrument_otel`), the
+  OpenInference and Phoenix instrumentation, `ExecutionGraph`, `ReplayInjector` and
+  `StructuralAssertions`, the JSONL, SQLite and remote stores and `open_store`, the local reference
+  control plane (`examples/control_plane`) and committed `fixtures/`.
+- The 0.5 examples, the README demo, the scripts and the benchmark harness. They are replaced by
+  the demos in `examples/` (see Added); the benchmark is dropped.
+
+### Verified against the real control plane
+- `tests/e2e/test_real_control_plane.py` runs the control-plane service (with an API key and SQLite)
+  and checks, over HTTP: a chain saved and read back with valid primitives envelopes and the
+  parent link intact, replay by `trace_id` plus `span_id` (stub and cut-point), `emit_open` leaving
+  one record per envelope, write-once trace labels, and a wrong key failing open and strict. It
+  needs the control-plane branch that adds the Chronicle 1.0 entities (control-plane PR, see
+  docs/migration).
+- A STUB result now has `model_dump()` and `to_dict()` (plain data), so code written for SDK
+  responses keeps working on replay. Rebuilding the original types is still future scope.
+
+### Known gaps (not regressions)
+- Streaming is not supported (`stream=True` passes through unrecorded).
+- The control-plane paths are in one module (`repositories/http_endpoints.py`) and are now
+  implemented by the control plane (docs/chronicle-api.md in that repository).
+
+
 ## [0.5.0] - 2026-09-22
 
 Schema 2.0: an Envelope now maps one-to-one onto an OpenTelemetry span. This release is breaking. Envelopes and fixtures recorded before it no longer load and must be re-recorded (there is no migration converter), and downstream code that imports `InputState`, `ActionResult` or `ContextMetadata`, or passes `boundary_id=` by keyword, must be updated (see below).

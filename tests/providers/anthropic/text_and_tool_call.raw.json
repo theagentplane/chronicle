@@ -1,0 +1,28 @@
+{
+  "id": "msg_01A",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "text",
+      "text": "Let me look that up."
+    },
+    {
+      "type": "tool_use",
+      "id": "toolu_01",
+      "name": "get_weather",
+      "input": {
+        "city": "Paris"
+      }
+    }
+  ],
+  "stop_reason": "tool_use",
+  "stop_sequence": null,
+  "usage": {
+    "input_tokens": 52,
+    "output_tokens": 31,
+    "cache_read_input_tokens": 0,
+    "cache_creation_input_tokens": 0
+  },
+  "model": "claude-sonnet-4-5-20250929"
+}

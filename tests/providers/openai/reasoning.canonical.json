@@ -1,0 +1,22 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "42"
+    }
+  ],
+  "finish_reason": "stop",
+  "provider": "openai",
+  "model": "o3-mini-2025-01-31",
+  "model_source": "served",
+  "usage": {
+    "input": 30,
+    "cached_read": 0,
+    "cache_write": 0,
+    "output": 72,
+    "reasoning": 448
+  },
+  "response_id": "chatcmpl-r1",
+  "deployment_id": null,
+  "error": null
+}

@@ -1,0 +1,22 @@
+{
+  "content": [
+    {
+      "type": "refusal",
+      "text": "I can't help with that."
+    }
+  ],
+  "finish_reason": "content_filter",
+  "provider": "anthropic",
+  "model": "claude-sonnet-4-5-20250929",
+  "model_source": "served",
+  "usage": {
+    "input": 20,
+    "cached_read": 0,
+    "cache_write": 0,
+    "output": 9,
+    "reasoning": 0
+  },
+  "response_id": "msg_f1",
+  "deployment_id": null,
+  "error": null
+}
