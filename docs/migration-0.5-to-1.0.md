@@ -115,4 +115,4 @@ instrumentation, the JSONL, SQLite and remote stores (`open_store`, `BufferedSto
 reference control plane and committed fixtures. Visualization and OpenTelemetry export are the
 control plane's job.
 
-The old examples are parked in `_legacy_demos/` and do not run yet.
+The 0.5 examples are gone; runnable replacements, written for 1.0, are in `examples/`.

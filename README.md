@@ -262,8 +262,8 @@ the provider keys are set; it never runs in CI.
 
 ## Roadmap
 
-See [ROADMAP.md](ROADMAP.md). Next: streaming capture and replay, a local control-plane scaffold with
-the demos rewritten against it, more adapters (Responses API, Gemini, Bedrock) and a pytest runner.
+See [ROADMAP.md](ROADMAP.md). Next: streaming capture and replay, a local control-plane scaffold,
+more adapters (Responses API, Gemini, Bedrock) and a pytest runner.
 
 ## Reference
 
@@ -287,7 +287,7 @@ src/chronicle/               # installable package (typed; version in _version.p
 docs/rfcs/                   # the technical design
 docs/adr/                    # architecture decision records
 tests/                       # unit, providers (conformance), e2e (multi-agent), live (opt in)
-_legacy_demos/               # 0.5 examples, parked until rewritten; not run, linted or packaged
+examples/                    # runnable demos: live model, real control plane (examples/README.md)
 ```
 
 </details>

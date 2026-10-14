@@ -18,9 +18,9 @@ Today `stream=True` passes through unrecorded.
 OpenAI Responses API (issue #61), Azure OpenAI deployment names, Gemini, Bedrock Converse (which
 returns no served model). Tool adapters for HTTP, MCP and A2A calls.
 
-### Local control-plane scaffold and the demos
+### Local control-plane scaffold
 A scaffold that starts a local control plane (replacing the zero-config quickstart that 1.0
-removes), and the examples, demo and scripts in `_legacy_demos/` rewritten to run against it.
+removes). The demos are rewritten and live in `examples/`; they start the control plane themselves.
 
 ## Later
 

@@ -62,6 +62,9 @@ introduced; TokenOps and any other consumer key on `trace_id` (decision 28, ADR 
   `otel`, `phoenix` and `langgraph` extras are reduced to `langgraph` and `judge`.
 
 ### Added (compatible: new surface)
+- **Demos** in `examples/`: `record_and_replay.py`, `multi_agent.py`, `frameworks.py` and
+  `incidents.py`. They call a live model and save to a real control plane they start themselves,
+  and `tests/e2e/test_examples.py` runs each against a scripted model. Not part of the package.
 - **Interceptor**: one crossing lifecycle for `@boundary`, `wrap`, `wrap_llm` and the instrumenters.
 - **Kind registry** and **adapters**: one-way `to_canonical` for OpenAI-style (Chat Completions;
   Azure OpenAI and LiteLLM) and Anthropic-style, with `register_adapter` for more.
@@ -84,8 +87,8 @@ introduced; TokenOps and any other consumer key on `trace_id` (decision 28, ADR 
   OpenInference and Phoenix instrumentation, `ExecutionGraph`, `ReplayInjector` and
   `StructuralAssertions`, the JSONL, SQLite and remote stores and `open_store`, the local reference
   control plane (`examples/control_plane`) and committed `fixtures/`.
-- The examples, the README demo and the scripts moved to `_legacy_demos/` (not run, linted or
-  packaged) until they are rewritten against a local control plane.
+- The 0.5 examples, the README demo, the scripts and the benchmark harness. They are replaced by
+  the demos in `examples/` (see Added); the benchmark is dropped.
 
 ### Verified against the real control plane
 - `tests/e2e/test_real_control_plane.py` runs the control-plane service (with an API key and SQLite)

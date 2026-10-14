@@ -81,6 +81,8 @@ dev = [
     # Local test servers.
     "starlette>=0.40",
     "uvicorn>=0.30",
+    # The real control plane the demos and the real-control-plane tests run against.
+    "agentplane-control-plane>=1.0",
 ]
 
 [tool.hatch.version]
@@ -101,9 +103,8 @@ include = [
 
 [tool.ruff]
 line-length = 100
-src = ["src", "tests"]
+src = ["src", "tests", "examples"]
 target-version = "py310"
-extend-exclude = ["_legacy_demos"]
 
 [tool.ruff.format]
 line-ending = "lf"
@@ -129,8 +130,8 @@ known-first-party = ["chronicle"]
 python_version = "3.10"
 strict = true
 plugins = ["pydantic.mypy"]
-files = ["src", "tests"]
-exclude = ["_legacy_demos"]
+files = ["src", "tests", "examples"]
+mypy_path = "examples"
 
 [[tool.mypy.overrides]]
 # Optional third-party integrations are imported lazily and are not all typed.
@@ -145,7 +146,6 @@ warn_required_dynamic_aliases = true
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["tests"]
-norecursedirs = ["_legacy_demos"]
 addopts = ["-ra", "--strict-markers", "--strict-config"]
 markers = [
     "e2e: multi-agent systems over A2A and HTTP, run against local servers only",
