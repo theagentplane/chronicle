@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed (internal)
+
+- The `test` dependencies require `agentplane-control-plane>=1.0.1`: 1.0.1 takes the SQLite write lock up front, so Chronicle's background delivery no longer loses writes with `database is locked` when a TokenOps agent writes ledger events at the same time ([control-plane#28](https://github.com/theagentplane/control-plane/issues/28)). No change to the installed package.
+
 ## [1.1.0] - 2026-10-15
 
 ### Added (compatible)

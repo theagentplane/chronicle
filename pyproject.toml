@@ -82,7 +82,7 @@ dev = [
     "starlette>=0.40",
     "uvicorn>=0.30",
     # The real control plane the demos and the real-control-plane tests run against.
-    "agentplane-control-plane>=1.0",
+    "agentplane-control-plane>=1.0.1",
 ]
 
 [tool.hatch.version]
