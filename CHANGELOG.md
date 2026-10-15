@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added (compatible)
+- **`chronicle.current_session()`** returns the `RecordingSession` of the active span (its
+  `trace_id`, `span_id`, `parent_envelope_id`), or `None` outside `span`/`aspan`/`record`/a
+  middleware request. It never creates a span. Additive: nothing existing changes. *Consumers
+  (TokenOps):* use it instead of importing `chronicle.framework.context.session_context_utils`
+  (ADR 0010).
+
 ## [1.0.0] - 2026-10-15
 
 A clean break from 0.5.0 (design decision 14): Chronicle is rebuilt on `agentplane-primitives`,
