@@ -6,7 +6,7 @@ resolution-markers = [
     "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
     "python_full_version == '3.14.*' and sys_platform != 'emscripten'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten'",
-    "(python_full_version >= '3.11' and python_full_version < '3.14' and sys_platform != 'emscripten') or (python_full_version == '3.11.*' and sys_platform == 'emscripten')",
+    "python_full_version == '3.11.*' or (python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform != 'emscripten')",
     "python_full_version < '3.11'",
 ]
 
@@ -87,7 +87,7 @@ provides-extras = ["judge", "langgraph"]
 [package.metadata.requires-dev]
 dev = [
     { name = "a2a-sdk", extras = ["http-server"], specifier = ">=1.2" },
-    { name = "agentplane-control-plane", specifier = ">=1.0" },
+    { name = "agentplane-control-plane", specifier = ">=1.0.1" },
     { name = "anthropic", specifier = ">=0.40" },
     { name = "build", specifier = ">=1.2" },
     { name = "langchain-core", specifier = ">=0.3" },
@@ -106,7 +106,7 @@ dev = [
 
 [[package]]
 name = "agentplane-control-plane"
-version = "1.0.0"
+version = "1.0.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "agentplane-primitives" },
@@ -123,9 +123,9 @@ dependencies = [
     { name = "sqlalchemy", version = "2.1.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "uvicorn" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/13/f0/fb6dfb529ee84cc38403d770daa27cc440b8513a8c04f0c92f65146ecf17/agentplane_control_plane-1.0.0.tar.gz", hash = "sha256:08453e2daf1119ff971ba8ec9f96ef599557cda28374d69ad939944fc8f2c495", size = 201406, upload-time = "2026-10-14T19:39:39.308Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/70/a2/5ea0802b548c956248913559ba4035ba69153e94cb79747c341be1c5d583/agentplane_control_plane-1.0.1.tar.gz", hash = "sha256:4d2bda1b4fb4bfe1287db44516995c8f3bbaa1a1a9f1962759e002fce67ee659", size = 202331, upload-time = "2026-10-15T16:14:19.2Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d5/96/146730fd3679b85832b8867ff854f6d3994a75db3a0bbbb610e5c360be0e/agentplane_control_plane-1.0.0-py3-none-any.whl", hash = "sha256:5f9c260c333464db855c8a9920583488f9ca2cc7ab3101988b579a679e76dc1b", size = 190792, upload-time = "2026-10-14T19:39:36.834Z" },
+    { url = "https://files.pythonhosted.org/packages/8c/ed/dbf7a37f927017fc36f3b75d8425e8407e356b07e748d59adaecd2cfb400/agentplane_control_plane-1.0.1-py3-none-any.whl", hash = "sha256:a26e80321c3f391e2bb453d48c6915e860d3b9f23979f351161815ad416ab705", size = 191255, upload-time = "2026-10-15T16:14:17.584Z" },
 ]
 
 [[package]]
@@ -920,7 +920,7 @@ resolution-markers = [
     "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
     "python_full_version == '3.14.*' and sys_platform != 'emscripten'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten'",
-    "(python_full_version >= '3.11' and python_full_version < '3.14' and sys_platform != 'emscripten') or (python_full_version == '3.11.*' and sys_platform == 'emscripten')",
+    "python_full_version == '3.11.*' or (python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform != 'emscripten')",
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/35/c8/1d457d9150ff948f2ce6ada7715e0eeebbe5d3b58a45271a1e222474bcd3/filelock-4.1.1.tar.gz", hash = "sha256:7ba0927482c5a814b0a7f391d029ccdb8010f576f0a74c0dcde1811e8bc4c1b6", size = 563430, upload-time = "2026-10-11T16:11:54.373Z" }
 wheels = [
@@ -2153,7 +2153,7 @@ resolution-markers = [
     "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
     "python_full_version == '3.14.*' and sys_platform != 'emscripten'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten'",
-    "(python_full_version >= '3.11' and python_full_version < '3.14' and sys_platform != 'emscripten') or (python_full_version == '3.11.*' and sys_platform == 'emscripten')",
+    "python_full_version == '3.11.*' or (python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform != 'emscripten')",
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/80/a8/66d45abadff219e36e2a824181b8f6a67e7ed4572934d6252c71c29d5731/platformdirs-4.13.0.tar.gz", hash = "sha256:1aa0b0d3f224c1f07c295121e312a5a24a180d6ae5a8425ea1784b3e3863e9c0", size = 61094, upload-time = "2026-10-11T02:05:24.109Z" }
 wheels = [
@@ -2242,11 +2242,11 @@ wheels = [
 
 [[package]]
 name = "pyasn1"
-version = "0.6.4"
+version = "0.6.5"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/a4/9a/23310166d960def5897e91fe20e5b724601b02a22e84ba1f94232c0b7f67/pyasn1-0.6.4.tar.gz", hash = "sha256:9c447d8431c947fe4c8febc4ed9e760bc29011a5b01e5c74b67025bd9fb8ce81", size = 151262, upload-time = "2026-07-09T01:12:33.988Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/88/7e/3c0da41061a2021cac7cd524fd57092adbe5b515e8bf9005702e366802e2/pyasn1-0.6.5.tar.gz", hash = "sha256:6b11616a6bcf3a40e635f082bb232fa57b5e0dd7f517bd7ddd69ec3794508a47", size = 155152, upload-time = "2026-10-27T06:32:49.125Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9a/3b/6163796d69c3977d1e4287bea4a6979161cbbdd170ebb430511e8e1999ce/pyasn1-0.6.4-py3-none-any.whl", hash = "sha256:deda9277cfd454080ec40b207fb6df82206a3a2688735233cdcd8d3d565f088b", size = 84410, upload-time = "2026-07-09T01:12:32.92Z" },
+    { url = "https://files.pythonhosted.org/packages/19/1f/3eefd5c84c35cae44549ce1c7f7e58f7945b34f5a6bce07a135438522073/pyasn1-0.6.5-py3-none-any.whl", hash = "sha256:4017b0fce125096b8573b39c989fdb1a4b19cf761e683398184550fea0e66587", size = 84807, upload-time = "2026-10-27T06:32:48.045Z" },
 ]
 
 [[package]]
@@ -2882,7 +2882,7 @@ resolution-markers = [
     "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
     "python_full_version == '3.14.*' and sys_platform != 'emscripten'",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten'",
-    "(python_full_version >= '3.11' and python_full_version < '3.14' and sys_platform != 'emscripten') or (python_full_version == '3.11.*' and sys_platform == 'emscripten')",
+    "python_full_version == '3.11.*' or (python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform != 'emscripten')",
 ]
 dependencies = [
     { name = "typing-extensions" },
